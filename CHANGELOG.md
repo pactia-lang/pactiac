@@ -11,11 +11,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Builtin macro expansion:** `lower/macros.ts` lowers `#[list]`, `#[paginated]`, `#[detail]`, `#[create]`, and `#[idempotent]` into endpoint `modifiers.*` IR keys; ownership macros map to `authorization.ownership.scope`.
 - **Manifest references:** `lower/references.ts` populates `manifest.references[]` from cross-module `@fk` edges in model slices.
 - **Structural tag validation:** `frontend/validate/tags.ts` checks required `@api`, `@entity`, and `@stack` fields during compile (diagnostics until JSON Schema tag bodies are normative).
+- **Effective registry:** `resolve/registry.ts` builds workspace macro precedence (stack package > explicit imports > builtins) from vendored `pactia.package.yaml` manifests.
+- **Package macro overrides:** `lower/macros.ts` flattens package `expands_to` chains (nested `#[macro]` and `modifiers.*` IR assignments) before builtin lowering; detects `MACRO_EXPANSION_CYCLE`.
+- **Registry errors:** `REGISTRY_COLLISION` when two imports export the same macro name.
 
 ### Changed
 
 - Fleet golden `fleet.service.yaml` uses expanded `modifiers.*` instead of a raw `macros` name list.
 - `compileIrWorkspace` reports `macro.expansion` only for unknown macros, not recognized builtins.
+- `compileWorkspace` passes `effectiveRegistry` from resolved packages into IR lowering.
 
 ## [0.1.0] - 2026-06-18
 

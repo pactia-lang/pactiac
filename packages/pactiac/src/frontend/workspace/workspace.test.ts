@@ -62,6 +62,8 @@ test("assembleWorkspace resolves vendored packages when PACTIA_VENDOR_ROOT is se
   withVendorRoot(() => {
     const assembled = assembleWorkspace(fleetWorkspaceRoot);
     assert.ok(assembled.lockfileDigest?.startsWith("sha256:"));
+    assert.ok(assembled.effectiveRegistry);
+    assert.equal(assembled.effectiveRegistry.macros.size, 0);
   });
 });
 
