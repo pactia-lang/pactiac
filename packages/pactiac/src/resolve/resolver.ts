@@ -8,10 +8,12 @@ import {
   parsePactiaLock,
   parsePactiaToml,
 } from "./manifest.js";
+import { buildEffectiveRegistry, type EffectiveRegistry } from "./registry.js";
 
 export interface ResolvedWorkspacePackages {
   readonly lockfileDigest: string | undefined;
   readonly loaded: readonly LoadedPackage[];
+  readonly effectiveRegistry: EffectiveRegistry | undefined;
 }
 
 export function resolveWorkspacePackages(
@@ -20,7 +22,7 @@ export function resolveWorkspacePackages(
   stackTagTarget: string,
 ): ResolvedWorkspacePackages {
   if (!files.pactiaTomlSource || !files.pactiaLockSource) {
-    return { lockfileDigest: undefined, loaded: [] };
+    return { lockfileDigest: undefined, loaded: [], effectiveRegistry: undefined };
   }
 
   const toml = parsePactiaToml(files.pactiaTomlSource);
@@ -40,5 +42,10 @@ export function resolveWorkspacePackages(
   return {
     lockfileDigest: lockfileDigest(files.pactiaLockSource),
     loaded,
+    effectiveRegistry: buildEffectiveRegistry({
+      stackCoordinate,
+      importCoordinates: imports,
+      loaded,
+    }),
   };
 }

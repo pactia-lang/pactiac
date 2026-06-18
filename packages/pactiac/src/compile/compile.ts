@@ -35,6 +35,7 @@ export function compileWorkspace(workspaceRoot: string): CompileResult {
     entry: assembled.merged.entry,
     lockfileDigest: assembled.lockfileDigest,
     packagesResolved: hasLock,
+    effectiveRegistry: assembled.effectiveRegistry,
   });
 
   return { files, diagnostics };

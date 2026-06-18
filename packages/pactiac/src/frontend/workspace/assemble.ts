@@ -1,12 +1,14 @@
 import { discoverWorkspace } from "./discover.js";
 import { mergeWorkspaceSources } from "./merge.js";
 import { resolveWorkspacePackages } from "../../resolve/resolver.js";
+import type { EffectiveRegistry } from "../../resolve/registry.js";
 import { extractKernel } from "../kernel/extract.js";
 import type { MergedWorkspaceSource } from "./types.js";
 
 export interface AssembledWorkspace {
   readonly merged: MergedWorkspaceSource;
   readonly lockfileDigest: string | undefined;
+  readonly effectiveRegistry: EffectiveRegistry | undefined;
 }
 
 export function assembleWorkspace(rootDir: string): AssembledWorkspace {
@@ -25,5 +27,6 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
       lockfileDigest: resolved.lockfileDigest,
     },
     lockfileDigest: resolved.lockfileDigest,
+    effectiveRegistry: resolved.effectiveRegistry,
   };
 }

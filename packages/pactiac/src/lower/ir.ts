@@ -12,6 +12,7 @@ import { extractKernel, type KernelDeploy, type KernelEndpoint, type KernelProgr
 import { serviceFileStem } from "../frontend/kernel/text.js";
 import { BuiltinMacro, expandEndpointMacros, parseMacroName } from "./macros.js";
 import { collectManifestReferences } from "./references.js";
+import type { EffectiveRegistry } from "../resolve/registry.js";
 
 /** Fixed timestamp so compile output is byte-stable across runs. */
 const COMPILED_AT = "1970-01-01T00:00:00.000Z";
@@ -23,6 +24,7 @@ export interface LowerIrOptions {
   readonly entry?: string;
   readonly lockfileDigest?: string;
   readonly packagesResolved?: boolean;
+  readonly effectiveRegistry?: EffectiveRegistry;
 }
 
 function ownershipScopeFromMacros(macros: readonly string[]): string | undefined {
@@ -52,8 +54,8 @@ function endpointAuthorization(endpoint: KernelEndpoint) {
   return undefined;
 }
 
-function lowerEndpoint(endpoint: KernelEndpoint) {
-  const { modifiers } = expandEndpointMacros(endpoint.macros);
+function lowerEndpoint(endpoint: KernelEndpoint, effectiveRegistry?: EffectiveRegistry) {
+  const { modifiers } = expandEndpointMacros(endpoint.macros, effectiveRegistry);
 
   return {
     id: endpoint.id,
@@ -152,7 +154,11 @@ function lowerModelSlice(module: KernelModule) {
   };
 }
 
-function lowerServiceSlice(module: KernelModule, serviceName: string) {
+function lowerServiceSlice(
+  module: KernelModule,
+  serviceName: string,
+  effectiveRegistry?: EffectiveRegistry,
+) {
   const service = module.services.find((candidate) => candidate.name === serviceName);
   if (!service) {
     throw new Error(`Service '${serviceName}' not found in module '${module.name}'`);
@@ -166,7 +172,9 @@ function lowerServiceSlice(module: KernelModule, serviceName: string) {
       description: service.description,
       flags: service.flags,
       guide: service.guide,
-      endpoints: service.endpoints.map(lowerEndpoint),
+      endpoints: service.endpoints.map((endpoint) =>
+        lowerEndpoint(endpoint, effectiveRegistry),
+      ),
       scenarios: loweredScenarios,
       obligations: [],
     },
@@ -211,10 +219,13 @@ function aggregateSecurity(modules: readonly KernelModule[]): Record<string, unk
 }
 
 export function lowerIrWorkspace(program: KernelProgram, options: LowerIrOptions = {}): IrWorkspace {
+  const effectiveRegistry = options.effectiveRegistry;
   const moduleBundles = program.modules.map((module) => ({
     module: lowerModuleSlice(module),
     model: lowerModelSlice(module),
-    services: module.services.map((service) => lowerServiceSlice(module, service.name)),
+    services: module.services.map((service) =>
+      lowerServiceSlice(module, service.name, effectiveRegistry),
+    ),
   }));
 
   const manifestModules = program.modules.map((module) => ({
@@ -339,7 +350,9 @@ export function compileIrWorkspace(
 
   const macroEndpoints = program.modules.flatMap((mod) =>
     mod.services.flatMap((svc) =>
-      svc.endpoints.flatMap((ep) => expandEndpointMacros(ep.macros).unknownMacros),
+      svc.endpoints.flatMap((ep) =>
+        expandEndpointMacros(ep.macros, options.effectiveRegistry).unknownMacros,
+      ),
     ),
   );
   if (macroEndpoints.length > 0) {
