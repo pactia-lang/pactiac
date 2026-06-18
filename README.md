@@ -50,6 +50,8 @@ export PACTIA_SPEC_ROOT=/path/to/spec
 npm test
 ```
 
+Tag body JSON Schema validation uses the same `PACTIA_SPEC_ROOT` to load `registry/kernel-tags.yaml` and `schemas/tags/*`. Without it, only structural tag checks run.
+
 ## Workspace layout
 
 ```
@@ -103,7 +105,7 @@ CI fails if `generated/ir` drifts. The optional `sync-ir-schemas` workflow (requ
 
 | pactiac release | Implements spec |
 | --- | --- |
-| 0.1.x | Pactia 1.0 — kernel tag extract + module-scoped IR; workspace compile (`-w`) + package resolver; macro expansion + effectiveRegistry precedence |
+| 0.1.x | Pactia 1.0 — kernel extract + module-scoped IR; workspace compile; macro expansion + effectiveRegistry; JSON Schema tag validation (fleet tags) |
 
 ### Compile output layout
 

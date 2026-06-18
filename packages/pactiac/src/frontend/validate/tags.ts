@@ -1,6 +1,8 @@
 import type { Diagnostic } from "../../diagnostics/diagnostic.js";
 import { Provenance } from "../../diagnostics/diagnostic.js";
 import type { KernelProgram } from "../kernel/extract.js";
+import { loadKernelTagCatalog } from "./catalog.js";
+import { validateTagSchemas } from "./schema-validate.js";
 
 export enum KernelTag {
   Api = "api",
@@ -9,8 +11,8 @@ export enum KernelTag {
   Stack = "stack",
 }
 
-/** Structural kernel tag checks until spec tag JSON schemas are normative. */
-export function validateKernelTags(program: KernelProgram): Diagnostic[] {
+/** Structural kernel tag checks when JSON Schema validation is unavailable. */
+export function validateKernelTagsStructural(program: KernelProgram): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
   for (const mod of program.modules) {
@@ -64,4 +66,16 @@ export function validateKernelTags(program: KernelProgram): Diagnostic[] {
   }
 
   return diagnostics;
+}
+
+/** Structural checks plus JSON Schema validation when spec tag schemas are normative. */
+export function validateKernelTags(
+  program: KernelProgram,
+  catalog = loadKernelTagCatalog(),
+): Diagnostic[] {
+  const schemaDiagnostics = validateTagSchemas(program, catalog);
+  if (catalog) {
+    return schemaDiagnostics;
+  }
+  return [...validateKernelTagsStructural(program), ...schemaDiagnostics];
 }
