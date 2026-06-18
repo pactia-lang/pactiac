@@ -1,0 +1,14 @@
+# Bundled subset for pactiac CI — full catalog lives in pactia-lang/spec.
+pactiaVersion: "1.0"
+
+tags:
+  - name: stack
+    schema: schemas/tags/stack-v1.json
+  - name: entity
+    schema: schemas/tags/entity-v1.json
+  - name: api
+    schema: schemas/tags/api-v1.json
+  - name: auth
+    schema: schemas/tags/auth-v1.json
+  - name: public
+    schema: schemas/tags/public-v1.json

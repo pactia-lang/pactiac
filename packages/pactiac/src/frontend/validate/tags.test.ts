@@ -7,7 +7,7 @@ import { resolveSpecRoot } from "./spec-root.js";
 import { TagValidationErrorCode } from "./schema-validate.js";
 import { validateKernelTags, validateKernelTagsStructural } from "./tags.js";
 
-test("resolveSpecRoot finds sibling spec checkout", () => {
+test("resolveSpecRoot finds PACTIA_SPEC_ROOT, sibling spec, or bundled fixtures", () => {
   assert.ok(resolveSpecRoot());
 });
 
@@ -48,7 +48,7 @@ product X { @stack rust-anb { }
 
 test("validateKernelTags passes fleet-management-v2 fixture", () => {
   const catalog = loadKernelTagCatalog();
-  if (!catalog) return;
+  assert.ok(catalog);
 
   const program = extractKernel(readTestFixture(TestFixtureId.FleetManagementV2));
   assert.equal(validateKernelTags(program, catalog).length, 0);

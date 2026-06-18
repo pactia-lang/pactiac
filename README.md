@@ -50,7 +50,7 @@ export PACTIA_SPEC_ROOT=/path/to/spec
 npm test
 ```
 
-Tag body JSON Schema validation uses the same `PACTIA_SPEC_ROOT` to load `registry/kernel-tags.yaml` and `schemas/tags/*`. Without it, only structural tag checks run.
+Tag body JSON Schema validation uses the same `PACTIA_SPEC_ROOT` to load `registry/kernel-tags.yaml` and `schemas/tags/*`. Without it, pactiac falls back to bundled fixtures under `test/fixtures/spec/` (CI) or sibling `../spec` when present.
 
 ## Workspace layout
 

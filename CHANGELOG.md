@@ -14,7 +14,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Effective registry:** `resolve/registry.ts` builds workspace macro precedence (stack package > explicit imports > builtins) from vendored `pactia.package.yaml` manifests.
 - **Package macro overrides:** `lower/macros.ts` flattens package `expands_to` chains (nested `#[macro]` and `modifiers.*` IR assignments) before builtin lowering; detects `MACRO_EXPANSION_CYCLE`.
 - **Registry errors:** `REGISTRY_COLLISION` when two imports export the same macro name.
-- **JSON Schema tag validation:** `frontend/validate/` loads `kernel-tags.yaml` from `PACTIA_SPEC_ROOT`, validates normative tag bodies with Ajv (`TAG_BODY_INVALID`).
+- **JSON Schema tag validation:** `frontend/validate/` loads `kernel-tags.yaml` from `PACTIA_SPEC_ROOT`, sibling `../spec`, or bundled `test/fixtures/spec/` (CI), validates normative tag bodies with Ajv (`TAG_BODY_INVALID`).
 
 ### Changed
 

@@ -11,6 +11,13 @@ const pactiacRepoRoot = resolve(
   "..",
 );
 
+const bundledSpecRootPath = resolve(pactiacRepoRoot, "test", "fixtures", "spec");
+
+/** Bundled tag catalog used when pactia-lang/spec is not checked out (CI). */
+export function bundledSpecRoot(): string {
+  return bundledSpecRootPath;
+}
+
 /** Resolve spec repo root for kernel tag catalog and JSON schemas. */
 export function resolveSpecRoot(): string | undefined {
   const candidates: string[] = [];
@@ -21,6 +28,7 @@ export function resolveSpecRoot(): string | undefined {
 
   candidates.push(resolve(pactiacRepoRoot, "..", "spec"));
   candidates.push(resolve(pactiacRepoRoot, "spec"));
+  candidates.push(bundledSpecRootPath);
 
   return candidates.find((path) => existsSync(resolve(path, "registry", "kernel-tags.yaml")));
 }
