@@ -20,8 +20,7 @@ product:
           path: /fleet/vehicles
       bind:
         service: FleetService
-        method: GET
-        path: /api/v1/vehicles
+        endpoint: list_vehicles
       description: Customer browses their vehicles in a paginated table
     - id: vehicle_list
       platform: ios
@@ -31,8 +30,7 @@ product:
           tab: FleetTab
       bind:
         service: FleetService
-        method: GET
-        path: /api/v1/vehicles
+        endpoint: list_vehicles
       description: Customer scrolls fleet on phone with pull-to-refresh
     - id: vehicle_detail
       platform: web
@@ -42,8 +40,7 @@ product:
           path: /fleet/vehicles/:id
       bind:
         service: FleetService
-        method: GET
-        path: /api/v1/vehicles/:id
+        endpoint: get_vehicle
       description: Customer opens vehicle detail with latest GPS position
     - id: vehicle_create
       platform: web
@@ -51,10 +48,21 @@ product:
         id: vehicle_create
       bind:
         service: FleetService
-        method: POST
-        path: /api/v1/vehicles
+        endpoint: create_vehicle
       description: Admin registers a vehicle from the fleet console
-  security: {}
+  security:
+    statements:
+      - id: fleet
+        module: fleet
+        text: All admin mutations must be audit-logged
+    policies:
+      - id: fleet_retention
+        module: fleet
+        retain:
+          entity: GpsPosition
+          period: forever
+          reason: position history audit rule
+        residency: EU
   deployment:
     id: fleet
     environments:

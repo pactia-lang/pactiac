@@ -141,6 +141,25 @@ export interface V2DeployGate {
   readonly coverage?: string;
 }
 
+export interface V2Deploy {
+  readonly id?: string;
+  readonly environments: V2DeployEnvironment[];
+  readonly gates: V2DeployGate[];
+}
+
+export interface V2SecurityStatement {
+  readonly id: string;
+  readonly text: string;
+}
+
+export interface V2Policy {
+  readonly id: string;
+  readonly retainEntity?: string;
+  readonly retainPeriod?: string;
+  readonly retainReason?: string;
+  readonly residency?: string;
+}
+
 export interface V2Module {
   readonly name: string;
   readonly actors: V2Actor[];
@@ -156,6 +175,9 @@ export interface V2Module {
   readonly stateMachines: V2StateMachine[];
   readonly modelRules: V2Rule[];
   readonly services: V2Service[];
+  readonly deploy?: V2Deploy;
+  readonly securityStatements: V2SecurityStatement[];
+  readonly policies: V2Policy[];
 }
 
 export interface V2Product {
@@ -165,9 +187,6 @@ export interface V2Product {
   readonly topologyMode?: string;
   readonly tenancyMode?: string;
   readonly guide?: string | string[];
-  readonly deployId?: string;
-  readonly environments: V2DeployEnvironment[];
-  readonly gates: V2DeployGate[];
   readonly surfaces: V2Surface[];
 }
 
@@ -339,15 +358,45 @@ function parseApiBlock(
   };
 }
 
+function parseServicePrefixFlags(prefix: string): V2Service["flags"] {
+  return {
+    database: /#\[database\]/.test(prefix),
+    cache: /#\[cache\]/.test(prefix),
+    events: /#\[events\]/.test(prefix),
+  };
+}
+
+function parseDeployBlock(blockBody: string, blockId?: string): V2Deploy {
+  const environments: V2DeployEnvironment[] = [];
+  const gates: V2DeployGate[] = [];
+  for (const env of collectTagBlocks(blockBody, "environment")) {
+    environments.push({
+      id: env.id ?? "environment",
+      replicas: Number.parseInt(/replicas:\s*(\d+)/.exec(env.body)?.[1] ?? "0", 10) || undefined,
+      region: /region:\s*"([^"]+)"/.exec(env.body)?.[1],
+    });
+  }
+  for (const gate of collectTagBlocks(blockBody, "gate")) {
+    gates.push({
+      id: gate.id ?? "gate",
+      scenarios: /scenarios:\s*(\w+)/.exec(gate.body)?.[1],
+      coverage: stripFieldValue(/coverage:\s*("[^"]+"|\S+)/.exec(gate.body)?.[1] ?? ""),
+    });
+  }
+  return { id: blockId, environments, gates };
+}
+
 function parseServiceBody(
   serviceName: string,
   body: string,
   scenarios: ScenarioDecl[],
+  prefix = "",
 ): V2Service {
+  const prefixFlags = parseServicePrefixFlags(prefix);
   const flags = {
-    database: /#\[database\]/.test(body),
-    cache: /#\[cache\]/.test(body),
-    events: /#\[events\]/.test(body),
+    database: prefixFlags.database || /#\[database\]/.test(body),
+    cache: prefixFlags.cache || /#\[cache\]/.test(body),
+    events: prefixFlags.events || /#\[events\]/.test(body),
   };
 
   const endpoints: V2Endpoint[] = [];
@@ -527,9 +576,26 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
     const openBrace = serviceMatch.index + serviceMatch[0].length - 1;
     const closeBrace = findMatchingBrace(body, openBrace);
     const serviceBody = body.slice(openBrace + 1, closeBrace);
-    services.push(parseServiceBody(serviceName, serviceBody, scenarios));
+    const prefix = body.slice(0, serviceMatch.index).split("\n").slice(-8).join("\n");
+    services.push(parseServiceBody(serviceName, serviceBody, scenarios, prefix));
     serviceMatch = servicePattern.exec(body);
   }
+
+  const deployBlock = collectTagBlocks(body, "deploy")[0];
+  const deploy = deployBlock ? parseDeployBlock(deployBlock.body, deployBlock.id) : undefined;
+
+  const securityStatements = collectTagBlocks(body, "security").map((block) => ({
+    id: block.id ?? "security",
+    text: proseToText(extractProseLines(block.body)) ?? "",
+  }));
+
+  const policies = collectTagBlocks(body, "policy").map((block) => ({
+    id: block.id ?? "policy",
+    retainEntity: /entity:\s*(\w+)/.exec(block.body)?.[1],
+    retainPeriod: /period:\s*(\w+)/.exec(block.body)?.[1],
+    retainReason: stripFieldValue(/reason:\s*("[^"]+"|\S+)/.exec(block.body)?.[1] ?? ""),
+    residency: /residency:\s*(\w+)/.exec(block.body)?.[1],
+  }));
 
   return {
     name: moduleName,
@@ -546,6 +612,9 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
     stateMachines,
     modelRules,
     services,
+    deploy,
+    securityStatements,
+    policies,
   };
 }
 
@@ -571,26 +640,6 @@ export function extractV2Kernel(source: string): V2KernelProgram {
   const topologyBlock = collectTagBlocks(productBlock.body, "topology")[0];
   const tenancyBlock = collectTagBlocks(productBlock.body, "tenancy")[0];
   const guideBlock = collectTagBlocks(productBlock.body, "guide")[0];
-  const deployBlock = collectTagBlocks(productBlock.body, "deploy")[0];
-
-  const environments: V2DeployEnvironment[] = [];
-  const gates: V2DeployGate[] = [];
-  if (deployBlock) {
-    for (const env of collectTagBlocks(deployBlock.body, "environment")) {
-      environments.push({
-        id: env.id ?? "environment",
-        replicas: Number.parseInt(/replicas:\s*(\d+)/.exec(env.body)?.[1] ?? "0", 10) || undefined,
-        region: /region:\s*"([^"]+)"/.exec(env.body)?.[1],
-      });
-    }
-    for (const gate of collectTagBlocks(deployBlock.body, "gate")) {
-      gates.push({
-        id: gate.id ?? "gate",
-        scenarios: /scenarios:\s*(\w+)/.exec(gate.body)?.[1],
-        coverage: stripFieldValue(/coverage:\s*("[^"]+"|\S+)/.exec(gate.body)?.[1] ?? ""),
-      });
-    }
-  }
 
   const scenarios = extractV2Tests(source);
   const modules: V2Module[] = [];
@@ -623,9 +672,6 @@ export function extractV2Kernel(source: string): V2KernelProgram {
         ? normalizeTenancyMode(/mode:\s*(\w+)/.exec(tenancyBlock.body)?.[1] ?? "")
         : undefined,
       guide: guideBlock ? proseToGuidance(extractProseLines(guideBlock.body)) : undefined,
-      deployId: deployBlock?.id,
-      environments,
-      gates,
       surfaces,
     },
     modules,

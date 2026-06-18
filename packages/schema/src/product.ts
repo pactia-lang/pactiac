@@ -11,6 +11,7 @@ export const productTenancySchema = z.object({
 
 export const productSurfaceBindSchema = z.object({
   service: z.string().optional(),
+  endpoint: z.string().optional(),
   method: z.string().optional(),
   path: z.string().optional(),
   data: z.string().optional(),
