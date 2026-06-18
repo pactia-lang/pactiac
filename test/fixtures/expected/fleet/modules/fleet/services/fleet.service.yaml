@@ -2,9 +2,9 @@ service:
   name: FleetService
   description: Core fleet management and vehicle tracking
   flags:
-    database: false
-    cache: false
-    events: false
+    database: true
+    cache: true
+    events: true
   guide: Return errors via platform error envelope only — never raw stack traces to clients
   endpoints:
     - id: list_vehicles

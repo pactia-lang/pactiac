@@ -7,7 +7,7 @@ import { type Diagnostic, Provenance } from "./diagnostics.js";
 import { emitYaml } from "./emit.js";
 import { lowerScenarios } from "./lower-scenarios.js";
 import { parseThenClause, parseWhenClause } from "./test-clauses.js";
-import { extractV2Kernel, type V2Endpoint, type V2KernelProgram, type V2Module } from "./v2-kernel/extract.js";
+import { extractV2Kernel, type V2Deploy, type V2Endpoint, type V2KernelProgram, type V2Module } from "./v2-kernel/extract.js";
 import { serviceFileStem } from "./v2-kernel/text.js";
 
 /** Fixed timestamp so compile output is byte-stable across runs. */
@@ -149,6 +149,43 @@ function lowerServiceSlice(module: V2Module, serviceName: string) {
   };
 }
 
+function aggregateDeployment(modules: readonly V2Module[]): V2Deploy | undefined {
+  return modules.find((module) => module.deploy)?.deploy;
+}
+
+function aggregateSecurity(modules: readonly V2Module[]): Record<string, unknown> {
+  const statements = modules.flatMap((module) =>
+    module.securityStatements.map((statement) => ({
+      id: statement.id,
+      module: module.name,
+      text: statement.text,
+    })),
+  );
+  const policies = modules.flatMap((module) =>
+    module.policies.map((policy) => ({
+      id: policy.id,
+      module: module.name,
+      ...(policy.retainEntity
+        ? {
+            retain: {
+              entity: policy.retainEntity,
+              period: policy.retainPeriod,
+              reason: policy.retainReason,
+            },
+          }
+        : {}),
+      ...(policy.residency ? { residency: policy.residency } : {}),
+    })),
+  );
+  if (statements.length === 0 && policies.length === 0) {
+    return {};
+  }
+  return {
+    ...(statements.length > 0 ? { statements } : {}),
+    ...(policies.length > 0 ? { policies } : {}),
+  };
+}
+
 export function lowerIrWorkspace(program: V2KernelProgram): IrWorkspace {
   const moduleBundles = program.modules.map((module) => ({
     module: lowerModuleSlice(module),
@@ -200,24 +237,22 @@ export function lowerIrWorkspace(program: V2KernelProgram): IrWorkspace {
                 ...(surface.nav ? { nav: surface.nav } : {}),
               }
             : undefined,
-          bind: surface.method && surface.path
-            ? {
-                service: surface.serviceName,
-                method: surface.method,
-                path: surface.path,
-              }
-            : undefined,
+          bind: {
+            service: surface.serviceName,
+            endpoint: surface.apiId,
+          },
           description: surface.description,
         })),
-        security: {},
-        deployment:
-          program.product.environments.length > 0 || program.product.gates.length > 0
-            ? {
-                id: program.product.deployId,
-                environments: program.product.environments,
-                gates: program.product.gates,
-              }
-            : undefined,
+        security: aggregateSecurity(program.modules),
+        deployment: (() => {
+          const deployment = aggregateDeployment(program.modules);
+          if (!deployment) return undefined;
+          return {
+            id: deployment.id,
+            environments: deployment.environments,
+            gates: deployment.gates,
+          };
+        })(),
       },
     },
     modules: moduleBundles,

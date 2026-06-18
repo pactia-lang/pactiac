@@ -256,6 +256,9 @@
                       "service": {
                         "type": "string"
                       },
+                      "endpoint": {
+                        "type": "string"
+                      },
                       "method": {
                         "type": "string"
                       },

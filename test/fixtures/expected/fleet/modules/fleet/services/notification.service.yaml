@@ -2,9 +2,9 @@ service:
   name: NotificationService
   description: Fleet event notifications and alerts
   flags:
-    database: false
+    database: true
     cache: false
-    events: false
+    events: true
   endpoints: []
   scenarios: []
   obligations: []
