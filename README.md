@@ -7,12 +7,32 @@ Implements the normative specification in [pactia-lang/spec](https://github.com/
 ## Commands
 
 ```bash
-# Compile a product file to an IR workspace directory
+# Compile a single product file to an IR workspace directory
 pactiac compile -i product.pactia -o input/ [--report] [--provenance report.json]
+
+# Compile a multi-file workspace (product.pactia + modules/**)
+pactiac compile -w ./my-product -o input/ [--report] [--provenance report.json]
 
 # Regenerate golden test fixtures after intentional compiler changes
 npm run generate:golden
 ```
+
+### Workspace layout (source)
+
+```
+my-product/
+  product.pactia
+  pactia.toml
+  pactia.lock
+  .pactia/packages/          # vendored packages for offline/CI resolve
+  modules/<module>/
+    module.pactia
+    services/<name>.service.pactia
+    features/*.pactia
+    entities/*.pactia
+```
+
+Vendored package directories use the form `@scope--name@<version>/` (slashes in coordinates become `--`). Override the vendor search path with `PACTIA_VENDOR_ROOT` when packages live outside the workspace.
 
 ## Development
 
@@ -42,7 +62,9 @@ pactiac/
   test/
     fixtures/
       kernel/               bundled .pactia input
-      expected/fleet/         golden IR workspace output
+      workspace/fleet/      multi-file workspace fixture
+      packages/             shared vendored package stubs for tests
+      expected/fleet/       golden IR workspace output
     fixture-paths.ts
   .githooks/                  pre-commit (test), pre-push (IR schema drift)
   scripts/
@@ -70,7 +92,7 @@ CI fails if `generated/ir` drifts. The optional `sync-ir-schemas` workflow (requ
 
 | pactiac release | Implements spec |
 | --- | --- |
-| 0.1.x | Pactia 1.0 — v2 tag extract + module-scoped IR lowering for fleet fixture; macro expansion and package resolution partial |
+| 0.1.x | Pactia 1.0 — v2 tag extract + module-scoped IR; workspace compile (`-w`) + local package resolver stub; macro expansion partial |
 
 ### Compile output layout
 
