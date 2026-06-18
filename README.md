@@ -37,12 +37,12 @@ pactiac/
   packages/
     schema/                 @pactia/schema — IR Zod models + JSON Schema export
       generated/ir/         committed JSON Schema mirror (CI drift-checked)
+      test/fixtures/        hand-authored IR samples for schema unit tests
     pactiac/                @pactia/pactiac — lexer, parser, v2 kernel lowerer, CLI
   test/
     fixtures/
       kernel/               bundled .pactia input
       expected/fleet/         golden IR workspace output
-      input/                  hand-authored IR samples for schema unit tests
     fixture-paths.ts
   .githooks/                  pre-commit (test), pre-push (IR schema drift)
   scripts/
