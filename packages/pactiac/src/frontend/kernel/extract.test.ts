@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { readTestFixture, TestFixtureId } from "../../../../test/fixture-paths.js";
-import { extractV2Kernel } from "./extract.js";
+import { readTestFixture, TestFixtureId } from "../../../../../test/fixture-paths.js";
+import { extractKernel } from "./extract.js";
 
 const fleetSource = readTestFixture(TestFixtureId.FleetManagementV2);
 
-test("extractV2Kernel reads product-level facts from fleet fixture", () => {
-  const program = extractV2Kernel(fleetSource);
+test("extractKernel reads product-level facts from fleet fixture", () => {
+  const program = extractKernel(fleetSource);
 
   assert.equal(program.product.name, "FleetManagement");
   assert.equal(program.product.stackPackage, "rust-anb");
@@ -15,8 +15,8 @@ test("extractV2Kernel reads product-level facts from fleet fixture", () => {
   assert.ok(program.imports.includes("@pactia/protocol-rest"));
 });
 
-test("extractV2Kernel collects hoisted surfaces from nested @api blocks", () => {
-  const program = extractV2Kernel(fleetSource);
+test("extractKernel collects hoisted surfaces from nested @api blocks", () => {
+  const program = extractKernel(fleetSource);
   assert.equal(program.product.surfaces.length, 4);
   assert.ok(
     program.product.surfaces.every(
@@ -25,7 +25,7 @@ test("extractV2Kernel collects hoisted surfaces from nested @api blocks", () => 
   );
 });
 
-test("extractV2Kernel extracts module deploy security and policies", () => {
+test("extractKernel extracts module deploy security and policies", () => {
   const fleet = programModule(fleetSource);
 
   assert.equal(fleet.deploy?.environments.length, 2);
@@ -34,7 +34,7 @@ test("extractV2Kernel extracts module deploy security and policies", () => {
   assert.equal(fleet.policies[0]?.residency, "EU");
 });
 
-test("extractV2Kernel reads service flags from lines above service block", () => {
+test("extractKernel reads service flags from lines above service block", () => {
   const fleet = programModule(fleetSource);
   const fleetService = fleet.services.find((service) => service.name === "FleetService");
   const notificationService = fleet.services.find(
@@ -45,7 +45,7 @@ test("extractV2Kernel reads service flags from lines above service block", () =>
   assert.deepEqual(notificationService?.flags, { database: true, cache: false, events: true });
 });
 
-test("extractV2Kernel maps entities enums and endpoints", () => {
+test("extractKernel maps entities enums and endpoints", () => {
   const fleet = programModule(fleetSource);
   const fleetService = fleet.services.find((service) => service.name === "FleetService");
 
@@ -56,7 +56,7 @@ test("extractV2Kernel maps entities enums and endpoints", () => {
 });
 
 function programModule(source: string) {
-  const program = extractV2Kernel(source);
+  const program = extractKernel(source);
   const fleet = program.modules.find((module) => module.name === "fleet");
   assert.ok(fleet, "expected fleet module");
   return fleet;

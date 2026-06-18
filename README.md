@@ -58,7 +58,18 @@ pactiac/
     schema/                 @pactia/schema — IR Zod models + JSON Schema export
       generated/ir/         committed JSON Schema mirror (CI drift-checked)
       test/fixtures/        hand-authored IR samples for schema unit tests
-    pactiac/                @pactia/pactiac — lexer, parser, v2 kernel lowerer, CLI
+    pactiac/                @pactia/pactiac — compile pipeline (frontend, lower, emit, resolve), CLI
+      src/
+        compile/              compile(), compileWorkspace(), version gate
+        frontend/
+          lexer/              token types and tokenizer
+          kernel/             tag/block extract → KernelProgram
+          scenarios/          @test extract, when/then clauses, scenario lower
+          workspace/          multi-file discover, merge, assemble
+        lower/                KernelProgram → IR workspace
+        emit/                 IR → deterministic YAML
+        resolve/              pactia.toml / lock / vendored packages
+        diagnostics/
   test/
     fixtures/
       kernel/               bundled .pactia input
@@ -92,7 +103,7 @@ CI fails if `generated/ir` drifts. The optional `sync-ir-schemas` workflow (requ
 
 | pactiac release | Implements spec |
 | --- | --- |
-| 0.1.x | Pactia 1.0 — v2 tag extract + module-scoped IR; workspace compile (`-w`) + local package resolver stub; macro expansion partial |
+| 0.1.x | Pactia 1.0 — kernel tag extract + module-scoped IR; workspace compile (`-w`) + local package resolver stub; macro expansion partial |
 
 ### Compile output layout
 

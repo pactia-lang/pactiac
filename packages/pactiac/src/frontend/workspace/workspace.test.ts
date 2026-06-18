@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
-import { compile, compileWorkspace } from "../compile.js";
+import { compile, compileWorkspace } from "../../compile/compile.js";
 import { discoverWorkspace } from "./discover.js";
 import { mergeWorkspaceSources } from "./merge.js";
 import { assembleWorkspace } from "./assemble.js";
-import { readTestFixture, TestFixtureId } from "../../../../test/fixture-paths.js";
+import { readTestFixture, TestFixtureId } from "../../../../../test/fixture-paths.js";
 
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..");
+const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
 const fleetWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/fleet");
 const vendorRoot = join(repoRoot, "test/fixtures/packages");
 const expectedRoot = join(repoRoot, "test/fixtures/expected/fleet");

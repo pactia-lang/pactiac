@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { detectPactiaVersion, extractV2Tests } from "./v2-test-parser.js";
+import { detectPactiaVersion } from "../../compile/version.js";
+import { extractScenarios } from "./extract-tests.js";
 
 const serviceScopedSource = `
 pactia 1.0
@@ -18,19 +19,19 @@ test("detectPactiaVersion reads pactia header", () => {
   assert.equal(detectPactiaVersion("pactia 1.1\nproduct X {}"), "1.1");
 });
 
-test("extractV2Tests attributes scenarios to enclosing service", () => {
-  const scenarios = extractV2Tests(serviceScopedSource);
+test("extractScenarios attributes scenarios to enclosing service", () => {
+  const scenarios = extractScenarios(serviceScopedSource);
   assert.equal(scenarios.length, 1);
   assert.equal(scenarios[0]?.service, "S");
   assert.equal(scenarios[0]?.name, "one");
 });
 
-test("extractV2Tests rejects @test outside service", () => {
+test("extractScenarios rejects @test outside service", () => {
   const source = `pactia 1.0\nproduct X { @test t { name: "x", when: "GET /x", then: "status is 200", } }`;
-  assert.throws(() => extractV2Tests(source), /@test must appear inside a service block/);
+  assert.throws(() => extractScenarios(source), /@test must appear inside a service block/);
 });
 
-test("extractV2Tests rejects missing when/then fields", () => {
+test("extractScenarios rejects missing when/then fields", () => {
   const source = `pactia 1.0\nproduct X { module m { service S { @test t { name: "x", } } } }`;
-  assert.throws(() => extractV2Tests(source), /Expected when: and then:/);
+  assert.throws(() => extractScenarios(source), /Expected when: and then:/);
 });

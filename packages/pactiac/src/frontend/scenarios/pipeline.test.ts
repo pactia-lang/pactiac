@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { readTestFixture, TestFixtureId } from "../../../test/fixture-paths.js";
-import { compile } from "./compile.js";
-import { parseThenClause, parseWhenClause } from "./test-clauses.js";
-import { extractV2Tests } from "./v2-test-parser.js";
+import { readTestFixture, TestFixtureId } from "../../../../../test/fixture-paths.js";
+import { compile } from "../../compile/compile.js";
+import { parseThenClause, parseWhenClause } from "./clauses.js";
+import { extractScenarios } from "./extract-tests.js";
 
-const fleetV2Source = readTestFixture(TestFixtureId.FleetManagementV2);
+const fleetSource = readTestFixture(TestFixtureId.FleetManagementV2);
 
-test("extractV2Tests finds FleetService acceptance scenarios", () => {
-  const scenarios = extractV2Tests(fleetV2Source);
+test("extractScenarios finds FleetService acceptance scenarios", () => {
+  const scenarios = extractScenarios(fleetSource);
   assert.equal(scenarios.length, 3);
   assert.equal(scenarios[0]!.service, "FleetService");
   assert.equal(scenarios[0]!.name, "Admin registers a vehicle");
@@ -36,7 +36,7 @@ test("parseThenClause normalizes status, body ref, and kafka emit", () => {
 });
 
 test("compile fleet fixture emits module-scoped service YAML with scenarios", () => {
-  const { files } = compile(fleetV2Source);
+  const { files } = compile(fleetSource);
   const fleetService = files.get("modules/fleet/services/fleet.service.yaml") ?? "";
 
   assert.match(fleetService, /name: Admin registers a vehicle/);
@@ -49,9 +49,9 @@ test("compile fleet fixture emits module-scoped service YAML with scenarios", ()
   assert.match(fleetService, /provenance: Pactia/);
 });
 
-test("compile v2 is deterministic", () => {
-  const first = compile(fleetV2Source);
-  const second = compile(fleetV2Source);
+test("compile is deterministic", () => {
+  const first = compile(fleetSource);
+  const second = compile(fleetSource);
   for (const path of first.files.keys()) {
     assert.equal(first.files.get(path), second.files.get(path));
   }

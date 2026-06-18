@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { emitYaml } from "./emit.js";
+import { emitYaml } from "./yaml.js";
 
 test("emitYaml is deterministic for the same object", () => {
   const value = { service: { name: "FleetService", flags: { database: true } } };

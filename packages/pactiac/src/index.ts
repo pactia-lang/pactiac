@@ -1,25 +1,15 @@
-export { parse } from "./parser.js";
-export { Provenance } from "./diagnostics.js";
-export type { Diagnostic } from "./diagnostics.js";
-export { compile, compileScenariosOnly, compileToYamlMap, compileWorkspace } from "./compile.js";
-export type { CompileResult } from "./compile.js";
-export { compileIrWorkspace, emitIrWorkspace, lowerIrWorkspace } from "./lower-ir.js";
-export { extractV2Tests, detectPactiaVersion } from "./v2-test-parser.js";
-export { lowerScenarios } from "./lower-scenarios.js";
-export { parseWhenClause, parseThenClause } from "./test-clauses.js";
-export { emitYaml } from "./emit.js";
-export { tokenize, TokenType, PactiaSyntaxError } from "./tokens.js";
-export type { Token } from "./tokens.js";
-export type {
-  PactiaProgram,
-  ModuleDecl,
-  ModelDecl,
-  ErrorDecl,
-  EventDecl,
-  ConfigDecl,
-  ConfigEntry,
-  ScenarioDecl,
-  ScenarioStep,
-  EndpointDecl,
-} from "./ast.js";
-export { ConfigEntryKind } from "./ast.js";
+export { compile, compileWorkspace } from "./compile/compile.js";
+export type { CompileResult } from "./compile/compile.js";
+export { compileIrWorkspace, emitIrWorkspace, lowerIrWorkspace } from "./lower/ir.js";
+export { extractKernel } from "./frontend/kernel/extract.js";
+export type { KernelProgram } from "./frontend/kernel/extract.js";
+export { extractScenarios } from "./frontend/scenarios/extract-tests.js";
+export { detectPactiaVersion } from "./compile/version.js";
+export { lowerScenarios } from "./frontend/scenarios/lower.js";
+export { parseWhenClause, parseThenClause } from "./frontend/scenarios/clauses.js";
+export { emitYaml } from "./emit/yaml.js";
+export { Provenance } from "./diagnostics/diagnostic.js";
+export type { Diagnostic } from "./diagnostics/diagnostic.js";
+export { tokenize, TokenType, PactiaSyntaxError } from "./frontend/lexer/tokens.js";
+export type { Token } from "./frontend/lexer/tokens.js";
+export type { ScenarioDecl, ScenarioStep } from "./frontend/scenarios/types.js";

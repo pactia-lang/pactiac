@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { compile, compileWorkspace } from "./compile.js";
-import { Provenance } from "./diagnostics.js";
-import type { CompileResult } from "./compile.js";
+import { compile, compileWorkspace } from "./compile/compile.js";
+import type { CompileResult } from "./compile/compile.js";
+import { Provenance } from "./diagnostics/diagnostic.js";
 
 interface CliArgs {
   readonly command: string;
@@ -11,7 +11,6 @@ interface CliArgs {
   readonly workspace: string | undefined;
   readonly output: string | undefined;
   readonly report: boolean;
-  /** Path to write the machine-readable provenance report (consumed by bsc conform). */
   readonly provenance: string | undefined;
 }
 

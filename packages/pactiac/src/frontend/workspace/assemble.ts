@@ -1,7 +1,7 @@
 import { discoverWorkspace } from "./discover.js";
 import { mergeWorkspaceSources } from "./merge.js";
-import { resolveWorkspacePackages } from "../packages/resolver.js";
-import { extractV2Kernel } from "../v2-kernel/extract.js";
+import { resolveWorkspacePackages } from "../../resolve/resolver.js";
+import { extractKernel } from "../kernel/extract.js";
 import type { MergedWorkspaceSource } from "./types.js";
 
 export interface AssembledWorkspace {
@@ -12,7 +12,7 @@ export interface AssembledWorkspace {
 export function assembleWorkspace(rootDir: string): AssembledWorkspace {
   const files = discoverWorkspace(rootDir);
   const merged = mergeWorkspaceSources(files);
-  const kernel = extractV2Kernel(merged.source);
+  const kernel = extractKernel(merged.source);
   const resolved = resolveWorkspacePackages(
     files,
     kernel.imports,
