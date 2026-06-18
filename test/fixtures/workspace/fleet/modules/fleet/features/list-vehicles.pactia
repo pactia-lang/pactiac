@@ -1,0 +1,24 @@
+@auth { roles: [Customer, Admin] }
+#[list]
+#[paginated]
+#[owner]
+@output VehicleListResponse
+@throws { names: [Forbidden] }
+@api list_vehicles {
+  method: GET,
+  path: "/api/v1/vehicles",
+
+  @surface vehicle_list {
+    platform: web,
+    screen: { id: vehicle_list },
+    route: { path: "/fleet/vehicles" },
+    > Customer browses their vehicles in a paginated table
+  }
+
+  @surface vehicle_list {
+    platform: ios,
+    screen: { id: vehicle_list },
+    nav: { tab: FleetTab },
+    > Customer scrolls fleet on phone with pull-to-refresh
+  }
+}

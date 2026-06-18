@@ -1,0 +1,16 @@
+@auth { roles: [Customer, Admin] }
+#[detail]
+#[owner]
+@output VehicleDetailResponse
+@throws { names: [NotFound, Forbidden] }
+@api get_vehicle {
+  method: GET,
+  path: "/api/v1/vehicles/:id",
+
+  @surface vehicle_detail {
+    platform: web,
+    screen: { id: vehicle_detail },
+    route: { path: "/fleet/vehicles/:id" },
+    > Customer opens vehicle detail with latest GPS position
+  }
+}

@@ -1,0 +1,5 @@
+#[database]
+#[events]
+service NotificationService {
+  > Fleet event notifications and alerts
+}

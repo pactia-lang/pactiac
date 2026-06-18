@@ -13,6 +13,15 @@ import { serviceFileStem } from "./v2-kernel/text.js";
 /** Fixed timestamp so compile output is byte-stable across runs. */
 const COMPILED_AT = "1970-01-01T00:00:00.000Z";
 
+const PLACEHOLDER_LOCKFILE_DIGEST =
+  "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+
+export interface LowerIrOptions {
+  readonly entry?: string;
+  readonly lockfileDigest?: string;
+  readonly packagesResolved?: boolean;
+}
+
 function endpointAuthorization(endpoint: V2Endpoint) {
   if (endpoint.isPublic) {
     return { type: "PUBLIC" as const, roles: [] };
@@ -186,7 +195,7 @@ function aggregateSecurity(modules: readonly V2Module[]): Record<string, unknown
   };
 }
 
-export function lowerIrWorkspace(program: V2KernelProgram): IrWorkspace {
+export function lowerIrWorkspace(program: V2KernelProgram, options: LowerIrOptions = {}): IrWorkspace {
   const moduleBundles = program.modules.map((module) => ({
     module: lowerModuleSlice(module),
     model: lowerModelSlice(module),
@@ -209,8 +218,8 @@ export function lowerIrWorkspace(program: V2KernelProgram): IrWorkspace {
       manifest: {
         pactiaVersion: program.version,
         compiledAt: COMPILED_AT,
-        entry: "product.pactia",
-        lockfileDigest: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        entry: options.entry ?? "product.pactia",
+        lockfileDigest: options.lockfileDigest ?? PLACEHOLDER_LOCKFILE_DIGEST,
         modules: manifestModules,
         references: [],
       },
@@ -284,22 +293,32 @@ export function emitIrWorkspace(workspace: IrWorkspace): Map<string, string> {
   return files;
 }
 
-export function compileIrWorkspace(source: string): {
+export function compileIrWorkspace(
+  source: string,
+  options: LowerIrOptions = {},
+): {
   workspace: IrWorkspace;
   files: Map<string, string>;
   diagnostics: Diagnostic[];
 } {
   const program = extractV2Kernel(source);
-  const workspace = lowerIrWorkspace(program);
+  const workspace = lowerIrWorkspace(program, options);
   const files = emitIrWorkspace(workspace);
 
   const diagnostics: Diagnostic[] = [];
 
-  if (!program.imports.includes("@pactia/protocol-rest")) {
+  const protocolRestImported = program.imports.includes("@pactia/protocol-rest");
+  if (!protocolRestImported) {
     diagnostics.push({
       provenance: Provenance.NOT_DERIVABLE,
       target: "import.protocol-rest",
       message: "REST wire validation skipped — @pactia/protocol-rest not imported",
+    });
+  } else if (!options.packagesResolved) {
+    diagnostics.push({
+      provenance: Provenance.NOT_DERIVABLE,
+      target: "import.protocol-rest",
+      message: "REST wire validation skipped — package resolver not run",
     });
   }
 

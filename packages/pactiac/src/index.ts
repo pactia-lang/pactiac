@@ -1,7 +1,7 @@
 export { parse } from "./parser.js";
 export { Provenance } from "./diagnostics.js";
 export type { Diagnostic } from "./diagnostics.js";
-export { compile, compileScenariosOnly, compileToYamlMap } from "./compile.js";
+export { compile, compileScenariosOnly, compileToYamlMap, compileWorkspace } from "./compile.js";
 export type { CompileResult } from "./compile.js";
 export { compileIrWorkspace, emitIrWorkspace, lowerIrWorkspace } from "./lower-ir.js";
 export { extractV2Tests, detectPactiaVersion } from "./v2-test-parser.js";
