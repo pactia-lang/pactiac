@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@pactia/schema": "*",
+    "ajv": "^8.20.0",
     "yaml": "^2.6.1"
   },
   "devDependencies": {

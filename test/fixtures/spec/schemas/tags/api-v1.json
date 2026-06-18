@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pactia.io/schemas/tags/api-v1.json",
+  "title": "Pactia kernel tag @api (v1)",
+  "description": "Kernel @api endpoint clause. Wire fields (method, path) validated when @pactia/protocol-rest is imported.",
+  "type": "object",
+  "required": ["method", "path"],
+  "properties": {
+    "method": {
+      "type": "string",
+      "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^/"
+    }
+  },
+  "additionalProperties": true
+}
