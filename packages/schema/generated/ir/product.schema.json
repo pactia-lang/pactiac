@@ -1,0 +1,408 @@
+{
+  "$ref": "#/definitions/Product",
+  "definitions": {
+    "Product": {
+      "type": "object",
+      "properties": {
+        "product": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "provenance": {
+                          "type": "string",
+                          "enum": [
+                            "Pactia",
+                            "INFERRED",
+                            "STACK_DEFAULT",
+                            "PACKAGE",
+                            "MACRO",
+                            "DEFINE",
+                            "YAML_EMBED",
+                            "GUIDANCE",
+                            "GENERATED",
+                            "NOT_DERIVABLE"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "stackId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "stackVersion": {
+              "type": "string"
+            },
+            "stackDigest": {
+              "type": "string"
+            },
+            "topology": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            "tenancy": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "mode"
+              ],
+              "additionalProperties": false
+            },
+            "guide": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "provenance": {
+                      "type": "string",
+                      "enum": [
+                        "Pactia",
+                        "INFERRED",
+                        "STACK_DEFAULT",
+                        "PACKAGE",
+                        "MACRO",
+                        "DEFINE",
+                        "YAML_EMBED",
+                        "GUIDANCE",
+                        "GENERATED",
+                        "NOT_DERIVABLE"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "surfaces": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "web",
+                      "ios",
+                      "android",
+                      "desktop"
+                    ]
+                  },
+                  "screen": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "route": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": [
+                          "path"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "nav": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "text": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "provenance": {
+                                    "type": "string",
+                                    "enum": [
+                                      "Pactia",
+                                      "INFERRED",
+                                      "STACK_DEFAULT",
+                                      "PACKAGE",
+                                      "MACRO",
+                                      "DEFINE",
+                                      "YAML_EMBED",
+                                      "GUIDANCE",
+                                      "GENERATED",
+                                      "NOT_DERIVABLE"
+                                    ]
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "bind": {
+                    "type": "object",
+                    "properties": {
+                      "service": {
+                        "type": "string"
+                      },
+                      "method": {
+                        "type": "string"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "data": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                ]
+                              },
+                              "provenance": {
+                                "type": "string",
+                                "enum": [
+                                  "Pactia",
+                                  "INFERRED",
+                                  "STACK_DEFAULT",
+                                  "PACKAGE",
+                                  "MACRO",
+                                  "DEFINE",
+                                  "YAML_EMBED",
+                                  "GUIDANCE",
+                                  "GENERATED",
+                                  "NOT_DERIVABLE"
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "security": {
+              "type": "object",
+              "additionalProperties": {}
+            },
+            "deployment": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "environments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "replicas": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "region": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "default": []
+                },
+                "gates": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "scenarios": {
+                        "type": "string"
+                      },
+                      "coverage": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "default": []
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "stackId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "product"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

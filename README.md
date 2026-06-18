@@ -1,24 +1,29 @@
 # pactiac
 
-Pactia compiler — parse `.pactia` source, lower to machine IR, emit workspace YAML.
+Pactia compiler — parse `.pactia` source, lower to module-scoped IR, emit workspace YAML.
 
 Implements the normative specification in [pactia-lang/spec](https://github.com/pactia-lang/spec).
 
 ## Commands
 
 ```bash
+# Compile a product file to an IR workspace directory
 pactiac compile -i product.pactia -o input/ [--report] [--provenance report.json]
+
+# Regenerate golden test fixtures after intentional compiler changes
+npm run generate:golden
 ```
 
 ## Development
 
 ```bash
 npm install
+npm run hooks:install   # optional — pre-commit runs tests, pre-push checks IR schema drift
 npm run build
 npm test
 ```
 
-Golden tests bundle [fleet-management-v2.pactia](test/fixtures/kernel/fleet-management-v2.pactia) (synced from [pactia-lang/spec](https://github.com/pactia-lang/spec)). To test against a local spec checkout instead:
+Golden tests bundle [fleet-management-v2.pactia](test/fixtures/kernel/fleet-management-v2.pactia) (synced from [pactia-lang/spec](https://github.com/pactia-lang/spec)). Override the input fixture root with:
 
 ```bash
 export PACTIA_SPEC_ROOT=/path/to/spec
@@ -30,18 +35,52 @@ npm test
 ```
 pactiac/
   packages/
-    schema/       @pactia/schema — IR Zod models + JSON Schema export
-    pactiac/      @pactia/pactiac — lexer, parser, partial compiler
+    schema/                 @pactia/schema — IR Zod models + JSON Schema export
+      generated/ir/         committed JSON Schema mirror (CI drift-checked)
+    pactiac/                @pactia/pactiac — lexer, parser, v2 kernel lowerer, CLI
   test/
-    fixtures/     Bundled .pactia inputs + module-scoped IR YAML samples
+    fixtures/
+      kernel/               bundled .pactia input
+      expected/fleet/         golden IR workspace output
+      input/                  hand-authored IR samples for schema unit tests
     fixture-paths.ts
+  .githooks/                  pre-commit (test), pre-push (IR schema drift)
+  scripts/
+    generate-golden.ts
+    install-hooks.sh
 ```
+
+## IR JSON Schema sync
+
+Zod models in `@pactia/schema` are the source of truth. Export committed copies:
+
+```bash
+npm run export:ir-schemas
+```
+
+By default this writes to `packages/schema/generated/ir/`. In a monorepo checkout next to `spec/`:
+
+```bash
+PACTIA_SPEC_ROOT=../spec npm run export:ir-schemas -w @pactia/schema
+```
+
+CI fails if `generated/ir` drifts. The optional `sync-ir-schemas` workflow (requires `SPEC_SYNC_TOKEN`) can open commits on `pactia-lang/spec`.
 
 ## Specification coupling
 
 | pactiac release | Implements spec |
 | --- | --- |
-| 1.0.x | Pactia 1.0 (kernel partial — `@test` lowering today) |
+| 0.1.x | Pactia 1.0 — v2 tag extract + module-scoped IR lowering for fleet fixture; macro expansion and package resolution partial |
+
+### Compile output layout
+
+```
+manifest.yaml
+product.yaml
+modules/<module>/<module>.module.yaml
+modules/<module>/<module>.model.yaml
+modules/<module>/services/<service>.service.yaml
+```
 
 ## License
 

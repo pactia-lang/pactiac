@@ -6,7 +6,10 @@ import { irJsonSchemaExporters, type IrJsonSchemaName } from "../src/json-schema
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const pactiacRoot = resolve(scriptDir, "../../..");
 const specRoot = process.env.PACTIA_SPEC_ROOT ?? resolve(pactiacRoot, "..", "spec");
-const outputDir = join(specRoot, "schemas/ir");
+const outputDir =
+  process.env.PACTIA_SPEC_ROOT !== undefined
+    ? join(specRoot, "schemas/ir")
+    : join(pactiacRoot, "packages/schema/generated/ir");
 
 const schemaFiles: ReadonlyArray<{ name: IrJsonSchemaName; filename: string }> = [
   { name: "manifest", filename: "manifest.schema.json" },

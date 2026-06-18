@@ -1,0 +1,44 @@
+name: Sync IR schemas to spec
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec_ref:
+        description: Target branch on pactia-lang/spec
+        required: false
+        default: main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: github.repository == 'pactia-lang/pactiac'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run export:ir-schemas -w @pactia/schema
+      - name: Checkout spec repo
+        uses: actions/checkout@v4
+        with:
+          repository: pactia-lang/spec
+          ref: ${{ inputs.spec_ref }}
+          path: spec
+          token: ${{ secrets.SPEC_SYNC_TOKEN }}
+      - name: Copy schemas into spec
+        run: |
+          mkdir -p spec/schemas/ir
+          cp packages/schema/generated/ir/*.json spec/schemas/ir/
+          cd spec
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add schemas/ir
+          if git diff --cached --quiet; then
+            echo "No schema changes to sync"
+            exit 0
+          fi
+          git commit -m "chore: sync IR JSON Schema from pactiac"
+          git push

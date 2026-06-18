@@ -1,0 +1,90 @@
+module:
+  name: fleet
+  actors:
+    - id: admins
+      role: Admin
+      capabilities:
+        - manage_fleets
+        - manage_users
+    - id: customers
+      role: Customer
+      capabilities:
+        - track_vehicles
+        - view_history
+  rules:
+    - id: single_customer
+      text: Vehicles belong to exactly one customer.
+    - id: gps_retention
+      text: GPS position history must be stored indefinitely.
+    - id: admin_only_register
+      text: Only admins may register or decommission vehicles.
+    - id: device_required
+      text: A vehicle must have an active device before GPS ingestion is accepted.
+  config:
+    profiles:
+      backend:
+        DATABASE_URL:
+          required: true
+          description: PostgreSQL connection string for the fleet database.
+        GPS_DEVICE_API_KEY:
+          required: true
+          secret: true
+          description: Inbound API key for telematics devices posting GPS updates.
+        JWT_PUBLIC_KEY:
+          required: true
+          secret: true
+          description: RSA public key for verifying user JWT tokens.
+        LOG_LEVEL:
+          required: false
+          default: info
+          description: Log verbosity — debug only in non-production environments.
+  errors:
+    catalog:
+      NotFound:
+        status: 404
+        code: RESOURCE_NOT_FOUND
+        message: The requested resource does not exist
+      Forbidden:
+        status: 403
+        code: ACCESS_DENIED
+        message: Actor lacks permission
+      ValidationFailed:
+        status: 422
+        code: INVALID_INPUT
+        message: Request failed validation
+      Conflict:
+        status: 409
+        code: ALREADY_EXISTS
+        message: VIN already registered
+      DeviceUnknown:
+        status: 404
+        code: DEVICE_NOT_FOUND
+        message: No vehicle for this device
+  integrations:
+    - name: gps_devices
+      direction: INBOUND
+      auth:
+        type: API_KEY
+        env: GPS_DEVICE_API_KEY
+      mapsTo: POST /api/v1/gps/ingest
+      purpose: Ingests GPS position updates from telematics devices
+  events:
+    - id: vehicle.created
+      payload: VehicleCreatedPayload
+      handler: NotificationService.onVehicleCreated
+      description: Fired when a vehicle is registered in the platform
+    - id: position.received
+      payload: GpsIngestRequest
+      handler: NotificationService.onPositionReceived
+      description: Fired when a GPS device pushes a valid position update
+  eventHandlers: []
+  observe:
+    slos:
+      - service: FleetService
+        metric: error_rate
+        target: < 1%
+      - service: FleetService
+        metric: availability
+        target: 99.9%
+    alerts: []
+  dependsOn: []

@@ -35,23 +35,24 @@ test("parseThenClause normalizes status, body ref, and kafka emit", () => {
   assert.equal(parsed.kafkaEmits, "vehicle.created");
 });
 
-test("compile v2 fleet fixture emits schema-valid scenarios.yaml", () => {
+test("compile fleet fixture emits module-scoped service YAML with scenarios", () => {
   const { files } = compile(fleetV2Source);
-  assert.ok(files.has("scenarios.yaml"));
+  const fleetService = files.get("modules/fleet/services/fleet.service.yaml") ?? "";
 
-  const yaml = files.get("scenarios.yaml") ?? "";
-  assert.match(yaml, /name: Admin registers a vehicle/);
-  assert.match(yaml, /service: FleetService/);
-  assert.match(yaml, /method: POST/);
-  assert.match(yaml, /path: \/api\/v1\/vehicles/);
-  assert.match(yaml, /httpStatus: "403"/);
-  assert.match(yaml, /bodyRef: VehicleListResponse/);
-  assert.match(yaml, /kafkaEmits: vehicle\.created/);
-  assert.match(yaml, /provenance: Pactia/);
+  assert.match(fleetService, /name: Admin registers a vehicle/);
+  assert.match(fleetService, /service: FleetService/);
+  assert.match(fleetService, /method: POST/);
+  assert.match(fleetService, /path: \/api\/v1\/vehicles/);
+  assert.match(fleetService, /httpStatus: "403"/);
+  assert.match(fleetService, /bodyRef: VehicleListResponse/);
+  assert.match(fleetService, /kafkaEmits: vehicle\.created/);
+  assert.match(fleetService, /provenance: Pactia/);
 });
 
 test("compile v2 is deterministic", () => {
   const first = compile(fleetV2Source);
   const second = compile(fleetV2Source);
-  assert.equal(first.files.get("scenarios.yaml"), second.files.get("scenarios.yaml"));
+  for (const path of first.files.keys()) {
+    assert.equal(first.files.get(path), second.files.get(path));
+  }
 });

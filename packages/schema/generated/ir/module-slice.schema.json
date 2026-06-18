@@ -1,0 +1,631 @@
+{
+  "$ref": "#/definitions/ModuleSlice",
+  "definitions": {
+    "ModuleSlice": {
+      "type": "object",
+      "properties": {
+        "module": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "provenance": {
+                          "type": "string",
+                          "enum": [
+                            "Pactia",
+                            "INFERRED",
+                            "STACK_DEFAULT",
+                            "PACKAGE",
+                            "MACRO",
+                            "DEFINE",
+                            "YAML_EMBED",
+                            "GUIDANCE",
+                            "GENERATED",
+                            "NOT_DERIVABLE"
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "actors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "role": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "capabilities": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "default": []
+                  }
+                },
+                "required": [
+                  "id",
+                  "role"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "provenance": {
+                    "type": "string",
+                    "enum": [
+                      "Pactia",
+                      "INFERRED",
+                      "STACK_DEFAULT",
+                      "PACKAGE",
+                      "MACRO",
+                      "DEFINE",
+                      "YAML_EMBED",
+                      "GUIDANCE",
+                      "GENERATED",
+                      "NOT_DERIVABLE"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "text"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "config": {
+              "type": "object",
+              "properties": {
+                "profiles": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "required": {
+                          "type": "boolean"
+                        },
+                        "secret": {
+                          "type": "boolean"
+                        },
+                        "default": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "text": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    "provenance": {
+                                      "type": "string",
+                                      "enum": [
+                                        "Pactia",
+                                        "INFERRED",
+                                        "STACK_DEFAULT",
+                                        "PACKAGE",
+                                        "MACRO",
+                                        "DEFINE",
+                                        "YAML_EMBED",
+                                        "GUIDANCE",
+                                        "GENERATED",
+                                        "NOT_DERIVABLE"
+                                      ]
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "default": {}
+                }
+              },
+              "additionalProperties": false
+            },
+            "errors": {
+              "type": "object",
+              "properties": {
+                "catalog": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "integer"
+                      },
+                      "code": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "message": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "status",
+                      "code",
+                      "message"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "default": {}
+                }
+              },
+              "additionalProperties": false
+            },
+            "integrations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "direction": {
+                    "type": "string",
+                    "enum": [
+                      "INBOUND",
+                      "OUTBOUND",
+                      "BIDIRECTIONAL"
+                    ]
+                  },
+                  "auth": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "NONE",
+                          "API_KEY",
+                          "HMAC",
+                          "MTLS",
+                          "OAUTH2_CLIENT_CREDENTIALS"
+                        ]
+                      },
+                      "env": {
+                        "type": "string"
+                      },
+                      "header": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "mapsTo": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                ]
+                              },
+                              "provenance": {
+                                "type": "string",
+                                "enum": [
+                                  "Pactia",
+                                  "INFERRED",
+                                  "STACK_DEFAULT",
+                                  "PACKAGE",
+                                  "MACRO",
+                                  "DEFINE",
+                                  "YAML_EMBED",
+                                  "GUIDANCE",
+                                  "GENERATED",
+                                  "NOT_DERIVABLE"
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "timeout": {
+                    "type": "string"
+                  },
+                  "retry": {
+                    "type": "string"
+                  },
+                  "requestBody": {
+                    "type": "string"
+                  },
+                  "responseBody": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "direction"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "payload": {
+                    "type": "string"
+                  },
+                  "handler": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                ]
+                              },
+                              "provenance": {
+                                "type": "string",
+                                "enum": [
+                                  "Pactia",
+                                  "INFERRED",
+                                  "STACK_DEFAULT",
+                                  "PACKAGE",
+                                  "MACRO",
+                                  "DEFINE",
+                                  "YAML_EMBED",
+                                  "GUIDANCE",
+                                  "GENERATED",
+                                  "NOT_DERIVABLE"
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "eventHandlers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "payload": {
+                    "type": "string"
+                  },
+                  "handler": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "text": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  }
+                                ]
+                              },
+                              "provenance": {
+                                "type": "string",
+                                "enum": [
+                                  "Pactia",
+                                  "INFERRED",
+                                  "STACK_DEFAULT",
+                                  "PACKAGE",
+                                  "MACRO",
+                                  "DEFINE",
+                                  "YAML_EMBED",
+                                  "GUIDANCE",
+                                  "GENERATED",
+                                  "NOT_DERIVABLE"
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "observe": {
+              "type": "object",
+              "properties": {
+                "slos": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "service": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "metric": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "target": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "service",
+                      "metric",
+                      "target"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "default": []
+                },
+                "alerts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": {}
+                  },
+                  "default": []
+                }
+              },
+              "additionalProperties": false
+            },
+            "dependsOn": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": []
+            },
+            "guide": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ]
+                    },
+                    "provenance": {
+                      "type": "string",
+                      "enum": [
+                        "Pactia",
+                        "INFERRED",
+                        "STACK_DEFAULT",
+                        "PACKAGE",
+                        "MACRO",
+                        "DEFINE",
+                        "YAML_EMBED",
+                        "GUIDANCE",
+                        "GENERATED",
+                        "NOT_DERIVABLE"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "module"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

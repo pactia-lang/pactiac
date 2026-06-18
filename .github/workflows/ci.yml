@@ -19,3 +19,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+
+  ir-schemas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run export:ir-schemas -w @pactia/schema
+      - name: Check generated IR JSON Schema is committed
+        run: git diff --exit-code -- packages/schema/generated/ir

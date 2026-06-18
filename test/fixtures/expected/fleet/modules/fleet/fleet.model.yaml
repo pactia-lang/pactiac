@@ -1,0 +1,240 @@
+model:
+  name: fleet
+  entities:
+    - name: VehicleListItem
+      fields:
+        - name: id
+          type: UUID
+          array: false
+          optional: false
+        - name: label
+          type: STRING
+          array: false
+          optional: false
+        - name: status
+          type: VEHICLESTATUS
+          array: false
+          optional: false
+        - name: vin
+          type: STRING
+          array: false
+          optional: false
+    - name: VehicleListResponse
+      fields:
+        - name: vehicles
+          type: VEHICLELISTITEM
+          array: true
+          optional: false
+        - name: nextCursor
+          type: STRING
+          array: false
+          optional: true
+          annotations:
+            nullable: true
+    - name: VehicleDetailResponse
+      fields:
+        - name: id
+          type: UUID
+          array: false
+          optional: false
+        - name: customerId
+          type: UUID
+          array: false
+          optional: false
+        - name: label
+          type: STRING
+          array: false
+          optional: false
+        - name: status
+          type: VEHICLESTATUS
+          array: false
+          optional: false
+        - name: vin
+          type: STRING
+          array: false
+          optional: false
+    - name: CreateVehicleRequest
+      fields:
+        - name: customerId
+          type: UUID
+          array: false
+          optional: false
+        - name: vin
+          type: STRING
+          array: false
+          optional: false
+        - name: label
+          type: STRING
+          array: false
+          optional: false
+        - name: deviceId
+          type: STRING
+          array: false
+          optional: false
+    - name: CreateVehicleResponse
+      fields:
+        - name: vehicleId
+          type: UUID
+          array: false
+          optional: false
+    - name: GpsIngestRequest
+      fields:
+        - name: deviceId
+          type: STRING
+          array: false
+          optional: false
+        - name: latitude
+          type: DECIMAL
+          array: false
+          optional: false
+        - name: longitude
+          type: DECIMAL
+          array: false
+          optional: false
+        - name: recordedAt
+          type: DATETIME
+          array: false
+          optional: false
+    - name: GpsIngestResponse
+      fields:
+        - name: positionId
+          type: UUID
+          array: false
+          optional: false
+    - name: VehicleCreatedPayload
+      fields:
+        - name: vehicleId
+          type: UUID
+          array: false
+          optional: false
+        - name: customerId
+          type: UUID
+          array: false
+          optional: false
+        - name: vin
+          type: STRING
+          array: false
+          optional: false
+    - name: Customer
+      fields:
+        - name: id
+          type: UUID
+          array: false
+          optional: false
+          annotations:
+            primary: true
+        - name: name
+          type: STRING
+          array: false
+          optional: false
+        - name: email
+          type: STRING
+          array: false
+          optional: false
+          annotations:
+            unique: true
+            pii: true
+        - name: createdAt
+          type: DATETIME
+          array: false
+          optional: false
+    - name: Vehicle
+      fields:
+        - name: id
+          type: UUID
+          array: false
+          optional: false
+          annotations:
+            primary: true
+        - name: customerId
+          type: UUID
+          array: false
+          optional: false
+          annotations:
+            references:
+              entity: Customer
+        - name: vin
+          type: STRING
+          array: false
+          optional: false
+          annotations:
+            unique: true
+        - name: label
+          type: STRING
+          array: false
+          optional: false
+        - name: status
+          type: VEHICLESTATUS
+          array: false
+          optional: false
+        - name: deviceId
+          type: STRING
+          array: false
+          optional: false
+        - name: createdAt
+          type: DATETIME
+          array: false
+          optional: false
+    - name: GpsPosition
+      fields:
+        - name: id
+          type: UUID
+          array: false
+          optional: false
+          annotations:
+            primary: true
+        - name: vehicleId
+          type: UUID
+          array: false
+          optional: false
+          annotations:
+            references:
+              entity: Vehicle
+        - name: latitude
+          type: DECIMAL
+          array: false
+          optional: false
+        - name: longitude
+          type: DECIMAL
+          array: false
+          optional: false
+        - name: recordedAt
+          type: DATETIME
+          array: false
+          optional: false
+        - name: deviceId
+          type: STRING
+          array: false
+          optional: false
+  enums:
+    - name: VehicleStatus
+      values:
+        - ACTIVE
+        - INACTIVE
+        - DECOMMISSIONED
+  relations:
+    - id: customer_owns_vehicles
+      from: Customer
+      to: Vehicle
+      verb: owns
+      cardinality: many
+    - id: vehicle_has_positions
+      from: Vehicle
+      to: GpsPosition
+      verb: has
+      cardinality: many
+  stateMachines:
+    - id: vehicle_lifecycle
+      entity: Vehicle.status
+      transitions:
+        - from: ACTIVE
+          to: INACTIVE
+        - from: ACTIVE
+          to: DECOMMISSIONED
+        - from: INACTIVE
+          to: DECOMMISSIONED
+  rules:
+    - id: domain_single_customer
+      text: Every vehicle belongs to exactly one customer.
+    - id: domain_gps_immutable
+      text: GPS position history must never be deleted.
