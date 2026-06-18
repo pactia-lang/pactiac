@@ -1,0 +1,30 @@
+model:
+  name: fleet
+  enums:
+    - name: VehicleStatus
+      values:
+        - ACTIVE
+        - INACTIVE
+        - DECOMMISSIONED
+  entities:
+    - name: Vehicle
+      fields:
+        - name: id
+          type: UUID
+          annotations:
+            primary: true
+        - name: customerId
+          type: UUID
+          annotations:
+            references:
+              entity: Customer
+              field: id
+        - name: vin
+          type: STRING
+          annotations:
+            unique: true
+        - name: status
+          type: STRING
+  relations: []
+  stateMachines: []
+  rules: []

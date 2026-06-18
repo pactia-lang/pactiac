@@ -1,0 +1,33 @@
+name: Bug report
+description: Parser, lowering, emit, or CLI defect
+title: "[bug]: "
+labels:
+  - bug
+body:
+  - type: input
+    id: pactiac_version
+    attributes:
+      label: pactiac version
+      placeholder: 0.2.0
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Minimal .pactia source
+      description: Paste the smallest program that reproduces the issue.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual output
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected output
+    validations:
+      required: true

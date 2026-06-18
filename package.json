@@ -1,0 +1,21 @@
+{
+  "name": "pactiac",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @pactia/schema && npm run build -w @pactia/pactiac",
+    "test": "npm run build && npm run test -w @pactia/schema && npm run test -w @pactia/pactiac",
+    "compile": "node packages/pactiac/dist/cli.js compile"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pactia-lang/pactiac.git"
+  }
+}

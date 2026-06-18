@@ -1,0 +1,33 @@
+module:
+  name: fleet
+  description: Fleet domain module
+  actors:
+    - id: admin
+      role: Admin
+      capabilities:
+        - manage_fleet
+    - id: customer
+      role: Customer
+      capabilities:
+        - view_vehicles
+  rules:
+    - id: vin-unique
+      text: VIN must be unique across all vehicles
+  config:
+    profiles:
+      backend:
+        DATABASE_URL:
+          required: true
+          secret: true
+  errors:
+    catalog:
+      NotFound:
+        status: 404
+        code: RESOURCE_NOT_FOUND
+        message: Resource not found
+  integrations: []
+  events:
+    - id: vehicle.created
+      payload: VehicleCreatedPayload
+  eventHandlers: []
+  dependsOn: []

@@ -1,0 +1,89 @@
+plugin:
+  id: rust-anb
+  version: 1.0.0
+  name: Rust ANB Stack
+  description: Rust / Axum / PostgreSQL / Redis / Kafka reference stack
+  locked: true
+
+profile:
+  stack:
+    language: RUST
+    framework: AXUM
+    database: POSTGRESQL
+    cache: REDIS
+    events: KAFKA
+    orchestration: KUBERNETES
+    observability:
+      metrics: PROMETHEUS
+      tracing: OPENTELEMETRY
+  architecture:
+    style: CLEAN_ARCHITECTURE
+    communication:
+      sync: REST
+      async: KAFKA
+    layers:
+      - domain
+      - application
+      - infrastructure
+      - api
+  policy:
+    auth:
+      type: JWT
+      tokenExpiry: 3600s
+      refreshExpiry: 7d
+    retention: 7y
+    residency: unrestricted
+  deployment:
+    port: 8080
+  codingStandards:
+    notes: Use platform error envelope
+
+platformLaw:
+  errorEnvelope:
+    codeField: code
+    messageField: message
+    detailsField: details
+    traceIdField: traceId
+  paginationDefaults:
+    style: CURSOR
+    defaultLimit: 20
+    maxLimit: 100
+    defaultOrder: ASC
+  kafka:
+    topicPrefix: fleet
+    serialization: JSON
+    deadLetterSuffix: .dlq
+    consumerGroupPrefix: fleet
+  cache:
+    keyPrefix: fleet
+    defaultTtl: 5m
+  authClaims:
+    - sub
+    - role
+  idempotencyHeader: Idempotency-Key
+
+technologyPolicy:
+  use:
+    language:
+      - id: rust
+        version: ">=1.78"
+    framework:
+      - id: axum
+        version: "^0.7"
+    database:
+      - id: postgresql
+    cache:
+      - id: redis
+    events:
+      - id: kafka
+    observability:
+      metrics: prometheus
+      tracing: opentelemetry
+    auth:
+      - id: jwt
+    orchestration:
+      - id: kubernetes
+  forbid:
+    frameworks:
+      - id: actix-web
+        reason: Platform standard is Axum
