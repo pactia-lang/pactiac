@@ -22,10 +22,8 @@ service:
       errors:
         - Forbidden
       modifiers:
-        macros:
-          - list
-          - paginated
-          - owner
+        list: true
+        paginated: true
       emits: []
       provenance: Pactia
     - id: get_vehicle
@@ -45,9 +43,7 @@ service:
         - NotFound
         - Forbidden
       modifiers:
-        macros:
-          - detail
-          - owner
+        detail: true
       emits: []
       provenance: Pactia
     - id: create_vehicle
@@ -67,9 +63,8 @@ service:
         - ValidationFailed
         - Conflict
       modifiers:
-        macros:
-          - create
-          - idempotent
+        create: true
+        idempotency: REQUIRED
       emits:
         - vehicle.created
       provenance: Pactia
@@ -89,9 +84,8 @@ service:
         - ValidationFailed
         - DeviceUnknown
       modifiers:
-        macros:
-          - create
-          - idempotent
+        create: true
+        idempotency: REQUIRED
       emits:
         - position.received
       provenance: Pactia

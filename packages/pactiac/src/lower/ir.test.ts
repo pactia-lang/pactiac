@@ -49,9 +49,16 @@ test("emitIrWorkspace uses kebab-case service file stems", () => {
   assert.ok(files.has("modules/fleet/services/notification.service.yaml"));
 });
 
-test("compileIrWorkspace reports macro expansion gaps", () => {
-  const { diagnostics } = compileIrWorkspace(fleetSource);
-  assert.ok(diagnostics.some((diagnostic) => diagnostic.target === "macro.expansion"));
+test("compileIrWorkspace expands builtin endpoint macros", () => {
+  const { diagnostics, workspace } = compileIrWorkspace(fleetSource);
+  assert.ok(!diagnostics.some((diagnostic) => diagnostic.target === "macro.expansion"));
+
+  const fleetService = workspace.modules[0]?.services[0]?.service;
+  const listEndpoint = fleetService?.endpoints.find((ep) => ep.id === "list_vehicles");
+  assert.deepEqual(listEndpoint?.modifiers, { list: true, paginated: true });
+
+  const createEndpoint = fleetService?.endpoints.find((ep) => ep.id === "create_vehicle");
+  assert.deepEqual(createEndpoint?.modifiers, { create: true, idempotency: "REQUIRED" });
 });
 
 test("extract and lower are deterministic", () => {
