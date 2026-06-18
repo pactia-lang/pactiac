@@ -16,11 +16,19 @@ const compiledByPath = new Map<string, ValidateFunction>();
 
 function getValidator(schemaPath: string): ValidateFunction {
   let validate = compiledByPath.get(schemaPath);
-  if (!validate) {
-    const schema = JSON.parse(readFileSync(schemaPath, "utf8")) as object;
-    validate = ajv.compile(schema);
-    compiledByPath.set(schemaPath, validate);
+  if (validate) return validate;
+
+  const schema = JSON.parse(readFileSync(schemaPath, "utf8")) as { $id?: string };
+  if (schema.$id) {
+    const existing = ajv.getSchema(schema.$id);
+    if (existing) {
+      compiledByPath.set(schemaPath, existing);
+      return existing;
+    }
   }
+
+  validate = ajv.compile(schema);
+  compiledByPath.set(schemaPath, validate);
   return validate;
 }
 

@@ -14,9 +14,9 @@ test("resolveSpecRoot finds PACTIA_SPEC_ROOT, sibling spec, or bundled fixtures"
 test("loadKernelTagCatalog marks fleet tag schemas as normative", () => {
   const catalog = loadKernelTagCatalog();
   assert.ok(catalog);
-  assert.equal(catalog.entries.get("api")?.normative, true);
-  assert.equal(catalog.entries.get("auth")?.normative, true);
-  assert.equal(catalog.entries.get("entity")?.normative, true);
+  for (const tag of ["api", "auth", "entity", "input", "output", "emit", "throws", "actor", "deploy"]) {
+    assert.equal(catalog.entries.get(tag)?.normative, true, `@${tag} should be normative`);
+  }
 });
 
 test("validateKernelTags passes minimal valid product", () => {
@@ -52,6 +52,22 @@ test("validateKernelTags passes fleet-management-v2 fixture", () => {
 
   const program = extractKernel(readTestFixture(TestFixtureId.FleetManagementV2));
   assert.equal(validateKernelTags(program, catalog).length, 0);
+});
+
+test("validateKernelTags reports TAG_BODY_INVALID for actor without capabilities", () => {
+  const catalog = loadKernelTagCatalog();
+  const program = extractKernel(`pactia 1.0
+product X { @stack rust-anb { }
+  module m {
+    @actor bots { role: Bot, capabilities: [], }
+    service S {
+      @auth { roles: [Admin] }
+      @api x { method: GET, path: "/x", }
+    }
+  }
+}`);
+  const diagnostics = validateKernelTags(program, catalog);
+  assert.ok(diagnostics.some((d) => d.target.includes("actor.bots")));
 });
 
 test("validateKernelTagsStructural remains fallback without catalog", () => {
