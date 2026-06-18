@@ -1,4 +1,4 @@
-import { PactiaSyntaxError } from "../tokens.js";
+import { PactiaSyntaxError } from "../lexer/tokens.js";
 
 export function findMatchingBrace(source: string, openBraceIndex: number): number {
   let depth = 0;

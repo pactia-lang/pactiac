@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { irWorkspaceSchema } from "@pactia/schema";
-import { readTestFixture, TestFixtureId } from "../../../test/fixture-paths.js";
-import { compileIrWorkspace, lowerIrWorkspace } from "./lower-ir.js";
-import { extractV2Kernel } from "./v2-kernel/extract.js";
+import { readTestFixture, TestFixtureId } from "../../../../test/fixture-paths.js";
+import { compileIrWorkspace, lowerIrWorkspace } from "./ir.js";
+import { extractKernel } from "../frontend/kernel/extract.js";
 
 const fleetSource = readTestFixture(TestFixtureId.FleetManagementV2);
 
@@ -65,6 +65,6 @@ test("extract and lower are deterministic", () => {
 });
 
 test("lowerIrWorkspace requires at least one module", () => {
-  const emptyProgram = extractV2Kernel(`pactia 1.0\nproduct X { @stack rust-anb { } }`);
+  const emptyProgram = extractKernel(`pactia 1.0\nproduct X { @stack rust-anb { } }`);
   assert.throws(() => lowerIrWorkspace({ ...emptyProgram, modules: [] }));
 });

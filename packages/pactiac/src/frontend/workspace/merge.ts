@@ -1,5 +1,5 @@
 import { dirname, resolve } from "node:path";
-import { extractBlockAfter } from "../v2-kernel/brace.js";
+import { extractBlockAfter } from "../kernel/brace.js";
 import type { MergedWorkspaceSource, WorkspaceFiles, WorkspaceModuleFiles } from "./types.js";
 
 const PRODUCT_FILE = "product.pactia";

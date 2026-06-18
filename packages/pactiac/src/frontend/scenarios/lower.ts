@@ -4,8 +4,8 @@ import {
   type ScenariosInput,
   scenariosInputSchema,
 } from "@pactia/schema";
-import type { ScenarioDecl } from "./ast.js";
-import { parseThenClause, parseWhenClause } from "./test-clauses.js";
+import type { ScenarioDecl } from "./types.js";
+import { parseThenClause, parseWhenClause } from "./clauses.js";
 
 export function lowerScenarios(decls: readonly ScenarioDecl[]): ScenariosInput {
   const scenarios: ScenarioEntry[] = decls.map((decl) => {

@@ -1,4 +1,4 @@
-import type { WorkspaceFiles } from "../workspace/types.js";
+import type { WorkspaceFiles } from "../frontend/workspace/types.js";
 import { loadVendoredPackage, type LoadedPackage } from "./loader.js";
 import {
   assertImportsDeclared,

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ScenarioProvenance } from "@pactia/schema";
-import type { ScenarioDecl } from "./ast.js";
-import { lowerScenarios } from "./lower-scenarios.js";
+import type { ScenarioDecl } from "./types.js";
+import { lowerScenarios } from "./lower.js";
 
 const sampleDecl: ScenarioDecl = {
   name: "Admin registers a vehicle",

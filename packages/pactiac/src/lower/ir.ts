@@ -3,12 +3,12 @@ import {
   type IrWorkspace,
   ScenarioProvenance,
 } from "@pactia/schema";
-import { type Diagnostic, Provenance } from "./diagnostics.js";
-import { emitYaml } from "./emit.js";
-import { lowerScenarios } from "./lower-scenarios.js";
-import { parseThenClause, parseWhenClause } from "./test-clauses.js";
-import { extractV2Kernel, type V2Deploy, type V2Endpoint, type V2KernelProgram, type V2Module } from "./v2-kernel/extract.js";
-import { serviceFileStem } from "./v2-kernel/text.js";
+import { type Diagnostic, Provenance } from "../diagnostics/diagnostic.js";
+import { emitYaml } from "../emit/yaml.js";
+import { lowerScenarios } from "../frontend/scenarios/lower.js";
+import { parseThenClause, parseWhenClause } from "../frontend/scenarios/clauses.js";
+import { extractKernel, type KernelDeploy, type KernelEndpoint, type KernelProgram, type KernelModule } from "../frontend/kernel/extract.js";
+import { serviceFileStem } from "../frontend/kernel/text.js";
 
 /** Fixed timestamp so compile output is byte-stable across runs. */
 const COMPILED_AT = "1970-01-01T00:00:00.000Z";
@@ -22,7 +22,7 @@ export interface LowerIrOptions {
   readonly packagesResolved?: boolean;
 }
 
-function endpointAuthorization(endpoint: V2Endpoint) {
+function endpointAuthorization(endpoint: KernelEndpoint) {
   if (endpoint.isPublic) {
     return { type: "PUBLIC" as const, roles: [] };
   }
@@ -39,7 +39,7 @@ function endpointAuthorization(endpoint: V2Endpoint) {
   return undefined;
 }
 
-function lowerEndpoint(endpoint: V2Endpoint) {
+function lowerEndpoint(endpoint: KernelEndpoint) {
   return {
     id: endpoint.id,
     method: endpoint.method,
@@ -58,7 +58,7 @@ function lowerEndpoint(endpoint: V2Endpoint) {
   };
 }
 
-function lowerModuleSlice(module: V2Module) {
+function lowerModuleSlice(module: KernelModule) {
   return {
     module: {
       name: module.name,
@@ -104,7 +104,7 @@ function lowerModuleSlice(module: V2Module) {
   };
 }
 
-function lowerModelSlice(module: V2Module) {
+function lowerModelSlice(module: KernelModule) {
   return {
     model: {
       name: module.name,
@@ -137,7 +137,7 @@ function lowerModelSlice(module: V2Module) {
   };
 }
 
-function lowerServiceSlice(module: V2Module, serviceName: string) {
+function lowerServiceSlice(module: KernelModule, serviceName: string) {
   const service = module.services.find((candidate) => candidate.name === serviceName);
   if (!service) {
     throw new Error(`Service '${serviceName}' not found in module '${module.name}'`);
@@ -158,11 +158,11 @@ function lowerServiceSlice(module: V2Module, serviceName: string) {
   };
 }
 
-function aggregateDeployment(modules: readonly V2Module[]): V2Deploy | undefined {
+function aggregateDeployment(modules: readonly KernelModule[]): KernelDeploy | undefined {
   return modules.find((module) => module.deploy)?.deploy;
 }
 
-function aggregateSecurity(modules: readonly V2Module[]): Record<string, unknown> {
+function aggregateSecurity(modules: readonly KernelModule[]): Record<string, unknown> {
   const statements = modules.flatMap((module) =>
     module.securityStatements.map((statement) => ({
       id: statement.id,
@@ -195,7 +195,7 @@ function aggregateSecurity(modules: readonly V2Module[]): Record<string, unknown
   };
 }
 
-export function lowerIrWorkspace(program: V2KernelProgram, options: LowerIrOptions = {}): IrWorkspace {
+export function lowerIrWorkspace(program: KernelProgram, options: LowerIrOptions = {}): IrWorkspace {
   const moduleBundles = program.modules.map((module) => ({
     module: lowerModuleSlice(module),
     model: lowerModelSlice(module),
@@ -301,7 +301,7 @@ export function compileIrWorkspace(
   files: Map<string, string>;
   diagnostics: Diagnostic[];
 } {
-  const program = extractV2Kernel(source);
+  const program = extractKernel(source);
   const workspace = lowerIrWorkspace(program, options);
   const files = emitIrWorkspace(workspace);
 
@@ -340,7 +340,7 @@ export function compileIrWorkspace(
 
 /** Lower scenarios only — kept for focused tests. */
 export function lowerScenarioDiagnostics(source: string): Diagnostic[] {
-  const scenarios = extractV2Kernel(source).modules.flatMap((mod) =>
+  const scenarios = extractKernel(source).modules.flatMap((mod) =>
     mod.services.flatMap((svc) => svc.scenarios),
   );
   for (const scenario of scenarios) {

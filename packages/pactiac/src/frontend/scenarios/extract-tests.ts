@@ -1,23 +1,11 @@
-import type { ScenarioDecl } from "./ast.js";
-import { PactiaSyntaxError } from "./tokens.js";
+import { PactiaSyntaxError } from "../lexer/tokens.js";
+import { findMatchingBrace } from "../kernel/brace.js";
+import type { ScenarioDecl } from "./types.js";
 
 interface ServiceRegion {
   readonly name: string;
   readonly bodyStart: number;
   readonly bodyEnd: number;
-}
-
-function findMatchingBrace(source: string, openBraceIndex: number): number {
-  let depth = 0;
-  for (let index = openBraceIndex; index < source.length; index += 1) {
-    const char = source[index];
-    if (char === "{") depth += 1;
-    else if (char === "}") {
-      depth -= 1;
-      if (depth === 0) return index;
-    }
-  }
-  throw new PactiaSyntaxError("Unclosed block", 0, 0);
 }
 
 function collectServiceRegions(source: string): ServiceRegion[] {
@@ -102,11 +90,8 @@ function parseTestBody(body: string, service: string, line: number): ScenarioDec
   };
 }
 
-/**
- * Extract `@test { }` blocks from Pactia 1.0 source without parsing the full kernel.
- * Attributes each block to the nearest enclosing `service Name { }`.
- */
-export function extractV2Tests(source: string): ScenarioDecl[] {
+/** Extract `@test { }` blocks and attribute each to its enclosing service. */
+export function extractScenarios(source: string): ScenarioDecl[] {
   const scenarios: ScenarioDecl[] = [];
   const serviceRegions = collectServiceRegions(source);
   const pattern = /@test(?:\s+[\w.-]+)?\s*\{/g;
@@ -127,9 +112,4 @@ export function extractV2Tests(source: string): ScenarioDecl[] {
   }
 
   return scenarios;
-}
-
-export function detectPactiaVersion(source: string): string {
-  const match = /^\s*pactia\s+([0-9]+(?:\.[0-9]+)?)/m.exec(source);
-  return match?.[1] ?? "1.0";
 }

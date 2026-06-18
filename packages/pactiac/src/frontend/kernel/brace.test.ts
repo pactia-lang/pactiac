@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PactiaSyntaxError } from "../tokens.js";
+import { PactiaSyntaxError } from "../lexer/tokens.js";
 import { collectTagBlocks, extractBlockAfter, findMatchingBrace } from "./brace.js";
 
 test("findMatchingBrace returns index of closing brace at same depth", () => {

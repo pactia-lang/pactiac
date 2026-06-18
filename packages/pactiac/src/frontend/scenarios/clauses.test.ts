@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ScenarioOwnership } from "@pactia/schema";
-import { parseThenClause, parseWhenClause } from "./test-clauses.js";
+import { parseThenClause, parseWhenClause } from "./clauses.js";
 
 test("parseWhenClause extracts actor auth ownership method and path", () => {
   const parsed = parseWhenClause(

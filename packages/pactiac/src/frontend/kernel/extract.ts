@@ -1,5 +1,5 @@
-import type { ScenarioDecl } from "../ast.js";
-import { extractV2Tests } from "../v2-test-parser.js";
+import type { ScenarioDecl } from "../scenarios/types.js";
+import { extractScenarios } from "../scenarios/extract-tests.js";
 import { collectTagBlocks, extractBlockAfter, findMatchingBrace } from "./brace.js";
 import {
   extractProseLines,
@@ -13,38 +13,38 @@ import {
   stripFieldValue,
 } from "./text.js";
 
-export interface V2Actor {
+export interface KernelActor {
   readonly id: string;
   readonly role: string;
   readonly capabilities: string[];
 }
 
-export interface V2Rule {
+export interface KernelRule {
   readonly id: string;
   readonly text: string;
 }
 
-export interface V2ConfigEntry {
+export interface KernelConfigEntry {
   readonly required?: boolean;
   readonly secret?: boolean;
   readonly default?: string;
   readonly description?: string | string[];
 }
 
-export interface V2ErrorDef {
+export interface KernelErrorDef {
   readonly status: number;
   readonly code: string;
   readonly message: string;
 }
 
-export interface V2Event {
+export interface KernelEvent {
   readonly id: string;
   readonly payload?: string;
   readonly handler?: string;
   readonly description?: string | string[];
 }
 
-export interface V2EntityField {
+export interface KernelEntityField {
   readonly name: string;
   readonly type: string;
   readonly array: boolean;
@@ -58,17 +58,17 @@ export interface V2EntityField {
   };
 }
 
-export interface V2Entity {
+export interface KernelEntity {
   readonly name: string;
-  readonly fields: V2EntityField[];
+  readonly fields: KernelEntityField[];
 }
 
-export interface V2Enum {
+export interface KernelEnum {
   readonly name: string;
   readonly values: string[];
 }
 
-export interface V2Relation {
+export interface KernelRelation {
   readonly id: string;
   readonly from: string;
   readonly to: string;
@@ -76,13 +76,13 @@ export interface V2Relation {
   readonly cardinality?: string;
 }
 
-export interface V2StateMachine {
+export interface KernelStateMachine {
   readonly id: string;
   readonly entity: string;
   readonly transitions: Array<{ from: string; to: string }>;
 }
 
-export interface V2Surface {
+export interface KernelSurface {
   readonly id: string;
   readonly platform?: string;
   readonly screenId?: string;
@@ -95,7 +95,7 @@ export interface V2Surface {
   readonly path?: string;
 }
 
-export interface V2Endpoint {
+export interface KernelEndpoint {
   readonly id: string;
   readonly method?: string;
   readonly path?: string;
@@ -108,19 +108,19 @@ export interface V2Endpoint {
   readonly throws: string[];
   readonly emits: string[];
   readonly macros: string[];
-  readonly surfaces: V2Surface[];
+  readonly surfaces: KernelSurface[];
 }
 
-export interface V2Service {
+export interface KernelService {
   readonly name: string;
   readonly description?: string;
   readonly flags: { database: boolean; cache: boolean; events: boolean };
-  readonly endpoints: V2Endpoint[];
+  readonly endpoints: KernelEndpoint[];
   readonly scenarios: ScenarioDecl[];
   readonly guide?: string | string[];
 }
 
-export interface V2Integration {
+export interface KernelIntegration {
   readonly name: string;
   readonly direction: string;
   readonly authType?: string;
@@ -129,30 +129,30 @@ export interface V2Integration {
   readonly purpose?: string | string[];
 }
 
-export interface V2DeployEnvironment {
+export interface KernelDeployEnvironment {
   readonly id: string;
   readonly replicas?: number;
   readonly region?: string;
 }
 
-export interface V2DeployGate {
+export interface KernelDeployGate {
   readonly id: string;
   readonly scenarios?: string;
   readonly coverage?: string;
 }
 
-export interface V2Deploy {
+export interface KernelDeploy {
   readonly id?: string;
-  readonly environments: V2DeployEnvironment[];
-  readonly gates: V2DeployGate[];
+  readonly environments: KernelDeployEnvironment[];
+  readonly gates: KernelDeployGate[];
 }
 
-export interface V2SecurityStatement {
+export interface KernelSecurityStatement {
   readonly id: string;
   readonly text: string;
 }
 
-export interface V2Policy {
+export interface KernelPolicy {
   readonly id: string;
   readonly retainEntity?: string;
   readonly retainPeriod?: string;
@@ -160,41 +160,41 @@ export interface V2Policy {
   readonly residency?: string;
 }
 
-export interface V2Module {
+export interface KernelModule {
   readonly name: string;
-  readonly actors: V2Actor[];
-  readonly rules: V2Rule[];
-  readonly config: Record<string, Record<string, V2ConfigEntry>>;
-  readonly errors: Record<string, V2ErrorDef>;
-  readonly events: V2Event[];
-  readonly integrations: V2Integration[];
+  readonly actors: KernelActor[];
+  readonly rules: KernelRule[];
+  readonly config: Record<string, Record<string, KernelConfigEntry>>;
+  readonly errors: Record<string, KernelErrorDef>;
+  readonly events: KernelEvent[];
+  readonly integrations: KernelIntegration[];
   readonly observeSlos: Array<{ service: string; metric: string; target: string }>;
-  readonly enums: V2Enum[];
-  readonly entities: V2Entity[];
-  readonly relations: V2Relation[];
-  readonly stateMachines: V2StateMachine[];
-  readonly modelRules: V2Rule[];
-  readonly services: V2Service[];
-  readonly deploy?: V2Deploy;
-  readonly securityStatements: V2SecurityStatement[];
-  readonly policies: V2Policy[];
+  readonly enums: KernelEnum[];
+  readonly entities: KernelEntity[];
+  readonly relations: KernelRelation[];
+  readonly stateMachines: KernelStateMachine[];
+  readonly modelRules: KernelRule[];
+  readonly services: KernelService[];
+  readonly deploy?: KernelDeploy;
+  readonly securityStatements: KernelSecurityStatement[];
+  readonly policies: KernelPolicy[];
 }
 
-export interface V2Product {
+export interface KernelProduct {
   readonly name: string;
   readonly description?: string;
   readonly stackPackage: string;
   readonly topologyMode?: string;
   readonly tenancyMode?: string;
   readonly guide?: string | string[];
-  readonly surfaces: V2Surface[];
+  readonly surfaces: KernelSurface[];
 }
 
-export interface V2KernelProgram {
+export interface KernelProgram {
   readonly version: string;
   readonly imports: string[];
-  readonly product: V2Product;
-  readonly modules: V2Module[];
+  readonly product: KernelProduct;
+  readonly modules: KernelModule[];
 }
 
 function parseBracketList(value: string): string[] {
@@ -206,10 +206,10 @@ function parseBracketList(value: string): string[] {
     .filter((part) => part.length > 0);
 }
 
-function parseEntityBlock(body: string, entityName: string): V2Entity {
-  const fields: V2EntityField[] = [];
+function parseEntityBlock(body: string, entityName: string): KernelEntity {
+  const fields: KernelEntityField[] = [];
   const lines = body.split("\n");
-  let pendingAnnotations: V2EntityField["annotations"] = {};
+  let pendingAnnotations: KernelEntityField["annotations"] = {};
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -315,14 +315,14 @@ function parseApiBlock(
   body: string,
   modifiers: ReturnType<typeof parseEndpointModifiers>,
   serviceName: string,
-): V2Endpoint {
+): KernelEndpoint {
   const methodMatch = /method:\s*(\w+)/.exec(body);
   const pathMatch = /path:\s*("[^"]+"|\S+)/.exec(body);
   const method = methodMatch?.[1];
   const path = pathMatch ? stripFieldValue(pathMatch[1]!) : undefined;
   const prose = proseToGuidance(extractProseLines(body));
 
-  const surfaces: V2Surface[] = collectTagBlocks(body, "surface").map((block) => {
+  const surfaces: KernelSurface[] = collectTagBlocks(body, "surface").map((block) => {
     const platformMatch = /platform:\s*(\w+)/.exec(block.body);
     const screenMatch = /id:\s*([\w.-]+)/.exec(block.body);
     const routeMatch = /path:\s*"([^"]+)"/.exec(block.body);
@@ -358,7 +358,7 @@ function parseApiBlock(
   };
 }
 
-function parseServicePrefixFlags(prefix: string): V2Service["flags"] {
+function parseServicePrefixFlags(prefix: string): KernelService["flags"] {
   return {
     database: /#\[database\]/.test(prefix),
     cache: /#\[cache\]/.test(prefix),
@@ -366,9 +366,9 @@ function parseServicePrefixFlags(prefix: string): V2Service["flags"] {
   };
 }
 
-function parseDeployBlock(blockBody: string, blockId?: string): V2Deploy {
-  const environments: V2DeployEnvironment[] = [];
-  const gates: V2DeployGate[] = [];
+function parseDeployBlock(blockBody: string, blockId?: string): KernelDeploy {
+  const environments: KernelDeployEnvironment[] = [];
+  const gates: KernelDeployGate[] = [];
   for (const env of collectTagBlocks(blockBody, "environment")) {
     environments.push({
       id: env.id ?? "environment",
@@ -391,7 +391,7 @@ function parseServiceBody(
   body: string,
   scenarios: ScenarioDecl[],
   prefix = "",
-): V2Service {
+): KernelService {
   const prefixFlags = parseServicePrefixFlags(prefix);
   const flags = {
     database: prefixFlags.database || /#\[database\]/.test(body),
@@ -399,7 +399,7 @@ function parseServiceBody(
     events: prefixFlags.events || /#\[events\]/.test(body),
   };
 
-  const endpoints: V2Endpoint[] = [];
+  const endpoints: KernelEndpoint[] = [];
   const apiPattern = /@api\s+([\w.-]+)\s*\{/g;
   let match: RegExpExecArray | null = apiPattern.exec(body);
   while (match) {
@@ -430,7 +430,7 @@ function parseServiceBody(
   };
 }
 
-function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDecl[]): V2Module {
+function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDecl[]): KernelModule {
   const actors = collectTagBlocks(body, "actor").map((block) => {
     const roleMatch = /role:\s*(\w+)/.exec(block.body);
     const capsMatch = /capabilities:\s*\[([^\]]+)\]/.exec(block.body);
@@ -449,7 +449,7 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
     }))
     .filter((rule) => rule.text.length > 0);
 
-  const config: Record<string, Record<string, V2ConfigEntry>> = {};
+  const config: Record<string, Record<string, KernelConfigEntry>> = {};
   for (const block of collectTagBlocks(body, "config")) {
     const profileName = block.id ?? "default";
     config[profileName] = {};
@@ -470,7 +470,7 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
     }
   }
 
-  const errors: Record<string, V2ErrorDef> = {};
+  const errors: Record<string, KernelErrorDef> = {};
   for (const block of collectTagBlocks(body, "errors")) {
     const entryPattern = /(\w+):\s*\{/g;
     let entryMatch: RegExpExecArray | null = entryPattern.exec(block.body);
@@ -504,7 +504,7 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
   }));
 
   const observeBlock = collectTagBlocks(body, "observe")[0];
-  const observeSlos: V2Module["observeSlos"] = [];
+  const observeSlos: KernelModule["observeSlos"] = [];
   if (observeBlock) {
     const sloPattern = /\{\s*service:\s*(\w+),\s*metric:\s*([\w_]+),\s*target:\s*"([^"]+)"\s*\}/g;
     let sloMatch: RegExpExecArray | null = sloPattern.exec(observeBlock.body);
@@ -519,11 +519,11 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
   }
 
   const modelBlock = extractBlockAfter(body, /model\s*\{/);
-  const enums: V2Enum[] = [];
-  const entities: V2Entity[] = [];
-  const relations: V2Relation[] = [];
-  const stateMachines: V2StateMachine[] = [];
-  const modelRules: V2Rule[] = [];
+  const enums: KernelEnum[] = [];
+  const entities: KernelEntity[] = [];
+  const relations: KernelRelation[] = [];
+  const stateMachines: KernelStateMachine[] = [];
+  const modelRules: KernelRule[] = [];
 
   if (modelBlock) {
     for (const block of collectTagBlocks(modelBlock.body, "enum")) {
@@ -568,7 +568,7 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
     );
   }
 
-  const services: V2Service[] = [];
+  const services: KernelService[] = [];
   const servicePattern = /\bservice\s+([A-Za-z][\w]*)\s*\{/g;
   let serviceMatch: RegExpExecArray | null = servicePattern.exec(body);
   while (serviceMatch) {
@@ -618,7 +618,7 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
   };
 }
 
-export function extractV2Kernel(source: string): V2KernelProgram {
+export function extractKernel(source: string): KernelProgram {
   const versionMatch = /^\s*pactia\s+([0-9]+(?:\.[0-9]+)?)/m.exec(source);
   const version = versionMatch?.[1] ?? "1.0";
 
@@ -641,8 +641,8 @@ export function extractV2Kernel(source: string): V2KernelProgram {
   const tenancyBlock = collectTagBlocks(productBlock.body, "tenancy")[0];
   const guideBlock = collectTagBlocks(productBlock.body, "guide")[0];
 
-  const scenarios = extractV2Tests(source);
-  const modules: V2Module[] = [];
+  const scenarios = extractScenarios(source);
+  const modules: KernelModule[] = [];
   const modulePattern = /module\s+(\w+)\s*\{/g;
   let moduleMatch: RegExpExecArray | null = modulePattern.exec(source);
   while (moduleMatch) {
@@ -654,7 +654,7 @@ export function extractV2Kernel(source: string): V2KernelProgram {
     moduleMatch = modulePattern.exec(source);
   }
 
-  const surfaces: V2Surface[] = modules.flatMap((mod) =>
+  const surfaces: KernelSurface[] = modules.flatMap((mod) =>
     mod.services.flatMap((svc) => svc.endpoints.flatMap((ep) => ep.surfaces)),
   );
 
