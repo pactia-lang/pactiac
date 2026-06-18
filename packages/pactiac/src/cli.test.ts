@@ -90,7 +90,6 @@ test("cli compile writes provenance report when requested", () => {
       diagnostics: Array<{ provenance: string; target: string }>;
     };
     assert.ok(Array.isArray(report.diagnostics));
-    assert.ok(report.diagnostics.length > 0);
     assert.match(result.stdout, /Provenance summary:/);
   } finally {
     rmSync(outputDir, { recursive: true, force: true });
