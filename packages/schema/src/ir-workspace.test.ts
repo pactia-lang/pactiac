@@ -18,7 +18,7 @@ import {
   serviceSliceSchema,
 } from "./index.js";
 
-const fixturesRoot = resolve(import.meta.dirname, "../../../test/fixtures/input");
+const fixturesRoot = resolve(import.meta.dirname, "../test/fixtures");
 
 function loadYaml<T>(relativePath: string): T {
   const content = readFileSync(join(fixturesRoot, relativePath), "utf-8");
