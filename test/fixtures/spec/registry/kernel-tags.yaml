@@ -12,3 +12,15 @@ tags:
     schema: schemas/tags/auth-v1.json
   - name: public
     schema: schemas/tags/public-v1.json
+  - name: input
+    schema: schemas/tags/input-v1.json
+  - name: output
+    schema: schemas/tags/output-v1.json
+  - name: emit
+    schema: schemas/tags/emit-v1.json
+  - name: throws
+    schema: schemas/tags/throws-v1.json
+  - name: actor
+    schema: schemas/tags/actor-v1.json
+  - name: deploy
+    schema: schemas/tags/deploy-v1.json

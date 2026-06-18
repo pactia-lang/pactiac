@@ -17,6 +17,42 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
   });
 
   for (const mod of program.modules) {
+    for (const actor of mod.actors) {
+      instances.push({
+        tag: "actor",
+        target: `actor.${actor.id}`,
+        body: {
+          id: actor.id,
+          role: actor.role,
+          capabilities: actor.capabilities,
+        },
+      });
+    }
+
+    if (mod.deploy) {
+      instances.push({
+        tag: "deploy",
+        target: `deploy.${mod.deploy.id ?? mod.name}`,
+        body: {
+          ...(mod.deploy.id ? { id: mod.deploy.id } : {}),
+          environments: mod.deploy.environments.map((env) => ({
+            id: env.id,
+            ...(env.replicas !== undefined ? { replicas: env.replicas } : {}),
+            ...(env.region ? { region: env.region } : {}),
+          })),
+          ...(mod.deploy.gates.length > 0
+            ? {
+                gates: mod.deploy.gates.map((gate) => ({
+                  id: gate.id,
+                  ...(gate.scenarios ? { scenarios: gate.scenarios } : {}),
+                  ...(gate.coverage ? { coverage: gate.coverage } : {}),
+                })),
+              }
+            : {}),
+        },
+      });
+    }
+
     for (const entity of mod.entities) {
       instances.push({
         tag: "entity",
@@ -57,6 +93,38 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
             tag: "auth",
             target: `auth.${endpoint.id}`,
             body: { roles: endpoint.roles },
+          });
+        }
+
+        if (endpoint.inputType) {
+          instances.push({
+            tag: "input",
+            target: `input.${endpoint.id}`,
+            body: { type: endpoint.inputType },
+          });
+        }
+
+        if (endpoint.outputType) {
+          instances.push({
+            tag: "output",
+            target: `output.${endpoint.id}`,
+            body: { type: endpoint.outputType },
+          });
+        }
+
+        if (endpoint.throws.length > 0) {
+          instances.push({
+            tag: "throws",
+            target: `throws.${endpoint.id}`,
+            body: { names: endpoint.throws },
+          });
+        }
+
+        for (const event of endpoint.emits) {
+          instances.push({
+            tag: "emit",
+            target: `emit.${endpoint.id}.${event}`,
+            body: { event },
           });
         }
       }
