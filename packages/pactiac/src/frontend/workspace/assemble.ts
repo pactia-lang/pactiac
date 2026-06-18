@@ -1,6 +1,7 @@
 import { discoverWorkspace } from "./discover.js";
 import { mergeWorkspaceSources } from "./merge.js";
 import { resolveWorkspacePackages } from "../../resolve/resolver.js";
+import type { LoadedPackage } from "../../resolve/loader.js";
 import type { EffectiveRegistry } from "../../resolve/registry.js";
 import { extractKernel } from "../kernel/extract.js";
 import type { MergedWorkspaceSource } from "./types.js";
@@ -9,6 +10,7 @@ export interface AssembledWorkspace {
   readonly merged: MergedWorkspaceSource;
   readonly lockfileDigest: string | undefined;
   readonly effectiveRegistry: EffectiveRegistry | undefined;
+  readonly loadedPackages: readonly LoadedPackage[];
 }
 
 export function assembleWorkspace(rootDir: string): AssembledWorkspace {
@@ -28,5 +30,6 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
     },
     lockfileDigest: resolved.lockfileDigest,
     effectiveRegistry: resolved.effectiveRegistry,
+    loadedPackages: resolved.loaded,
   };
 }

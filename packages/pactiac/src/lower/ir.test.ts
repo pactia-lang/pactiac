@@ -49,6 +49,12 @@ test("emitIrWorkspace uses kebab-case service file stems", () => {
   assert.ok(files.has("modules/fleet/services/notification.service.yaml"));
 });
 
+test("compileIrWorkspace validates REST wire when protocol-rest is imported", () => {
+  const { diagnostics } = compileIrWorkspace(fleetSource);
+  assert.ok(!diagnostics.some((diagnostic) => diagnostic.target === "import.protocol-rest"));
+  assert.ok(!diagnostics.some((diagnostic) => diagnostic.target.startsWith("wire.protocol-rest")));
+});
+
 test("compileIrWorkspace expands builtin endpoint macros", () => {
   const { diagnostics, workspace } = compileIrWorkspace(fleetSource);
   assert.ok(!diagnostics.some((diagnostic) => diagnostic.target === "macro.expansion"));

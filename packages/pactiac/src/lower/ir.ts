@@ -6,6 +6,7 @@ import {
 import { type Diagnostic, Provenance } from "../diagnostics/diagnostic.js";
 import { emitYaml } from "../emit/yaml.js";
 import { validateKernelTags } from "../frontend/validate/tags.js";
+import { validateProtocolRestWire } from "../frontend/validate/protocol-wire.js";
 import { lowerScenarios } from "../frontend/scenarios/lower.js";
 import { parseThenClause, parseWhenClause } from "../frontend/scenarios/clauses.js";
 import { extractKernel, type KernelDeploy, type KernelEndpoint, type KernelProgram, type KernelModule } from "../frontend/kernel/extract.js";
@@ -13,6 +14,7 @@ import { serviceFileStem } from "../frontend/kernel/text.js";
 import { BuiltinMacro, expandEndpointMacros, parseMacroName } from "./macros.js";
 import { collectManifestReferences } from "./references.js";
 import type { EffectiveRegistry } from "../resolve/registry.js";
+import type { LoadedPackage } from "../resolve/loader.js";
 
 /** Fixed timestamp so compile output is byte-stable across runs. */
 const COMPILED_AT = "1970-01-01T00:00:00.000Z";
@@ -25,6 +27,7 @@ export interface LowerIrOptions {
   readonly lockfileDigest?: string;
   readonly packagesResolved?: boolean;
   readonly effectiveRegistry?: EffectiveRegistry;
+  readonly loadedPackages?: readonly LoadedPackage[];
 }
 
 function ownershipScopeFromMacros(macros: readonly string[]): string | undefined {
@@ -340,12 +343,12 @@ export function compileIrWorkspace(
       target: "import.protocol-rest",
       message: "REST wire validation skipped — @pactia/protocol-rest not imported",
     });
-  } else if (!options.packagesResolved) {
-    diagnostics.push({
-      provenance: Provenance.NOT_DERIVABLE,
-      target: "import.protocol-rest",
-      message: "REST wire validation skipped — package resolver not run",
-    });
+  } else {
+    diagnostics.push(
+      ...validateProtocolRestWire(program, {
+        loadedPackages: options.loadedPackages,
+      }),
+    );
   }
 
   const macroEndpoints = program.modules.flatMap((mod) =>
