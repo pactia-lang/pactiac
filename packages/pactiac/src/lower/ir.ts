@@ -5,10 +5,13 @@ import {
 } from "@pactia/schema";
 import { type Diagnostic, Provenance } from "../diagnostics/diagnostic.js";
 import { emitYaml } from "../emit/yaml.js";
+import { validateKernelTags } from "../frontend/validate/tags.js";
 import { lowerScenarios } from "../frontend/scenarios/lower.js";
 import { parseThenClause, parseWhenClause } from "../frontend/scenarios/clauses.js";
 import { extractKernel, type KernelDeploy, type KernelEndpoint, type KernelProgram, type KernelModule } from "../frontend/kernel/extract.js";
 import { serviceFileStem } from "../frontend/kernel/text.js";
+import { BuiltinMacro, expandEndpointMacros, parseMacroName } from "./macros.js";
+import { collectManifestReferences } from "./references.js";
 
 /** Fixed timestamp so compile output is byte-stable across runs. */
 const COMPILED_AT = "1970-01-01T00:00:00.000Z";
@@ -22,15 +25,25 @@ export interface LowerIrOptions {
   readonly packagesResolved?: boolean;
 }
 
+function ownershipScopeFromMacros(macros: readonly string[]): string | undefined {
+  const names = new Set(macros.map(parseMacroName));
+  if (names.has(BuiltinMacro.Owner)) return "OWN_ROWS";
+  if (names.has(BuiltinMacro.Buyer)) return "PARTY_BUYER";
+  if (names.has(BuiltinMacro.Seller)) return "PARTY_SELLER";
+  if (names.has(BuiltinMacro.Participant)) return "PARTY_PARTICIPANT";
+  return undefined;
+}
+
 function endpointAuthorization(endpoint: KernelEndpoint) {
   if (endpoint.isPublic) {
     return { type: "PUBLIC" as const, roles: [] };
   }
-  if (endpoint.macros.includes("owner")) {
+  const ownershipScope = ownershipScopeFromMacros(endpoint.macros);
+  if (ownershipScope) {
     return {
       type: "OWNERSHIP" as const,
       roles: endpoint.roles,
-      ownership: { scope: "OWN_ROWS" },
+      ownership: { scope: ownershipScope },
     };
   }
   if (endpoint.roles.length > 0) {
@@ -40,6 +53,8 @@ function endpointAuthorization(endpoint: KernelEndpoint) {
 }
 
 function lowerEndpoint(endpoint: KernelEndpoint) {
+  const { modifiers } = expandEndpointMacros(endpoint.macros);
+
   return {
     id: endpoint.id,
     method: endpoint.method,
@@ -53,7 +68,7 @@ function lowerEndpoint(endpoint: KernelEndpoint) {
     },
     errors: endpoint.throws,
     emits: endpoint.emits,
-    modifiers: endpoint.macros.length > 0 ? { macros: endpoint.macros } : undefined,
+    modifiers: Object.keys(modifiers).length > 0 ? modifiers : undefined,
     provenance: Provenance.Pactia,
   };
 }
@@ -221,7 +236,7 @@ export function lowerIrWorkspace(program: KernelProgram, options: LowerIrOptions
         entry: options.entry ?? "product.pactia",
         lockfileDigest: options.lockfileDigest ?? PLACEHOLDER_LOCKFILE_DIGEST,
         modules: manifestModules,
-        references: [],
+        references: collectManifestReferences(program),
       },
     },
     product: {
@@ -324,16 +339,18 @@ export function compileIrWorkspace(
 
   const macroEndpoints = program.modules.flatMap((mod) =>
     mod.services.flatMap((svc) =>
-      svc.endpoints.filter((ep) => ep.macros.length > 0).map((ep) => `${svc.name}.${ep.id}`),
+      svc.endpoints.flatMap((ep) => expandEndpointMacros(ep.macros).unknownMacros),
     ),
   );
   if (macroEndpoints.length > 0) {
     diagnostics.push({
       provenance: Provenance.NOT_DERIVABLE,
       target: "macro.expansion",
-      message: `Macro expansion not applied; recorded modifiers on: ${macroEndpoints.join(", ")}`,
+      message: `Unknown macros: ${macroEndpoints.join(", ")}`,
     });
   }
+
+  diagnostics.push(...validateKernelTags(program));
 
   return { workspace, files, diagnostics };
 }

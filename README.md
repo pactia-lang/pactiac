@@ -103,7 +103,7 @@ CI fails if `generated/ir` drifts. The optional `sync-ir-schemas` workflow (requ
 
 | pactiac release | Implements spec |
 | --- | --- |
-| 0.1.x | Pactia 1.0 — kernel tag extract + module-scoped IR; workspace compile (`-w`) + local package resolver stub; macro expansion partial |
+| 0.1.x | Pactia 1.0 — kernel tag extract + module-scoped IR; workspace compile (`-w`) + local package resolver; builtin macro expansion (D1–D3) |
 
 ### Compile output layout
 
