@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pactia.io/schemas/tags/environment-v1.json",
+  "title": "Pactia kernel tag @environment (v1)",
+  "description": "Deployment environment override nested under @deploy.",
+  "type": "object",
+  "required": ["id"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "replicas": { "type": "integer", "minimum": 1 },
+    "region": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

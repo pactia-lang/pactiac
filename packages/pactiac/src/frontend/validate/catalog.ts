@@ -26,7 +26,21 @@ function isNormativeSchema(schema: Record<string, unknown>): boolean {
     return true;
   }
   const properties = schema["properties"];
-  return isRecord(properties) && Object.keys(properties).length > 0;
+  if (isRecord(properties) && Object.keys(properties).length > 0) {
+    return true;
+  }
+  if (schema["type"] === "object" && schema["additionalProperties"] === false) {
+    return true;
+  }
+  const oneOf = schema["oneOf"];
+  if (Array.isArray(oneOf)) {
+    return oneOf.some((entry) => isRecord(entry) && isNormativeSchema(entry));
+  }
+  const anyOf = schema["anyOf"];
+  if (Array.isArray(anyOf)) {
+    return anyOf.some((entry) => isRecord(entry) && isNormativeSchema(entry));
+  }
+  return false;
 }
 
 export function loadKernelTagCatalog(specRoot?: string): KernelTagCatalog | undefined {

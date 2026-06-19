@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pactia.io/schemas/tags/encrypt-v1.json",
+  "title": "Pactia kernel tag @encrypt (v1)",
+  "description": "Field-level encryption scope modifier.",
+  "type": "object",
+  "required": ["entity", "field", "scope"],
+  "properties": {
+    "entity": { "type": "string", "minLength": 1 },
+    "field": { "type": "string", "minLength": 1 },
+    "scope": {
+      "type": "string",
+      "enum": ["at_rest", "in_transit"]
+    }
+  },
+  "additionalProperties": false
+}

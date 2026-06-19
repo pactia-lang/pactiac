@@ -68,6 +68,27 @@ function collectFieldModifierInstances(
       },
     });
   }
+  if (field.annotations.retain) {
+    instances.push({
+      tag: "retain",
+      target: `retain.${entityName}.${field.name}`,
+      body: {
+        ...context,
+        period: field.annotations.retain.period,
+        ...(field.annotations.retain.after ? { after: field.annotations.retain.after } : {}),
+      },
+    });
+  }
+  if (field.annotations.encryption) {
+    instances.push({
+      tag: "encrypt",
+      target: `encrypt.${entityName}.${field.name}`,
+      body: {
+        ...context,
+        scope: field.annotations.encryption.scope,
+      },
+    });
+  }
 
   return instances;
 }
@@ -124,6 +145,20 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
           : {}),
       },
     });
+
+    const bindTarget = `bind.${surface.serviceName}.${surface.apiId}.${surface.platform ?? "unknown"}`;
+    instances.push({
+      tag: "bind",
+      target: bindTarget,
+      body: surface.bind.data
+        ? { data: surface.bind.data }
+        : {
+            service: surface.bind.service ?? surface.serviceName,
+            endpoint: surface.bind.endpoint ?? surface.apiId,
+            ...(surface.bind.method ? { method: surface.bind.method } : {}),
+            ...(surface.bind.path ? { path: surface.bind.path } : {}),
+          },
+    });
   }
 
   for (const mod of program.modules) {
@@ -159,6 +194,42 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
                 })),
               }
             : {}),
+        },
+      });
+
+      for (const env of mod.deploy.environments) {
+        instances.push({
+          tag: "environment",
+          target: `environment.${env.id}`,
+          body: {
+            id: env.id,
+            ...(env.replicas !== undefined ? { replicas: env.replicas } : {}),
+            ...(env.region ? { region: env.region } : {}),
+          },
+        });
+      }
+
+      for (const gate of mod.deploy.gates) {
+        instances.push({
+          tag: "gate",
+          target: `gate.${gate.id}`,
+          body: {
+            id: gate.id,
+            ...(gate.scenarios ? { scenarios: gate.scenarios } : {}),
+            ...(gate.coverage ? { coverage: gate.coverage } : {}),
+          },
+        });
+      }
+    }
+
+    for (const compliance of mod.compliances) {
+      instances.push({
+        tag: "compliance",
+        target: `compliance.${compliance.id}`,
+        body: {
+          id: compliance.id,
+          ...(compliance.framework ? { framework: compliance.framework } : {}),
+          ...(compliance.appliesTo ? { applies_to: compliance.appliesTo } : {}),
         },
       });
     }
@@ -351,6 +422,20 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
             when: scenario.whenText,
             then: scenario.thenText,
             service: service.name,
+          },
+        });
+      }
+
+      for (const obligation of service.obligations) {
+        instances.push({
+          tag: "must",
+          target: `must.${obligation.id ?? obligation.on ?? "obligation"}`,
+          body: {
+            id: obligation.id ?? obligation.on ?? "obligation",
+            ...(obligation.on && obligation.lines
+              ? { on: obligation.on, lines: obligation.lines }
+              : {}),
+            ...(obligation.text ? { text: obligation.text } : {}),
           },
         });
       }

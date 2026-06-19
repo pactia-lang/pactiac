@@ -4,5 +4,5 @@
   "title": "Pactia kernel tag @stack (v1)",
   "description": "Product stack binding. Target id is parsed from source; body is optional stack profile facts.",
   "type": "object",
-  "additionalProperties": true
+  "additionalProperties": false
 }

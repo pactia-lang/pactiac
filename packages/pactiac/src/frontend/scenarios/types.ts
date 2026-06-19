@@ -11,3 +11,11 @@ export interface ScenarioDecl {
   readonly whenText?: string;
   readonly thenText?: string;
 }
+
+export interface MustDecl {
+  readonly id?: string;
+  readonly on?: string;
+  readonly lines?: string[];
+  readonly text?: string;
+  readonly service: string;
+}
