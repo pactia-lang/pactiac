@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pactia.io/schemas/tags/errors-v1.json",
+  "title": "Pactia kernel tag @errors (v1)",
+  "description": "Module error catalog referenced by @throws on @api.",
+  "type": "object",
+  "required": ["catalog"],
+  "properties": {
+    "catalog": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status", "code", "message"],
+        "properties": {
+          "status": { "type": "integer", "minimum": 100, "maximum": 599 },
+          "code": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

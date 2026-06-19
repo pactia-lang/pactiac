@@ -24,3 +24,19 @@ tags:
     schema: schemas/tags/actor-v1.json
   - name: deploy
     schema: schemas/tags/deploy-v1.json
+  - name: rule
+    schema: schemas/tags/rule-v1.json
+  - name: config
+    schema: schemas/tags/config-v1.json
+  - name: errors
+    schema: schemas/tags/errors-v1.json
+  - name: event
+    schema: schemas/tags/event-v1.json
+  - name: integration
+    schema: schemas/tags/integration-v1.json
+  - name: observe
+    schema: schemas/tags/observe-v1.json
+  - name: policy
+    schema: schemas/tags/policy-v1.json
+  - name: status
+    schema: schemas/tags/status-v1.json

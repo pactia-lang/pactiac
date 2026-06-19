@@ -6,6 +6,11 @@ export interface TagValidationInstance {
   readonly body: Record<string, unknown>;
 }
 
+function guidanceText(value: string | string[] | undefined): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value.join("\n") : value;
+}
+
 /** Build JSON tag bodies from extracted kernel facts for schema validation. */
 export function collectTagValidationInstances(program: KernelProgram): TagValidationInstance[] {
   const instances: TagValidationInstance[] = [];
@@ -49,6 +54,111 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
                 })),
               }
             : {}),
+        },
+      });
+    }
+
+    for (const rule of [...mod.rules, ...mod.modelRules]) {
+      instances.push({
+        tag: "rule",
+        target: `rule.${rule.id}`,
+        body: { id: rule.id, text: rule.text },
+      });
+    }
+
+    for (const [profile, entries] of Object.entries(mod.config)) {
+      instances.push({
+        tag: "config",
+        target: `config.${profile}`,
+        body: {
+          profile,
+          entries: Object.fromEntries(
+            Object.entries(entries).map(([key, entry]) => [
+              key,
+              {
+                ...(entry.required !== undefined ? { required: entry.required } : {}),
+                ...(entry.secret ? { secret: true } : {}),
+                ...(entry.default ? { default: entry.default } : {}),
+                ...(guidanceText(entry.description)
+                  ? { description: guidanceText(entry.description) }
+                  : {}),
+              },
+            ]),
+          ),
+        },
+      });
+    }
+
+    if (Object.keys(mod.errors).length > 0) {
+      instances.push({
+        tag: "errors",
+        target: `errors.${mod.name}`,
+        body: { catalog: mod.errors },
+      });
+    }
+
+    for (const event of mod.events) {
+      instances.push({
+        tag: "event",
+        target: `event.${event.id}`,
+        body: {
+          id: event.id,
+          ...(event.payload ? { payload: event.payload } : {}),
+          ...(event.handler ? { handler: event.handler } : {}),
+          ...(guidanceText(event.description)
+            ? { description: guidanceText(event.description) }
+            : {}),
+        },
+      });
+    }
+
+    for (const integration of mod.integrations) {
+      instances.push({
+        tag: "integration",
+        target: `integration.${integration.name}`,
+        body: {
+          name: integration.name,
+          direction: integration.direction,
+          ...(integration.authType
+            ? {
+                auth: {
+                  type: integration.authType,
+                  ...(integration.authEnv ? { env: integration.authEnv } : {}),
+                },
+              }
+            : {}),
+          ...(integration.mapsTo ? { mapsTo: integration.mapsTo.replace(/^"|"$/g, "") } : {}),
+          ...(guidanceText(integration.purpose)
+            ? { purpose: guidanceText(integration.purpose) }
+            : {}),
+        },
+      });
+    }
+
+    if (mod.observeSlos.length > 0) {
+      instances.push({
+        tag: "observe",
+        target: `observe.${mod.name}`,
+        body: { slos: mod.observeSlos },
+      });
+    }
+
+    for (const policy of mod.policies) {
+      instances.push({
+        tag: "policy",
+        target: `policy.${policy.id}`,
+        body: {
+          id: policy.id,
+          ...(policy.retainEntity && policy.retainPeriod
+            ? {
+                retain: {
+                  entity: policy.retainEntity,
+                  period: policy.retainPeriod,
+                  ...(policy.retainReason ? { reason: policy.retainReason } : {}),
+                },
+              }
+            : {}),
+          ...(policy.residency ? { residency: policy.residency } : {}),
         },
       });
     }
@@ -125,6 +235,14 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
             tag: "emit",
             target: `emit.${endpoint.id}.${event}`,
             body: { event },
+          });
+        }
+
+        if (endpoint.status !== undefined) {
+          instances.push({
+            tag: "status",
+            target: `status.${endpoint.id}`,
+            body: { status: endpoint.status },
           });
         }
       }

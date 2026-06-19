@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pactia.io/schemas/tags/rule-v1.json",
+  "title": "Pactia kernel tag @rule (v1)",
+  "description": "Prose business rule on module or model scope.",
+  "type": "object",
+  "required": ["id", "text"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "text": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}
