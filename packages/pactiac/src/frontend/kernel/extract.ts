@@ -54,6 +54,7 @@ export interface KernelEntityField {
     readonly unique?: boolean;
     readonly nullable?: boolean;
     readonly pii?: boolean;
+    readonly index?: boolean;
     readonly references?: { entity: string; field?: string };
   };
 }
@@ -242,6 +243,7 @@ function parseEntityBlock(body: string, entityName: string): KernelEntity {
       continue;
     }
     if (line.startsWith("@index")) {
+      pendingAnnotations = { ...pendingAnnotations, index: true };
       continue;
     }
 

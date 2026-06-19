@@ -17,6 +17,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **JSON Schema tag validation:** `frontend/validate/` loads `kernel-tags.yaml` from `PACTIA_SPEC_ROOT`, sibling `../spec`, or bundled `test/fixtures/spec/` (CI), validates normative tag bodies with Ajv (`TAG_BODY_INVALID`).
 - **REST wire validation:** `frontend/validate/protocol-wire.ts` validates `@api` `method`/`path` against `@pactia/protocol-rest` package wire schema (`WIRE_INVALID`).
 - **Fleet module/service tag validation:** JSON Schema bodies for `@input`, `@output`, `@emit`, `@throws`, `@actor`, `@deploy`, `@rule`, `@config`, `@errors`, `@event`, `@integration`, `@observe`, `@policy`, and `@status` in bundled CI catalog.
+- **Fleet model/field tag validation:** JSON Schema bodies for `@enum`, `@relation`, `@states`, and field modifiers (`@pk`, `@fk`, `@unique`, `@index`, `@nullable`, `@pii`).
 
 ### Changed
 

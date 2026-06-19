@@ -32,6 +32,15 @@ test("loadKernelTagCatalog marks fleet tag schemas as normative", () => {
     "observe",
     "policy",
     "status",
+    "enum",
+    "relation",
+    "states",
+    "pk",
+    "fk",
+    "unique",
+    "index",
+    "nullable",
+    "pii",
   ]) {
     assert.equal(catalog.entries.get(tag)?.normative, true, `@${tag} should be normative`);
   }
@@ -102,6 +111,24 @@ product X { @stack rust-anb { }
 }`);
   const diagnostics = validateKernelTags(program, catalog);
   assert.ok(diagnostics.some((d) => d.target.includes("integration.devices")));
+});
+
+test("validateKernelTags reports TAG_BODY_INVALID for relation missing to", () => {
+  const catalog = loadKernelTagCatalog();
+  const program = extractKernel(`pactia 1.0
+product X { @stack rust-anb { }
+  module m {
+    model {
+      @relation broken { from: Customer, verb: owns, cardinality: many, }
+    }
+    service S {
+      @auth { roles: [Admin] }
+      @api x { method: GET, path: "/x", }
+    }
+  }
+}`);
+  const diagnostics = validateKernelTags(program, catalog);
+  assert.ok(diagnostics.some((d) => d.target.includes("relation.broken")));
 });
 
 test("validateKernelTagsStructural remains fallback without catalog", () => {

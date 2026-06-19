@@ -1,4 +1,4 @@
-import type { KernelProgram } from "../kernel/extract.js";
+import type { KernelEntityField, KernelProgram } from "../kernel/extract.js";
 
 export interface TagValidationInstance {
   readonly tag: string;
@@ -9,6 +9,58 @@ export interface TagValidationInstance {
 function guidanceText(value: string | string[] | undefined): string | undefined {
   if (!value) return undefined;
   return Array.isArray(value) ? value.join("\n") : value;
+}
+
+function collectFieldModifierInstances(
+  entityName: string,
+  field: KernelEntityField,
+): TagValidationInstance[] {
+  const instances: TagValidationInstance[] = [];
+  const context = { entity: entityName, field: field.name };
+
+  if (field.annotations.primary) {
+    instances.push({ tag: "pk", target: `pk.${entityName}.${field.name}`, body: { ...context } });
+  }
+  if (field.annotations.unique) {
+    instances.push({
+      tag: "unique",
+      target: `unique.${entityName}.${field.name}`,
+      body: { ...context },
+    });
+  }
+  if (field.annotations.nullable) {
+    instances.push({
+      tag: "nullable",
+      target: `nullable.${entityName}.${field.name}`,
+      body: { ...context },
+    });
+  }
+  if (field.annotations.pii) {
+    instances.push({
+      tag: "pii",
+      target: `pii.${entityName}.${field.name}`,
+      body: { ...context },
+    });
+  }
+  if (field.annotations.index) {
+    instances.push({
+      tag: "index",
+      target: `index.${entityName}.${field.name}`,
+      body: { ...context },
+    });
+  }
+  if (field.annotations.references) {
+    instances.push({
+      tag: "fk",
+      target: `fk.${entityName}.${field.name}`,
+      body: {
+        ...context,
+        references: field.annotations.references,
+      },
+    });
+  }
+
+  return instances;
 }
 
 /** Build JSON tag bodies from extracted kernel facts for schema validation. */
@@ -175,6 +227,44 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
             ...(field.array ? { array: true } : {}),
             ...(field.optional ? { optional: true } : {}),
           })),
+        },
+      });
+
+      for (const field of entity.fields) {
+        instances.push(...collectFieldModifierInstances(entity.name, field));
+      }
+    }
+
+    for (const enumDef of mod.enums) {
+      instances.push({
+        tag: "enum",
+        target: `enum.${enumDef.name}`,
+        body: { name: enumDef.name, values: enumDef.values },
+      });
+    }
+
+    for (const relation of mod.relations) {
+      instances.push({
+        tag: "relation",
+        target: `relation.${relation.id}`,
+        body: {
+          id: relation.id,
+          from: relation.from,
+          to: relation.to,
+          ...(relation.verb ? { verb: relation.verb } : {}),
+          ...(relation.cardinality ? { cardinality: relation.cardinality } : {}),
+        },
+      });
+    }
+
+    for (const stateMachine of mod.stateMachines) {
+      instances.push({
+        tag: "states",
+        target: `states.${stateMachine.id}`,
+        body: {
+          id: stateMachine.id,
+          entity: stateMachine.entity,
+          transitions: stateMachine.transitions,
         },
       });
     }

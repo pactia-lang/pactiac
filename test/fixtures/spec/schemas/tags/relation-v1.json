@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pactia.io/schemas/tags/relation-v1.json",
+  "title": "Pactia kernel tag @relation (v1)",
+  "description": "Entity relationship declaration.",
+  "type": "object",
+  "required": ["id", "from", "to"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "from": { "type": "string", "minLength": 1 },
+    "to": { "type": "string", "minLength": 1 },
+    "verb": { "type": "string", "minLength": 1 },
+    "cardinality": { "type": "string", "enum": ["one", "many"] }
+  },
+  "additionalProperties": false
+}
