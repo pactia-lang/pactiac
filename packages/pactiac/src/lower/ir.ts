@@ -7,6 +7,7 @@ import { type Diagnostic, Provenance } from "../diagnostics/diagnostic.js";
 import { emitYaml } from "../emit/yaml.js";
 import { validateKernelTags } from "../frontend/validate/tags.js";
 import { validateProtocolRestWire } from "../frontend/validate/protocol-wire.js";
+import { validateStateGraphs } from "../frontend/validate/state-graphs.js";
 import { lowerScenarios } from "../frontend/scenarios/lower.js";
 import { parseThenClause, parseWhenClause } from "../frontend/scenarios/clauses.js";
 import { extractKernel, type KernelDeploy, type KernelEndpoint, type KernelProgram, type KernelModule } from "../frontend/kernel/extract.js";
@@ -372,6 +373,7 @@ export function compileIrWorkspace(
   }
 
   diagnostics.push(...validateKernelTags(program));
+  diagnostics.push(...validateStateGraphs(program));
 
   return { workspace, files, diagnostics };
 }

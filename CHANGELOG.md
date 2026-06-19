@@ -20,6 +20,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Fleet model/field tag validation:** JSON Schema bodies for `@enum`, `@relation`, `@states`, and field modifiers (`@pk`, `@fk`, `@unique`, `@index`, `@nullable`, `@pii`).
 - **Fleet product/service tag validation:** JSON Schema bodies for `@topology`, `@tenancy`, `@guide`, `@security`, `@surface`, and `@test`; `@must` schema bundled for future obligation extraction.
 - **Complete kernel tag validation:** all 41 kernel tags validated — `@bind`, `@compliance`, `@environment`, `@gate`, `@retain`, `@encrypt`, `@must` extraction and instances; catalog detects `oneOf`/`anyOf` normative schemas.
+- **State graph validation (phase 10):** `validateStateGraphs` checks `@states` enum bindings, duplicate edges, and `@transition` on `@api` against module state machines.
 
 ### Changed
 

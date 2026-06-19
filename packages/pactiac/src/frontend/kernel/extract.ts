@@ -121,6 +121,7 @@ export interface KernelEndpoint {
   readonly throws: string[];
   readonly emits: string[];
   readonly macros: string[];
+  readonly transition?: { readonly from: string; readonly to: string };
   readonly surfaces: KernelSurface[];
 }
 
@@ -313,6 +314,13 @@ function parseEntityBlock(body: string, entityName: string): KernelEntity {
   return { name: entityName, fields };
 }
 
+function parseTransitionFromBody(body: string): { from: string; to: string } | undefined {
+  const fromMatch = /from:\s*(\w+)/.exec(body);
+  const toMatch = /to:\s*(\w+)/.exec(body);
+  if (!fromMatch || !toMatch) return undefined;
+  return { from: fromMatch[1]!, to: toMatch[1]! };
+}
+
 function parseEndpointModifiers(lines: readonly string[]): {
   roles: string[];
   isPublic: boolean;
@@ -322,6 +330,7 @@ function parseEndpointModifiers(lines: readonly string[]): {
   throws: string[];
   emits: string[];
   macros: string[];
+  transition?: { from: string; to: string };
 } {
   let roles: string[] = [];
   let isPublic = false;
@@ -331,6 +340,7 @@ function parseEndpointModifiers(lines: readonly string[]): {
   const throws: string[] = [];
   const emits: string[] = [];
   const macros: string[] = [];
+  let transition: { from: string; to: string } | undefined;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -350,13 +360,15 @@ function parseEndpointModifiers(lines: readonly string[]): {
       if (namesMatch) throws.push(...parseBracketList(`[${namesMatch[1]}]`));
     } else if (trimmed.startsWith("@emit")) {
       emits.push(stripFieldValue(trimmed.replace("@emit", "")));
+    } else if (trimmed.startsWith("@transition")) {
+      transition = parseTransitionFromBody(trimmed);
     } else if (trimmed.startsWith("#[")) {
       const macroMatch = /#\[([\w(.,\s\d]+)\]/.exec(trimmed);
       if (macroMatch) macros.push(macroMatch[1]!);
     }
   }
 
-  return { roles, isPublic, inputType, outputType, status, throws, emits, macros };
+  return { roles, isPublic, inputType, outputType, status, throws, emits, macros, transition };
 }
 
 function parseSurfaceBind(
@@ -418,6 +430,9 @@ function parseApiBlock(
     };
   });
 
+  const transitionBlock = collectTagBlocks(body, "transition")[0];
+  const bodyTransition = transitionBlock ? parseTransitionFromBody(transitionBlock.body) : undefined;
+
   return {
     id: apiId,
     method,
@@ -431,6 +446,7 @@ function parseApiBlock(
     throws: modifiers.throws,
     emits: modifiers.emits,
     macros: modifiers.macros,
+    transition: bodyTransition ?? modifiers.transition,
     surfaces,
   };
 }
