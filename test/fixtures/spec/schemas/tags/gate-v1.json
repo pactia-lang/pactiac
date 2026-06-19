@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pactia.io/schemas/tags/gate-v1.json",
+  "title": "Pactia kernel tag @gate (v1)",
+  "description": "Promotion gate nested under @deploy.",
+  "type": "object",
+  "required": ["id"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "scenarios": { "type": "string", "minLength": 1 },
+    "coverage": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

@@ -84,3 +84,49 @@ product X {
   assert.ok(instances.some((i) => i.tag === "surface" && i.body.platform === "web"));
   assert.ok(instances.some((i) => i.tag === "test" && i.target === "test.list_ok"));
 });
+
+test("collectTagValidationInstances maps bind environment gate must retain encrypt compliance", () => {
+  const program = extractKernel(`pactia 1.0
+product X { @stack rust-anb { }
+  module m {
+    @compliance gdpr { framework: gdpr, applies_to: [fleet], }
+    @deploy d {
+      @environment staging { replicas: 1, region: "eu-west-1", }
+      @gate production { scenarios: pass, coverage: ">= 80%", }
+    }
+    model {
+      @entity Customer {
+        @retain { 7y }
+        @encrypt { at_rest }
+        @pk
+        id: uuid,
+      }
+    }
+    service S {
+      @auth { roles: [Admin] }
+      @api x {
+        method: GET,
+        path: "/x",
+        @surface list_web {
+          platform: web,
+          screen: { id: list },
+          @bind { data: ItemList },
+          > Browse
+        },
+      }
+      @must on_fail {
+        on: payment_failed,
+        > release inventory
+      }
+    }
+  }
+}`);
+  const instances = collectTagValidationInstances(program);
+  assert.ok(instances.some((i) => i.tag === "bind" && i.body.data === "ItemList"));
+  assert.ok(instances.some((i) => i.tag === "environment" && i.target === "environment.staging"));
+  assert.ok(instances.some((i) => i.tag === "gate" && i.target === "gate.production"));
+  assert.ok(instances.some((i) => i.tag === "must" && i.body.on === "payment_failed"));
+  assert.ok(instances.some((i) => i.tag === "retain" && i.body.period === "7y"));
+  assert.ok(instances.some((i) => i.tag === "encrypt" && i.body.scope === "at_rest"));
+  assert.ok(instances.some((i) => i.tag === "compliance" && i.body.framework === "gdpr"));
+});

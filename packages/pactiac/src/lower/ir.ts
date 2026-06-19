@@ -179,7 +179,12 @@ function lowerServiceSlice(
         lowerEndpoint(endpoint, effectiveRegistry),
       ),
       scenarios: loweredScenarios,
-      obligations: [],
+      obligations: service.obligations.map((obligation) => ({
+        ...(obligation.id ? { id: obligation.id } : {}),
+        ...(obligation.on ? { on: obligation.on } : {}),
+        ...(obligation.lines ? { text: obligation.lines } : {}),
+        ...(obligation.text ? { text: obligation.text } : {}),
+      })),
     },
   };
 }

@@ -15,9 +15,11 @@ test("loadKernelTagCatalog marks fleet tag schemas as normative", () => {
   const catalog = loadKernelTagCatalog();
   assert.ok(catalog);
   for (const tag of [
+    "stack",
     "api",
     "auth",
     "entity",
+    "public",
     "input",
     "output",
     "emit",
@@ -47,6 +49,13 @@ test("loadKernelTagCatalog marks fleet tag schemas as normative", () => {
     "security",
     "surface",
     "test",
+    "must",
+    "bind",
+    "compliance",
+    "environment",
+    "gate",
+    "retain",
+    "encrypt",
   ]) {
     assert.equal(catalog.entries.get(tag)?.normative, true, `@${tag} should be normative`);
   }

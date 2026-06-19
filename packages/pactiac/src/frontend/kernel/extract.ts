@@ -1,4 +1,5 @@
-import type { ScenarioDecl } from "../scenarios/types.js";
+import type { MustDecl, ScenarioDecl } from "../scenarios/types.js";
+import { extractMustObligations } from "../scenarios/extract-obligations.js";
 import { extractScenarios } from "../scenarios/extract-tests.js";
 import { collectTagBlocks, extractBlockAfter, findMatchingBrace } from "./brace.js";
 import {
@@ -56,6 +57,8 @@ export interface KernelEntityField {
     readonly pii?: boolean;
     readonly index?: boolean;
     readonly references?: { entity: string; field?: string };
+    readonly retain?: { period: string; after?: string };
+    readonly encryption?: { scope: string };
   };
 }
 
@@ -83,6 +86,14 @@ export interface KernelStateMachine {
   readonly transitions: Array<{ from: string; to: string }>;
 }
 
+export interface KernelSurfaceBind {
+  readonly service?: string;
+  readonly endpoint?: string;
+  readonly method?: string;
+  readonly path?: string;
+  readonly data?: string;
+}
+
 export interface KernelSurface {
   readonly id: string;
   readonly platform?: string;
@@ -94,6 +105,7 @@ export interface KernelSurface {
   readonly serviceName: string;
   readonly method?: string;
   readonly path?: string;
+  readonly bind: KernelSurfaceBind;
 }
 
 export interface KernelEndpoint {
@@ -118,6 +130,7 @@ export interface KernelService {
   readonly flags: { database: boolean; cache: boolean; events: boolean };
   readonly endpoints: KernelEndpoint[];
   readonly scenarios: ScenarioDecl[];
+  readonly obligations: MustDecl[];
   readonly guide?: string | string[];
 }
 
@@ -161,6 +174,12 @@ export interface KernelPolicy {
   readonly residency?: string;
 }
 
+export interface KernelCompliance {
+  readonly id: string;
+  readonly framework?: string;
+  readonly appliesTo?: string[];
+}
+
 export interface KernelModule {
   readonly name: string;
   readonly actors: KernelActor[];
@@ -179,6 +198,7 @@ export interface KernelModule {
   readonly deploy?: KernelDeploy;
   readonly securityStatements: KernelSecurityStatement[];
   readonly policies: KernelPolicy[];
+  readonly compliances: KernelCompliance[];
 }
 
 export interface KernelProduct {
@@ -244,6 +264,33 @@ function parseEntityBlock(body: string, entityName: string): KernelEntity {
     }
     if (line.startsWith("@index")) {
       pendingAnnotations = { ...pendingAnnotations, index: true };
+      continue;
+    }
+    if (line.startsWith("@retain")) {
+      const periodMatch =
+        /period:\s*(\w+)/.exec(line) ?? /\{\s*(\w+)\s*\}/.exec(line.replace("@retain", "").trim());
+      const afterMatch = /after:\s*(\w+)/.exec(line);
+      if (periodMatch) {
+        pendingAnnotations = {
+          ...pendingAnnotations,
+          retain: {
+            period: periodMatch[1]!,
+            ...(afterMatch ? { after: afterMatch[1]! } : {}),
+          },
+        };
+      }
+      continue;
+    }
+    if (line.startsWith("@encrypt")) {
+      const scopeMatch =
+        /scope:\s*(\w+)/.exec(line) ??
+        /\{\s*(\w+)\s*\}/.exec(line.replace("@encrypt", "").trim());
+      if (scopeMatch) {
+        pendingAnnotations = {
+          ...pendingAnnotations,
+          encryption: { scope: scopeMatch[1]!.toLowerCase() },
+        };
+      }
       continue;
     }
 
@@ -312,6 +359,33 @@ function parseEndpointModifiers(lines: readonly string[]): {
   return { roles, isPublic, inputType, outputType, status, throws, emits, macros };
 }
 
+function parseSurfaceBind(
+  surfaceBody: string,
+  serviceName: string,
+  apiId: string,
+  method?: string,
+  path?: string,
+): KernelSurfaceBind {
+  const bindBlock = collectTagBlocks(surfaceBody, "bind")[0];
+  if (bindBlock) {
+    const dataMatch = /data:\s*(\w+)/.exec(bindBlock.body);
+    if (dataMatch) {
+      return { data: dataMatch[1]! };
+    }
+    const service = /service:\s*(\w+)/.exec(bindBlock.body)?.[1];
+    const endpoint = /endpoint:\s*([\w.-]+)/.exec(bindBlock.body)?.[1];
+    const bindMethod = /method:\s*(\w+)/.exec(bindBlock.body)?.[1];
+    const bindPath = /path:\s*("[^"]+"|\S+)/.exec(bindBlock.body)?.[1];
+    return {
+      ...(service ? { service } : {}),
+      ...(endpoint ? { endpoint } : {}),
+      ...(bindMethod ? { method: bindMethod } : {}),
+      ...(bindPath ? { path: stripFieldValue(bindPath) } : {}),
+    };
+  }
+  return { service: serviceName, endpoint: apiId, ...(method ? { method } : {}), ...(path ? { path } : {}) };
+}
+
 function parseApiBlock(
   apiId: string,
   body: string,
@@ -340,6 +414,7 @@ function parseApiBlock(
       serviceName,
       method,
       path,
+      bind: parseSurfaceBind(block.body, serviceName, apiId, method, path),
     };
   });
 
@@ -392,6 +467,7 @@ function parseServiceBody(
   serviceName: string,
   body: string,
   scenarios: ScenarioDecl[],
+  obligations: MustDecl[],
   prefix = "",
 ): KernelService {
   const prefixFlags = parseServicePrefixFlags(prefix);
@@ -428,11 +504,17 @@ function parseServiceBody(
     flags,
     endpoints,
     scenarios: scenarios.filter((s) => s.service === serviceName),
+    obligations: obligations.filter((o) => o.service === serviceName),
     guide,
   };
 }
 
-function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDecl[]): KernelModule {
+function parseModuleBody(
+  moduleName: string,
+  body: string,
+  scenarios: ScenarioDecl[],
+  obligations: MustDecl[],
+): KernelModule {
   const actors = collectTagBlocks(body, "actor").map((block) => {
     const roleMatch = /role:\s*(\w+)/.exec(block.body);
     const capsMatch = /capabilities:\s*\[([^\]]+)\]/.exec(block.body);
@@ -579,7 +661,7 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
     const closeBrace = findMatchingBrace(body, openBrace);
     const serviceBody = body.slice(openBrace + 1, closeBrace);
     const prefix = body.slice(0, serviceMatch.index).split("\n").slice(-8).join("\n");
-    services.push(parseServiceBody(serviceName, serviceBody, scenarios, prefix));
+    services.push(parseServiceBody(serviceName, serviceBody, scenarios, obligations, prefix));
     serviceMatch = servicePattern.exec(body);
   }
 
@@ -599,6 +681,15 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
     residency: /residency:\s*(\w+)/.exec(block.body)?.[1],
   }));
 
+  const compliances = collectTagBlocks(body, "compliance").map((block) => {
+    const appliesMatch = /applies_to:\s*\[([^\]]+)\]/.exec(block.body);
+    return {
+      id: block.id ?? "compliance",
+      framework: /framework:\s*(\w+)/.exec(block.body)?.[1],
+      appliesTo: appliesMatch ? parseBracketList(`[${appliesMatch[1]}]`) : undefined,
+    };
+  });
+
   return {
     name: moduleName,
     actors,
@@ -617,6 +708,7 @@ function parseModuleBody(moduleName: string, body: string, scenarios: ScenarioDe
     deploy,
     securityStatements,
     policies,
+    compliances,
   };
 }
 
@@ -644,6 +736,7 @@ export function extractKernel(source: string): KernelProgram {
   const guideBlock = collectTagBlocks(productBlock.body, "guide")[0];
 
   const scenarios = extractScenarios(source);
+  const obligations = extractMustObligations(source);
   const modules: KernelModule[] = [];
   const modulePattern = /module\s+(\w+)\s*\{/g;
   let moduleMatch: RegExpExecArray | null = modulePattern.exec(source);
@@ -652,7 +745,7 @@ export function extractKernel(source: string): KernelProgram {
     const openBrace = moduleMatch.index + moduleMatch[0].length - 1;
     const closeBrace = findMatchingBrace(source, openBrace);
     const moduleBody = source.slice(openBrace + 1, closeBrace);
-    modules.push(parseModuleBody(moduleName, moduleBody, scenarios));
+    modules.push(parseModuleBody(moduleName, moduleBody, scenarios, obligations));
     moduleMatch = modulePattern.exec(source);
   }
 

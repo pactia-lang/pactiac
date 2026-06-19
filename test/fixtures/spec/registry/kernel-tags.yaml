@@ -72,3 +72,15 @@ tags:
     schema: schemas/tags/test-v1.json
   - name: must
     schema: schemas/tags/must-v1.json
+  - name: bind
+    schema: schemas/tags/bind-v1.json
+  - name: compliance
+    schema: schemas/tags/compliance-v1.json
+  - name: environment
+    schema: schemas/tags/environment-v1.json
+  - name: gate
+    schema: schemas/tags/gate-v1.json
+  - name: retain
+    schema: schemas/tags/retain-v1.json
+  - name: encrypt
+    schema: schemas/tags/encrypt-v1.json
