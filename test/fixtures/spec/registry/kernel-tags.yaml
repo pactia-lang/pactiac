@@ -58,3 +58,17 @@ tags:
     schema: schemas/tags/nullable-v1.json
   - name: pii
     schema: schemas/tags/pii-v1.json
+  - name: topology
+    schema: schemas/tags/topology-v1.json
+  - name: tenancy
+    schema: schemas/tags/tenancy-v1.json
+  - name: guide
+    schema: schemas/tags/guide-v1.json
+  - name: security
+    schema: schemas/tags/security-v1.json
+  - name: surface
+    schema: schemas/tags/surface-v1.json
+  - name: test
+    schema: schemas/tags/test-v1.json
+  - name: must
+    schema: schemas/tags/must-v1.json

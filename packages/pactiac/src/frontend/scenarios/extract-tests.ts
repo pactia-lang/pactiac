@@ -104,10 +104,12 @@ export function extractScenarios(source: string): ScenarioDecl[] {
       throw new PactiaSyntaxError("@test must appear inside a service block", 0, match.index);
     }
 
+    const headerMatch = /@test\s+([\w.-]+)\s*\{/.exec(source.slice(match.index, openBrace + 1));
     const closeBrace = findMatchingBrace(source, openBrace);
     const body = source.slice(openBrace + 1, closeBrace);
     const line = source.slice(0, match.index).split("\n").length;
-    scenarios.push(parseTestBody(body, service, line));
+    const scenario = parseTestBody(body, service, line);
+    scenarios.push(headerMatch?.[1] ? { ...scenario, id: headerMatch[1] } : scenario);
     match = pattern.exec(source);
   }
 

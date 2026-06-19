@@ -4,6 +4,7 @@ export interface ScenarioStep {
 }
 
 export interface ScenarioDecl {
+  readonly id?: string;
   readonly name: string;
   readonly steps: ScenarioStep[];
   readonly service?: string;

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pactia.io/schemas/tags/tenancy-v1.json",
+  "title": "Pactia kernel tag @tenancy (v1)",
+  "description": "Product tenancy isolation mode.",
+  "type": "object",
+  "required": ["mode"],
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["SINGLE_TENANT", "MULTI_TENANT"]
+    }
+  },
+  "additionalProperties": false
+}
