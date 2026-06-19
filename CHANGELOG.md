@@ -18,6 +18,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **REST wire validation:** `frontend/validate/protocol-wire.ts` validates `@api` `method`/`path` against `@pactia/protocol-rest` package wire schema (`WIRE_INVALID`).
 - **Fleet module/service tag validation:** JSON Schema bodies for `@input`, `@output`, `@emit`, `@throws`, `@actor`, `@deploy`, `@rule`, `@config`, `@errors`, `@event`, `@integration`, `@observe`, `@policy`, and `@status` in bundled CI catalog.
 - **Fleet model/field tag validation:** JSON Schema bodies for `@enum`, `@relation`, `@states`, and field modifiers (`@pk`, `@fk`, `@unique`, `@index`, `@nullable`, `@pii`).
+- **Fleet product/service tag validation:** JSON Schema bodies for `@topology`, `@tenancy`, `@guide`, `@security`, `@surface`, and `@test`; `@must` schema bundled for future obligation extraction.
 
 ### Changed
 

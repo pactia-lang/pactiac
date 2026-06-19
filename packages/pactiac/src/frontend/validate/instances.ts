@@ -11,6 +11,15 @@ function guidanceText(value: string | string[] | undefined): string | undefined 
   return Array.isArray(value) ? value.join("\n") : value;
 }
 
+function guideLines(value: string | string[] | undefined): string[] | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value : [value];
+}
+
+function surfaceDescription(value: string | string[] | undefined): string | undefined {
+  return guidanceText(value);
+}
+
 function collectFieldModifierInstances(
   entityName: string,
   field: KernelEntityField,
@@ -72,6 +81,50 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
     target: "product.stack",
     body: {},
   });
+
+  if (program.product.topologyMode) {
+    instances.push({
+      tag: "topology",
+      target: "product.topology",
+      body: { mode: program.product.topologyMode },
+    });
+  }
+
+  if (program.product.tenancyMode) {
+    instances.push({
+      tag: "tenancy",
+      target: "product.tenancy",
+      body: { mode: program.product.tenancyMode },
+    });
+  }
+
+  const productGuideLines = guideLines(program.product.guide);
+  if (productGuideLines) {
+    instances.push({
+      tag: "guide",
+      target: "product.guide",
+      body: { lines: productGuideLines },
+    });
+  }
+
+  for (const surface of program.product.surfaces) {
+    instances.push({
+      tag: "surface",
+      target: `surface.${surface.serviceName}.${surface.apiId}.${surface.platform ?? "unknown"}`,
+      body: {
+        id: surface.id,
+        platform: surface.platform,
+        apiId: surface.apiId,
+        serviceName: surface.serviceName,
+        ...(surface.screenId ? { screenId: surface.screenId } : {}),
+        ...(surface.routePath ? { routePath: surface.routePath } : {}),
+        ...(surface.nav ? { nav: surface.nav } : {}),
+        ...(surfaceDescription(surface.description)
+          ? { description: surfaceDescription(surface.description) }
+          : {}),
+      },
+    });
+  }
 
   for (const mod of program.modules) {
     for (const actor of mod.actors) {
@@ -215,6 +268,14 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
       });
     }
 
+    for (const security of mod.securityStatements) {
+      instances.push({
+        tag: "security",
+        target: `security.${security.id}`,
+        body: { id: security.id, text: security.text },
+      });
+    }
+
     for (const entity of mod.entities) {
       instances.push({
         tag: "entity",
@@ -270,6 +331,30 @@ export function collectTagValidationInstances(program: KernelProgram): TagValida
     }
 
     for (const service of mod.services) {
+      const serviceGuideLines = guideLines(service.guide);
+      if (serviceGuideLines) {
+        instances.push({
+          tag: "guide",
+          target: `guide.${mod.name}.${service.name}`,
+          body: { lines: serviceGuideLines },
+        });
+      }
+
+      for (const scenario of service.scenarios) {
+        if (!scenario.whenText || !scenario.thenText) continue;
+        instances.push({
+          tag: "test",
+          target: `test.${scenario.id ?? scenario.name}`,
+          body: {
+            ...(scenario.id ? { id: scenario.id } : {}),
+            name: scenario.name,
+            when: scenario.whenText,
+            then: scenario.thenText,
+            service: service.name,
+          },
+        });
+      }
+
       for (const endpoint of service.endpoints) {
         instances.push({
           tag: "api",

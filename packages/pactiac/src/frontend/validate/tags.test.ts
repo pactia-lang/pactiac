@@ -41,6 +41,12 @@ test("loadKernelTagCatalog marks fleet tag schemas as normative", () => {
     "index",
     "nullable",
     "pii",
+    "topology",
+    "tenancy",
+    "guide",
+    "security",
+    "surface",
+    "test",
   ]) {
     assert.equal(catalog.entries.get(tag)?.normative, true, `@${tag} should be normative`);
   }
@@ -129,6 +135,21 @@ product X { @stack rust-anb { }
 }`);
   const diagnostics = validateKernelTags(program, catalog);
   assert.ok(diagnostics.some((d) => d.target.includes("relation.broken")));
+});
+
+test("validateKernelTags reports TAG_BODY_INVALID for invalid topology mode", () => {
+  const catalog = loadKernelTagCatalog();
+  const program = extractKernel(`pactia 1.0
+product X {
+  @stack rust-anb { }
+  @topology { mode: monolith, }
+  module m { service S {
+    @auth { roles: [Admin] }
+    @api x { method: GET, path: "/x", }
+  } }
+}`);
+  const diagnostics = validateKernelTags(program, catalog);
+  assert.ok(diagnostics.some((d) => d.target.includes("topology")));
 });
 
 test("validateKernelTagsStructural remains fallback without catalog", () => {

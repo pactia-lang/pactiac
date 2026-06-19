@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pactia.io/schemas/tags/surface-v1.json",
+  "title": "Pactia kernel tag @surface (v1)",
+  "description": "Client surface bound to an @api endpoint.",
+  "type": "object",
+  "required": ["id", "platform", "apiId", "serviceName"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "platform": {
+      "type": "string",
+      "enum": ["web", "ios", "android", "desktop"]
+    },
+    "apiId": { "type": "string", "minLength": 1 },
+    "serviceName": { "type": "string", "minLength": 1 },
+    "screenId": { "type": "string", "minLength": 1 },
+    "routePath": { "type": "string", "minLength": 1 },
+    "nav": {
+      "type": "object",
+      "required": ["tab"],
+      "properties": {
+        "tab": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "description": { "type": "string", "minLength": 1 }
+  },
+  "anyOf": [{ "required": ["screenId"] }, { "required": ["description"] }],
+  "additionalProperties": false
+}
