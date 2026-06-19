@@ -40,3 +40,21 @@ tags:
     schema: schemas/tags/policy-v1.json
   - name: status
     schema: schemas/tags/status-v1.json
+  - name: enum
+    schema: schemas/tags/enum-v1.json
+  - name: relation
+    schema: schemas/tags/relation-v1.json
+  - name: states
+    schema: schemas/tags/states-v1.json
+  - name: pk
+    schema: schemas/tags/pk-v1.json
+  - name: fk
+    schema: schemas/tags/fk-v1.json
+  - name: unique
+    schema: schemas/tags/unique-v1.json
+  - name: index
+    schema: schemas/tags/index-v1.json
+  - name: nullable
+    schema: schemas/tags/nullable-v1.json
+  - name: pii
+    schema: schemas/tags/pii-v1.json
