@@ -14,7 +14,25 @@ test("resolveSpecRoot finds PACTIA_SPEC_ROOT, sibling spec, or bundled fixtures"
 test("loadKernelTagCatalog marks fleet tag schemas as normative", () => {
   const catalog = loadKernelTagCatalog();
   assert.ok(catalog);
-  for (const tag of ["api", "auth", "entity", "input", "output", "emit", "throws", "actor", "deploy"]) {
+  for (const tag of [
+    "api",
+    "auth",
+    "entity",
+    "input",
+    "output",
+    "emit",
+    "throws",
+    "actor",
+    "deploy",
+    "rule",
+    "config",
+    "errors",
+    "event",
+    "integration",
+    "observe",
+    "policy",
+    "status",
+  ]) {
     assert.equal(catalog.entries.get(tag)?.normative, true, `@${tag} should be normative`);
   }
 });
@@ -68,6 +86,22 @@ product X { @stack rust-anb { }
 }`);
   const diagnostics = validateKernelTags(program, catalog);
   assert.ok(diagnostics.some((d) => d.target.includes("actor.bots")));
+});
+
+test("validateKernelTags reports TAG_BODY_INVALID for inbound integration without mapsTo", () => {
+  const catalog = loadKernelTagCatalog();
+  const program = extractKernel(`pactia 1.0
+product X { @stack rust-anb { }
+  module m {
+    @integration devices { direction: inbound, auth: { type: api_key, env: KEY, }, }
+    service S {
+      @auth { roles: [Admin] }
+      @api x { method: GET, path: "/x", }
+    }
+  }
+}`);
+  const diagnostics = validateKernelTags(program, catalog);
+  assert.ok(diagnostics.some((d) => d.target.includes("integration.devices")));
 });
 
 test("validateKernelTagsStructural remains fallback without catalog", () => {
