@@ -6,10 +6,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @pactia/schema && npm run build -w @pactia/pactiac",
-    "test": "npm run build && npm run test -w @pactia/schema && npm run test -w @pactia/pactiac",
+    "build": "npm run build -w @pactia/pactiac",
+    "test": "npm run build && npm run test -w @pactia/pactiac",
     "compile": "node packages/pactiac/dist/cli.js compile",
-    "export:ir-schemas": "npm run build -w @pactia/schema && npm run export:ir-schemas -w @pactia/schema",
     "generate:golden": "npm run build && node --import tsx scripts/generate-golden.ts",
     "hooks:install": "bash scripts/install-hooks.sh"
   },

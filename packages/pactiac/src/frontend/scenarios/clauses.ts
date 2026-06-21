@@ -1,5 +1,5 @@
-import { ScenarioOwnership } from "@pactia/schema";
-import type { ScenarioGiven, ScenarioThenInput, ScenarioWhen } from "@pactia/schema";
+import { ScenarioOwnership } from "../../domain/provenance.js";
+import type { ScenarioGiven, ScenarioThenInput, ScenarioWhen } from "./types.js";
 
 const HTTP_METHOD_PATTERN = /\b(GET|POST|PUT|PATCH|DELETE)\s+(\S+)/;
 const ACTOR_PATTERN = /^([A-Z][A-Za-z0-9]*)\b/;

@@ -72,7 +72,7 @@
         },
         "ir": {
           "file": "product",
-          "path": "guidance[]",
+          "path": "guide[]",
           "merge": "append_host"
         }
       },

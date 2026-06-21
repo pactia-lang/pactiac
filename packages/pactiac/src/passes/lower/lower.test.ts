@@ -132,10 +132,14 @@ product Demo {
     assert.equal(lowered.diagnostics.length, 0);
     assert.ok(lowered.files.get("input/manifest.json"));
     assert.ok(lowered.files.get("input/product.json"));
-    const manifest = JSON.parse(lowered.files.get("input/manifest.json")!) as {
-      manifest: { modules: Array<{ name: string }> };
+    assert.ok(lowered.files.get("input/workspace.json"));
+    const workspace = JSON.parse(lowered.files.get("input/workspace.json")!) as {
+      manifest: { manifest: { modules: Array<{ name: string }> } };
+      product: { product: { name?: string } };
+      modules: Array<{ module: { module: { name?: string } } }>;
     };
-    assert.equal(manifest.manifest.modules[0]?.name, "billing");
+    assert.equal(workspace.manifest.manifest.modules[0]?.name, "billing");
+    assert.equal(workspace.modules[0]?.module.module.name, "billing");
   });
 
   it("lowers enum hosts from declared registry fields and entity hosts from open fields", () => {
@@ -173,5 +177,33 @@ product Demo {
     assert.equal(parsed.model.entities[0]?.name, "Item");
     assert.equal(parsed.model.entities[0]?.fields[0]?.name, "id");
     assert.equal(parsed.model.entities[0]?.fields[0]?.type, "UUID");
+  });
+
+  it("lowers product @guide prose lines into guide[] via registry path", () => {
+    const source = `pactia 1.0
+import @pactia/kernel;
+
+product Demo {
+  @guide {
+    > First guidance line
+    > Second guidance line
+  }
+
+  module billing {
+    service OrderService {
+      @api ping {
+        method: GET,
+        path: "/ping",
+      }
+    }
+  }
+}`;
+
+    const { lowered } = compileThroughLower(source, kernelRegistry());
+    assert.equal(lowered.diagnostics.length, 0);
+    const productJson = lowered.files.get("input/product.json");
+    assert.ok(productJson);
+    const parsed = JSON.parse(productJson!) as { product: { guide?: string[] } };
+    assert.deepEqual(parsed.product.guide, ["First guidance line", "Second guidance line"]);
   });
 });

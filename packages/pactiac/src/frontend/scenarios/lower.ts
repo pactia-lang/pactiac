@@ -1,9 +1,4 @@
-import {
-  ScenarioProvenance,
-  type ScenarioEntry,
-  type ScenariosInput,
-  scenariosInputSchema,
-} from "@pactia/schema";
+import { ScenarioProvenance, type ScenarioEntry, type ScenariosInput } from "./types.js";
 import type { ScenarioDecl } from "./types.js";
 import { parseThenClause, parseWhenClause } from "./clauses.js";
 
@@ -26,5 +21,5 @@ export function lowerScenarios(decls: readonly ScenarioDecl[]): ScenariosInput {
     };
   });
 
-  return scenariosInputSchema.parse({ scenarios });
+  return { scenarios };
 }

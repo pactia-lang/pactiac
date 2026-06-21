@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ScenarioOwnership } from "@pactia/schema";
+import { ScenarioOwnership } from "../../domain/provenance.js";
 import { parseThenClause, parseWhenClause } from "./clauses.js";
 
 test("parseWhenClause extracts actor auth ownership method and path", () => {

@@ -3,7 +3,7 @@ import { DiagnosticCode, createDiagnostic, hasErrors } from "../domain/index.js"
 import { detectPactiaVersion } from "../compile/version.js";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { lockfileDigest } from "../resolve/manifest.js";
+import { lockfileDigest, parsePactiaToml, resolveStackPackage } from "../resolve/manifest.js";
 import { bindSyntaxTree } from "../passes/bind/bind-syntax-tree.js";
 import { expandBoundTree } from "../passes/expand-macros/expand-bound-tree.js";
 import { lowerBoundTree } from "../passes/lower/lower-bound-tree.js";
@@ -159,12 +159,16 @@ export class CompilePipeline {
 
     const lockPath = join(context.workspaceRoot, "pactia.lock");
     const lockSource = existsSync(lockPath) ? readFileSync(lockPath, "utf8") : undefined;
+    const tomlPath = join(context.workspaceRoot, "pactia.toml");
+    const tomlSource = existsSync(tomlPath) ? readFileSync(tomlPath, "utf8") : undefined;
+    const stackCoordinate = tomlSource ? resolveStackPackage(parsePactiaToml(tomlSource)) : undefined;
 
     const lowerResult = lowerBoundTree({
       tree: bound,
       pactiaVersion: syntax.version,
       entryFile: context.entryFile,
       lockfileDigest: lockSource ? lockfileDigest(lockSource) : undefined,
+      stackCoordinate,
     });
     diagnostics.push(...lowerResult.diagnostics);
 

@@ -19,7 +19,6 @@
     "test": "node --import tsx --test $(find src -name '*.test.ts')"
   },
   "dependencies": {
-    "@pactia/schema": "*",
     "ajv": "^8.20.0"
   },
   "devDependencies": {
