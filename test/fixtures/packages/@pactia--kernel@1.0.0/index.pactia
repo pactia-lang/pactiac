@@ -40,6 +40,15 @@ export def @gate in module {
 export def @security in module {
 }
 
+export def @integration in module {
+  direction,
+}
+
+export def @event in module {
+  payload,
+  handler,
+}
+
 export def @enum in model {
   values,
 }
@@ -82,5 +91,13 @@ export def @test in service {
 }
 
 export def #database in service {
-  flags.database: true,
+  flags.database: true
+}
+
+export def #create in service {
+  modifiers.create: true
+}
+
+export def #idempotent in service {
+  modifiers.idempotency: REQUIRED
 }

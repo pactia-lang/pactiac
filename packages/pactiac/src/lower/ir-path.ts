@@ -1,7 +1,15 @@
 type WritableRecord = Record<string, unknown>;
 
 export function parseScalarValue(raw: string): unknown {
-  const trimmed = raw.trim();
+  let trimmed = raw.trim();
+  if (trimmed.endsWith(",")) {
+    trimmed = trimmed.slice(0, -1).trim();
+  }
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    const inner = trimmed.slice(1, -1).trim();
+    if (inner.length === 0) return [];
+    return inner.split(",").map((part) => parseScalarValue(part.trim()));
+  }
   if (trimmed === "true") return true;
   if (trimmed === "false") return false;
   const numeric = Number(trimmed);

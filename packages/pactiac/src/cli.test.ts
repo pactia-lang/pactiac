@@ -7,7 +7,16 @@ import { test } from "node:test";
 import { readTestFixture, TestFixtureId } from "../../../test/fixture-paths.js";
 
 const cliPath = resolve(import.meta.dirname, "../dist/cli.js");
-const relayFixture = resolve(import.meta.dirname, "../../../test/fixtures/kernel/relay.pactia");
+const repoRoot = resolve(import.meta.dirname, "../../..");
+const relayFixture = resolve(repoRoot, "test/fixtures/kernel/relay.pactia");
+const relayWorkspace = resolve(repoRoot, "test/fixtures/workspace/relay");
+const vendorRoot = resolve(repoRoot, "test/fixtures/packages");
+
+const compileEnv = {
+  ...process.env,
+  PACTIA_VENDOR_ROOT: vendorRoot,
+  PACTIA_WORKSPACE_ROOT: relayWorkspace,
+};
 
 test("cli compile writes IR workspace files to output directory", () => {
   const outputDir = mkdtempSync(join(tmpdir(), "pactiac-cli-"));
@@ -15,7 +24,7 @@ test("cli compile writes IR workspace files to output directory", () => {
     const result = spawnSync(
       process.execPath,
       [cliPath, "compile", "-i", relayFixture, "-o", outputDir],
-      { encoding: "utf8" },
+      { encoding: "utf8", env: compileEnv },
     );
 
     assert.equal(result.status, 0, result.stderr);
@@ -28,13 +37,13 @@ test("cli compile writes IR workspace files to output directory", () => {
 });
 
 test("cli compile -w writes IR from multi-file workspace", () => {
-  const workspaceRoot = resolve(import.meta.dirname, "../../../test/fixtures/workspace/relay");
+  const workspaceRoot = resolve(repoRoot, "test/fixtures/workspace/relay");
   const outputDir = mkdtempSync(join(tmpdir(), "pactiac-cli-ws-"));
   try {
     const result = spawnSync(
       process.execPath,
       [cliPath, "compile", "-w", workspaceRoot, "-o", outputDir],
-      { encoding: "utf8" },
+      { encoding: "utf8", env: { ...process.env, PACTIA_VENDOR_ROOT: vendorRoot } },
     );
 
     assert.equal(result.status, 0, result.stderr);
@@ -82,7 +91,7 @@ test("cli compile writes provenance report when requested", () => {
         provenancePath,
         "--report",
       ],
-      { encoding: "utf8" },
+      { encoding: "utf8", env: compileEnv },
     );
 
     assert.equal(result.status, 0, result.stderr);

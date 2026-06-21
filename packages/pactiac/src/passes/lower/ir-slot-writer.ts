@@ -2,7 +2,7 @@ import { IrMerge } from "../../domain/ir-merge.js";
 import type { BoundTreeItem } from "../../domain/bound-tree.js";
 import type { RegistryTagEntry } from "../../domain/registry.js";
 import { SyntaxNodeKind, type FieldLineNode, type ProseNode, type TagBodyItem } from "../../domain/syntax-tree.js";
-import { mergeDeep, parseScalarValue, setAtPath } from "../../lower/ir-path.js";
+import { getAtPath, mergeDeep, parseScalarValue, setAtPath } from "../../lower/ir-path.js";
 
 type WritableRecord = Record<string, unknown>;
 
@@ -73,30 +73,31 @@ export function primaryModifierField(entry: RegistryTagEntry): string | undefine
 export function appendHostObject(
   root: WritableRecord,
   slotPath: string,
-  host: WritableRecord,
+  host: WritableRecord | string,
 ): void {
-  const { containerPath, appendArray } = parseIrPath(slotPath);
-  if (appendArray) {
-    const existing = root[containerPath];
+  if (slotPath.endsWith("[]")) {
+    const arrayPath = slotPath.slice(0, -2);
+    const existing = getAtPath(root, arrayPath);
     const array = Array.isArray(existing) ? [...existing] : [];
     array.push(host);
-    root[containerPath] = array;
+    setAtPath(root, arrayPath, array);
     return;
   }
-  root[containerPath] = host;
+  setAtPath(root, slotPath, host);
 }
 
 export function mergeAtIrPath(root: WritableRecord, slotPath: string, patch: WritableRecord): void {
   const { containerPath, appendArray } = parseIrPath(slotPath);
   if (appendArray) {
-    throw new Error(`mergeAtIrPath does not support array path '${slotPath}'`);
+    appendHostObject(root, slotPath, patch);
+    return;
   }
-  const existing = root[containerPath];
+  const existing = getAtPath(root, containerPath);
   if (existing && typeof existing === "object" && !Array.isArray(existing)) {
     mergeDeep(existing as WritableRecord, patch);
     return;
   }
-  root[containerPath] = { ...patch };
+  setAtPath(root, containerPath, { ...patch });
 }
 
 export function mergePrefixShorthand(

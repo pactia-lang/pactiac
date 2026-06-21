@@ -125,7 +125,13 @@ export interface ModelNode {
   readonly location: SourceLocation;
 }
 
-export type ServiceItem = TagBlockNode | TagPrefixNode | MacroInvocationNode | ProseNode | FieldLineNode;
+export type ServiceItem =
+  | TagBlockNode
+  | TagPrefixNode
+  | MacroInvocationNode
+  | ProseNode
+  | FieldLineNode
+  | ModuleConstNode;
 export type ModelItem = TagBlockNode | TagPrefixNode | MacroInvocationNode | ProseNode | FieldLineNode;
 export type ModuleItem =
   | TagBlockNode

@@ -14,21 +14,29 @@ import { registryEntriesFromProgram } from "../registry/build-effective-registry
 
 const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
 const testIrPackage = join(repoRoot, "test/fixtures/packages/@pactia--test-ir@1.0.0");
+const kernelPackage = join(repoRoot, "test/fixtures/packages/@pactia--kernel@1.0.0");
 
-function testIrRegistry() {
-  const indexSource = readFileSync(join(testIrPackage, "index.pactia"), "utf8");
-  const manifestSource = readFileSync(join(testIrPackage, "pactia.package.json"), "utf8");
+function registryFromPackage(packageRoot: string, coordinate: string) {
+  const indexSource = readFileSync(join(packageRoot, "index.pactia"), "utf8");
+  const manifestSource = readFileSync(join(packageRoot, "pactia.package.json"), "utf8");
   const program = parseSyntaxTree({ source: indexSource, entryFile: "index.pactia" }).root;
-  const parsed = registryEntriesFromProgram(program, "@pactia/test-ir", manifestSource);
+  const parsed = registryEntriesFromProgram(program, coordinate, manifestSource);
   return {
     tags: new Map(parsed.tags.map((entry) => [entry.name, entry])),
     macros: new Map(parsed.macros.map((entry) => [entry.name, entry])),
   };
 }
 
-function compileThroughLower(source: string) {
+function testIrRegistry() {
+  return registryFromPackage(testIrPackage, "@pactia/test-ir");
+}
+
+function kernelRegistry() {
+  return registryFromPackage(kernelPackage, "@pactia/kernel");
+}
+
+function compileThroughLower(source: string, registry = testIrRegistry()) {
   const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
-  const registry = testIrRegistry();
   const bound = bindSyntaxTree(syntax, registry);
   const expanded = expandBoundTree(bound.tree, registry);
   const lowered = lowerBoundTree({
@@ -128,5 +136,42 @@ product Demo {
       manifest: { modules: Array<{ name: string }> };
     };
     assert.equal(manifest.manifest.modules[0]?.name, "billing");
+  });
+
+  it("lowers enum hosts from declared registry fields and entity hosts from open fields", () => {
+    const source = `pactia 1.0
+import @pactia/kernel;
+
+product Demo {
+  module billing {
+    model {
+      @enum Status {
+        values: [PENDING, FULFILLED],
+      }
+
+      @entity Item {
+        id: uuid,
+      }
+    }
+  }
+}`;
+
+    const { lowered } = compileThroughLower(source, kernelRegistry());
+    assert.equal(lowered.diagnostics.length, 0);
+
+    const modelJson = lowered.files.get("input/modules/billing/billing.model.json");
+    assert.ok(modelJson);
+    const parsed = JSON.parse(modelJson!) as {
+      model: {
+        enums: Array<{ name: string; values: string[] }>;
+        entities: Array<{ name: string; fields: Array<{ name: string; type: string }> }>;
+      };
+    };
+
+    assert.equal(parsed.model.enums[0]?.name, "Status");
+    assert.deepEqual(parsed.model.enums[0]?.values, ["PENDING", "FULFILLED"]);
+    assert.equal(parsed.model.entities[0]?.name, "Item");
+    assert.equal(parsed.model.entities[0]?.fields[0]?.name, "id");
+    assert.equal(parsed.model.entities[0]?.fields[0]?.type, "UUID");
   });
 });

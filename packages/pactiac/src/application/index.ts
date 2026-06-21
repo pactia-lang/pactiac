@@ -1,5 +1,6 @@
 export { CompilePipeline } from "./compile-pipeline.js";
 export { PackageBuildPipeline } from "./package-build-pipeline.js";
+export { compileSource } from "./compile-source.js";
 export type {
   AssembledWorkspace,
   CompileContext,

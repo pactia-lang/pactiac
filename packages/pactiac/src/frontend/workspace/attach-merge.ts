@@ -41,6 +41,45 @@ function indentBlock(text: string, spaces: number): string {
     .join("\n");
 }
 
+/** Splice `import { sym } from ./feature.pactia` bodies into an exported service fragment. */
+function expandServiceFragmentImports(serviceFilePath: string, serviceBody: string): string {
+  const importPattern = /^\s*import\s+\{\s*(\w+)\s*\}\s+from\s+([^;]+)\s*;/gm;
+  const chunks: string[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null = importPattern.exec(serviceBody);
+
+  while (match) {
+    chunks.push(serviceBody.slice(lastIndex, match.index));
+    const symbol = match[1]!;
+    const rawPath = match[2]!.trim().replace(/^["']|["']$/g, "");
+    const importPath = resolve(dirname(serviceFilePath), rawPath);
+    if (!existsSync(importPath)) {
+      throw new Error(`Service '${serviceFilePath}' imports '${rawPath}' but file was not found`);
+    }
+    const featureSource = readFileSync(importPath, "utf8");
+    const featureBlock = extractBlockAfter(featureSource, new RegExp(`export\\s+${symbol}\\s*\\{`));
+    if (!featureBlock) {
+      throw new Error(`Service '${serviceFilePath}' imports '${symbol}' but export was not found in '${rawPath}'`);
+    }
+    chunks.push(featureBlock.body.trim());
+    chunks.push("\n\n");
+    lastIndex = match.index + match[0].length;
+    match = importPattern.exec(serviceBody);
+  }
+
+  chunks.push(serviceBody.slice(lastIndex));
+  return chunks
+    .join("")
+    .replace(importPattern, "")
+    .trim();
+}
+
+function isConstantOnlyImport(filePath: string): boolean {
+  if (!existsSync(filePath)) return false;
+  const source = readFileSync(filePath, "utf8");
+  return /export\s+def\s+/.test(source) && !/export\s+(module|service|model)\s+/.test(source);
+}
+
 export function hasAttachComposition(productSource: string): boolean {
   return /module\s*\(\s*\w+\s*\)\s*\{/.test(productSource);
 }
@@ -219,7 +258,8 @@ function buildAttachedModuleBlock(
       continue;
     }
     const serviceExport = serviceResult.exportDecl!;
-    parts.push(`service ${serviceExport.name} {\n${indentBlock(serviceExport.body, 2)}\n}`);
+    const serviceBody = expandServiceFragmentImports(serviceExport.filePath, serviceExport.body);
+    parts.push(`service ${serviceExport.name} {\n${indentBlock(serviceBody, 2)}\n}`);
   }
 
   const combined = parts.filter((part) => part.length > 0).join("\n\n");
@@ -229,7 +269,7 @@ function buildAttachedModuleBlock(
   };
 }
 
-function extractProductHeader(productSource: string): {
+function extractProductHeader(productSource: string, productDir: string): {
   versionLine: string;
   imports: string;
   productName: string;
@@ -246,6 +286,8 @@ function extractProductHeader(productSource: string): {
     const fromMatch = /\bfrom\s+(\S+)\s*;/.exec(line);
     const fromPath = fromMatch?.[1]?.replace(/^["']|["']$/g, "") ?? "";
     if (!fromPath.startsWith("./") && !fromPath.startsWith("../")) {
+      imports.push(line);
+    } else if (/import\s*\{[^}]+\}\s+from\s+/.test(line) && isConstantOnlyImport(resolve(productDir, fromPath))) {
       imports.push(line);
     }
     importMatch = importLinePattern.exec(productSource);
@@ -283,7 +325,7 @@ export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedAttachWorks
     throw new Error("Attach workspace requires module(name) { … } blocks in product.pactia");
   }
 
-  const { versionLine, imports, productName, productBody } = extractProductHeader(files.productSource);
+  const { versionLine, imports, productName, productBody } = extractProductHeader(files.productSource, productDir);
   const diagnostics: Diagnostic[] = [];
   const moduleBlocks: string[] = [];
   for (const attach of attachModules) {

@@ -65,7 +65,31 @@ function applyToModule(
   }
 
   const items = module.items.map((item) => {
-    if (item.kind === SyntaxNodeKind.Service || item.kind === SyntaxNodeKind.Model) {
+    if (item.kind === SyntaxNodeKind.Service) {
+      const serviceConstants = new Map(moduleConstants);
+      for (const serviceItem of item.items) {
+        if (serviceItem.kind === SyntaxNodeKind.ModuleConst) {
+          serviceConstants.set(serviceItem.name, serviceItem.value);
+        }
+      }
+      return {
+        ...item,
+        items: item.items.map((serviceItem) => {
+          if (serviceItem.kind === SyntaxNodeKind.ModuleConst) return serviceItem;
+          if (serviceItem.kind === SyntaxNodeKind.Prose) {
+            return substituteProseNode(serviceItem, serviceConstants, diagnostics, module.location.file);
+          }
+          if (serviceItem.kind === SyntaxNodeKind.TagBlock) {
+            return {
+              ...serviceItem,
+              items: walkTagBodyItems(serviceItem.items, serviceConstants, diagnostics, module.location.file),
+            };
+          }
+          return serviceItem;
+        }),
+      };
+    }
+    if (item.kind === SyntaxNodeKind.Model) {
       return {
         ...item,
         items: walkTagBodyItems(item.items, moduleConstants, diagnostics, module.location.file),
