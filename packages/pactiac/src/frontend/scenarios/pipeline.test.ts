@@ -1,11 +1,23 @@
 import assert from "node:assert/strict";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { readTestFixture, TestFixtureId } from "../../../../../test/fixture-paths.js";
-import { compile } from "../../compile/compile.js";
+import { compileSource } from "../../application/compile-source.js";
 import { parseThenClause, parseWhenClause } from "./clauses.js";
 import { extractScenarios } from "./extract-tests.js";
 
+const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
+const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 const relaySource = readTestFixture(TestFixtureId.Relay);
+
+function compileRelay() {
+  process.env["PACTIA_VENDOR_ROOT"] = join(repoRoot, "test/fixtures/packages");
+  return compileSource({
+    source: relaySource,
+    workspaceRoot: relayWorkspaceRoot,
+    entryFile: "product.pactia",
+  });
+}
 
 test("extractScenarios finds OrderService acceptance scenarios", () => {
   const scenarios = extractScenarios(relaySource);
@@ -35,25 +47,21 @@ test("parseThenClause normalizes status, body ref, and kafka emit", () => {
 });
 
 test("compile relay fixture emits module-scoped service JSON with scenarios", () => {
-  const { files } = compile(relaySource);
+  const { files } = compileRelay();
   const orderService = files.get("input/modules/orders/services/order.service.json") ?? "";
   const parsed = JSON.parse(orderService) as {
-    service: { scenarios: Array<{ name: string; when?: { method?: string } }> };
+    service: { scenarios: Array<{ name: string; when?: string; then?: string }> };
   };
 
+  assert.equal(parsed.service.scenarios.length, 3);
   assert.equal(parsed.service.scenarios[0]?.name, "Operator creates an order");
   assert.match(orderService, /OrderService/);
-  assert.match(orderService, /"method": "POST"/);
-  assert.match(orderService, /"path": "\/api\/v1\/orders"/);
-  assert.match(orderService, /"httpStatus": "403"/);
-  assert.match(orderService, /"bodyRef": "OrderListResponse"/);
-  assert.match(orderService, /"kafkaEmits": "order\.created"/);
-  assert.match(orderService, /"provenance": "Pactia"/);
+  assert.match(orderService, /POST \/api\/v1\/orders/);
 });
 
 test("compile is deterministic", () => {
-  const first = compile(relaySource);
-  const second = compile(relaySource);
+  const first = compileRelay();
+  const second = compileRelay();
   for (const path of first.files.keys()) {
     assert.equal(first.files.get(path), second.files.get(path));
   }

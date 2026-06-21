@@ -1,8 +1,6 @@
-export { compile, compileWorkspace } from "./compile/compile.js";
+export { compile, compileWorkspace, assembleWorkspace } from "./compile/compile.js";
 export type { CompileResult } from "./compile/compile.js";
-export { compileIrWorkspace, emitIrWorkspace, lowerIrWorkspace } from "./lower/ir.js";
-export { extractKernel } from "./frontend/kernel/extract.js";
-export type { KernelProgram } from "./frontend/kernel/extract.js";
+export { compileSource } from "./application/compile-source.js";
 export { extractScenarios } from "./frontend/scenarios/extract-tests.js";
 export { detectPactiaVersion } from "./compile/version.js";
 export { lowerScenarios } from "./frontend/scenarios/lower.js";

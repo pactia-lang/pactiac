@@ -2,7 +2,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { PackageBuildPipeline } from "./application/package-build-pipeline.js";
-import { compile, compileWorkspace } from "./compile/compile.js";
+import { compile, compileWorkspace, workspaceRootForInput } from "./compile/compile.js";
 import type { CompileResult } from "./compile/compile.js";
 import { DiagnosticSeverity } from "./domain/diagnostic-code.js";
 import { Provenance } from "./diagnostics/diagnostic.js";
@@ -99,7 +99,10 @@ function runCompile(args: CliArgs): void {
   const outputDir = resolve(args.output);
   const result = args.workspace
     ? compileWorkspace(resolve(args.workspace))
-    : compile(readFileSync(resolve(args.input!), "utf8"));
+    : (() => {
+        const inputPath = resolve(args.input!);
+        return compile(readFileSync(inputPath, "utf8"), workspaceRootForInput(inputPath));
+      })();
 
   writeOutput(result, outputDir);
 

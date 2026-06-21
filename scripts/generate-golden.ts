@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { assembleWorkspace } from "../packages/pactiac/src/frontend/workspace/assemble.js";
-import { compileIrWorkspace } from "../packages/pactiac/src/lower/ir.js";
+import { compileSource } from "../packages/pactiac/src/application/compile-source.js";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 const outputRoot = join(repoRoot, "test/fixtures/expected/relay");
@@ -9,12 +9,11 @@ const sourcePath = join(repoRoot, "test/fixtures/kernel/relay.pactia");
 const workspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 
 const source = readFileSync(sourcePath, "utf8");
-const assembled = assembleWorkspace(workspaceRoot);
-const { files } = compileIrWorkspace(source, {
-  effectiveRegistry: assembled.effectiveRegistry,
-  packagesResolved: assembled.lockfileDigest !== undefined,
-  lockfileDigest: assembled.lockfileDigest,
-  loadedPackages: assembled.loadedPackages,
+assembleWorkspace(workspaceRoot);
+const { files } = compileSource({
+  source,
+  workspaceRoot,
+  entryFile: "product.pactia",
 });
 
 for (const [relativePath, content] of files) {

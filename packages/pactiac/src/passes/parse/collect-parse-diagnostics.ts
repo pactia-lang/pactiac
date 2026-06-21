@@ -36,7 +36,16 @@ function walkModule(module: ModuleNode, visitMacro: (node: MacroInvocationNode) 
 }
 
 function walkService(service: ServiceNode, visitMacro: (node: MacroInvocationNode) => void): void {
-  walkTagBodyItems(service.items, visitMacro);
+  for (const item of service.items) {
+    if (item.kind === SyntaxNodeKind.ModuleConst) continue;
+    if (item.kind === SyntaxNodeKind.MacroInvocation) {
+      visitMacro(item);
+      continue;
+    }
+    if (item.kind === SyntaxNodeKind.TagBlock) {
+      walkTagBodyItems(item.items, visitMacro);
+    }
+  }
 }
 
 function walkModel(model: ModelNode, visitMacro: (node: MacroInvocationNode) => void): void {

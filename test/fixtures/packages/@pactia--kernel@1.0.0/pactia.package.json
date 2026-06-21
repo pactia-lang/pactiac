@@ -188,6 +188,45 @@
         }
       },
       {
+        "name": "integration",
+        "in": [
+          "module"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [
+            "direction"
+          ],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "module",
+          "path": "integrations[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "event",
+        "in": [
+          "module"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [
+            "payload",
+            "handler"
+          ],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "module",
+          "path": "events[]",
+          "merge": "append_host"
+        }
+      },
+      {
         "name": "enum",
         "in": [
           "model"
@@ -356,7 +395,7 @@
         },
         "ir": {
           "file": "service",
-          "path": "tests[]",
+          "path": "scenarios[]",
           "merge": "append_host"
         }
       }
@@ -369,6 +408,24 @@
         ],
         "expandsTo": [
           "flags.database: true,"
+        ]
+      },
+      {
+        "name": "create",
+        "in": [
+          "service"
+        ],
+        "expandsTo": [
+          "modifiers.create: true,"
+        ]
+      },
+      {
+        "name": "idempotent",
+        "in": [
+          "service"
+        ],
+        "expandsTo": [
+          "modifiers.idempotency: REQUIRED,"
         ]
       }
     ]

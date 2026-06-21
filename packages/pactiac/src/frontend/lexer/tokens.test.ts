@@ -19,6 +19,12 @@ test("tokenize recognizes strings paths and prose prefix", () => {
   assert.ok(tokens.some((token) => token.type === TokenType.GT));
 });
 
+test("tokenize recognizes constant interpolation in prose", () => {
+  const tokens = tokenize("> policy ${max_page} and ${pagination_hint}");
+  assert.ok(tokens.some((token) => token.value === "${max_page}"));
+  assert.ok(tokens.some((token) => token.value === "${pagination_hint}"));
+});
+
 test("tokenize preserves line and column metadata", () => {
   const tokens = tokenize("product\n  Fleet {");
   const product = tokens[0];

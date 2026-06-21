@@ -312,6 +312,10 @@ export class RecursiveDescentParser {
     while (!stream.check(TokenType.RBRACE)) {
       stream.match(TokenType.COMMA);
       if (stream.check(TokenType.RBRACE)) break;
+      if (stream.check(TokenType.IDENT, "def")) {
+        items.push(this.parseModuleConst(stream, file));
+        continue;
+      }
       items.push(this.parseTagLikeItem(stream, file) as ServiceItem);
     }
     stream.expect(TokenType.RBRACE, "Expected '}' to close service block");
@@ -661,7 +665,7 @@ export class RecursiveDescentParser {
   }
 
   private isBlockKeyword(value: string): boolean {
-    return value === "module" || value === "service" || value === "model" || value === "def" || value === "product";
+    return value === "module" || value === "service" || value === "model" || value === "def";
   }
 }
 

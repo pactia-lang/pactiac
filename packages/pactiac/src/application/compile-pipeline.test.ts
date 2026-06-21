@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 import { CompilePhase } from "../domain/compile-phase.js";
 import { DiagnosticSeverity } from "../domain/diagnostic-code.js";
 import { BoundNodeKind } from "../domain/bound-tree.js";
+import { IrMerge } from "../domain/ir-merge.js";
 import { FsRegistryLoader } from "../adapters/fs-registry-loader.js";
 import { TomlLockReader } from "../adapters/toml-lock-reader.js";
 import { parseSyntaxTree } from "../passes/parse/recursive-descent-parser.js";
@@ -75,7 +76,7 @@ describe("CompilePipeline v2 wiring", () => {
         (child) => child.kind === BoundNodeKind.BoundBlock && child.hostName === "orders",
       );
       assert.ok(ordersModule);
-      assert.ok(result.diagnostics.length > 0);
+      assert.equal(result.diagnostics.length, 0);
     } finally {
       if (previous === undefined) delete process.env["PACTIA_VENDOR_ROOT"];
       else process.env["PACTIA_VENDOR_ROOT"] = previous;
@@ -116,8 +117,8 @@ describe("CompilePipeline v2 wiring", () => {
       const listEndpointPrep = orderService.children.filter(
         (child) =>
           child.kind === BoundNodeKind.BoundTag &&
-          child.tagName === "api" &&
-          child.hostId === "list_orders",
+          child.hostId === "list_orders" &&
+          child.registryEntry.ir.merge === IrMerge.AppendHost,
       );
       assert.ok(listEndpointPrep.length >= 1);
     } finally {

@@ -171,6 +171,21 @@ export function tokenize(source: string): Token[] {
       continue;
     }
 
+    // Constant interpolation in prose: ${name}
+    if (ch === "$" && source[i + 1] === "{") {
+      let value = advance();
+      value += advance();
+      while (i < source.length && isIdentPart(source[i] ?? "")) {
+        value += advance();
+      }
+      if (source[i] !== "}") {
+        throw new PactiaSyntaxError("Unterminated constant interpolation", startLine, startCol);
+      }
+      value += advance();
+      tokens.push({ type: TokenType.IDENT, value, line: startLine, col: startCol });
+      continue;
+    }
+
     // Path: starts with '/'
     if (ch === "/") {
       let value = "";
