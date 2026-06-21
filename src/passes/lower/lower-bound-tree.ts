@@ -458,10 +458,20 @@ class BoundTreeLowerer {
     const baseType = array ? raw.slice(0, -2).trim() : raw;
     return {
       name: line.name,
-      type: String(parseScalarValue(baseType)).toUpperCase(),
+      type: this.normalizeFieldType(baseType),
       array,
       optional: !line.required && line.value === undefined,
     };
+  }
+
+  /** Uppercase enum-like tokens; preserve package name segment after `/`. */
+  private normalizeFieldType(raw: string): string {
+    const value = String(parseScalarValue(raw));
+    const slash = value.indexOf("/");
+    if (slash > 0) {
+      return `${value.slice(0, slash).toUpperCase()}${value.slice(slash)}`;
+    }
+    return value.toUpperCase();
   }
 
   private applyFieldAnnotation(field: WritableRecord, tag: BoundTagNode): void {

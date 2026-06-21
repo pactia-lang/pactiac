@@ -17,10 +17,17 @@ import { expandBoundTree } from "./expand-bound-tree.js";
 
 const relayWorkspace = join(repoRoot, "test/fixtures/workspace/relay");
 
-function findServiceBlock(root: BoundBlockNode, serviceName: string): BoundBlockNode | undefined {
+function findServiceBlock(
+  root: BoundBlockNode,
+  serviceName: string,
+): BoundBlockNode | undefined {
   for (const item of root.children) {
     if (item.kind !== BoundNodeKind.BoundBlock) continue;
-    if (item.hostName === serviceName && item.placement === PlacementTarget.Service) return item;
+    if (
+      item.hostName === serviceName &&
+      item.placement === PlacementTarget.Service
+    )
+      return item;
     if (item.placement === PlacementTarget.Module) {
       const nested = findServiceBlock(item, serviceName);
       if (nested) return nested;
@@ -33,8 +40,10 @@ function collectFieldLines(items: readonly BoundTreeItem[]): FieldLineNode[] {
   const lines: FieldLineNode[] = [];
   for (const item of items) {
     if (item.kind === SyntaxNodeKind.FieldLine) lines.push(item);
-    if (item.kind === BoundNodeKind.BoundBlock) lines.push(...collectFieldLines(item.children));
-    if (item.kind === BoundNodeKind.BoundTag) lines.push(...collectFieldLines(item.children));
+    if (item.kind === BoundNodeKind.BoundBlock)
+      lines.push(...collectFieldLines(item.children));
+    if (item.kind === BoundNodeKind.BoundTag)
+      lines.push(...collectFieldLines(item.children));
   }
   return lines;
 }
@@ -42,8 +51,10 @@ function collectFieldLines(items: readonly BoundTreeItem[]): FieldLineNode[] {
 function containsMacro(items: readonly BoundTreeItem[]): boolean {
   return items.some((item) => {
     if (item.kind === BoundNodeKind.BoundMacro) return true;
-    if (item.kind === BoundNodeKind.BoundBlock) return containsMacro(item.children);
-    if (item.kind === BoundNodeKind.BoundTag) return containsMacro(item.children);
+    if (item.kind === BoundNodeKind.BoundBlock)
+      return containsMacro(item.children);
+    if (item.kind === BoundNodeKind.BoundTag)
+      return containsMacro(item.children);
     return false;
   });
 }
@@ -70,7 +81,7 @@ function bindAndExpand(source: string) {
 describe("expandBoundTree", () => {
   it("splices #paginated into modifier field lines", () => {
     const source = `pactia 1.0
-import { #paginated } from @pactia/rust-anb;
+import { #paginated } from @pactia/rust-stack;
 
 product X {
   module orders {
@@ -98,7 +109,7 @@ product X {
 
   it("follows nested macro chain list -> paginated", () => {
     const source = `pactia 1.0
-import { #list, #paginated } from @pactia/rust-anb;
+import { #list, #paginated } from @pactia/rust-stack;
 
 product X {
   module orders {
@@ -139,7 +150,9 @@ product X {
     assert.ok(service);
     const fields = collectFieldLines(service!.children);
     assert.equal(fields[0]?.value, "100");
-    const prose = service!.children.find((item) => item.kind === SyntaxNodeKind.Prose);
+    const prose = service!.children.find(
+      (item) => item.kind === SyntaxNodeKind.Prose,
+    );
     assert.ok(prose && prose.kind === SyntaxNodeKind.Prose);
     assert.equal(prose.text, "Policy row limit");
   });
@@ -156,7 +169,9 @@ product X {
     const registry = loadRegistryFromWorkspace(relayWorkspace, syntax);
     const bound = bindSyntaxTree(syntax, registry);
     const { diagnostics } = expandBoundTree(bound.tree, registry);
-    assert.ok(diagnostics.some((d) => d.code === DiagnosticCode.MacroArgsInvalid));
+    assert.ok(
+      diagnostics.some((d) => d.code === DiagnosticCode.MacroArgsInvalid),
+    );
   });
 
   it("reports PLACEMENT_VIOLATION when macro used outside in targets", () => {
@@ -171,7 +186,9 @@ product X {
     const registry = loadRegistryFromWorkspace(relayWorkspace, syntax);
     const bound = bindSyntaxTree(syntax, registry);
     const { diagnostics } = expandBoundTree(bound.tree, registry);
-    assert.ok(diagnostics.some((d) => d.code === DiagnosticCode.PlacementViolation));
+    assert.ok(
+      diagnostics.some((d) => d.code === DiagnosticCode.PlacementViolation),
+    );
   });
 
   it("reports MACRO_EXPANSION_CYCLE for recursive macros", () => {
@@ -187,6 +204,8 @@ product X {
     const registry = loadRegistryFromWorkspace(relayWorkspace, syntax);
     const bound = bindSyntaxTree(syntax, registry);
     const { diagnostics } = expandBoundTree(bound.tree, registry);
-    assert.ok(diagnostics.some((d) => d.code === DiagnosticCode.MacroExpansionCycle));
+    assert.ok(
+      diagnostics.some((d) => d.code === DiagnosticCode.MacroExpansionCycle),
+    );
   });
 });

@@ -13,12 +13,21 @@ import { expandBoundTree } from "../expand-macros/expand-bound-tree.js";
 import { parseSyntaxTree } from "../parse/recursive-descent-parser.js";
 import { registryEntriesFromProgram } from "../registry/build-effective-registry.js";
 
-const testIrPackage = join(repoRoot, "test/fixtures/packages/@pactia--test-ir@1.0.0");
-const kernelPackage = join(repoRoot, "test/fixtures/packages/@pactia--kernel@1.0.0");
+const testIrPackage = join(
+  repoRoot,
+  "test/fixtures/packages/@pactia--test-ir@1.0.0",
+);
+const kernelPackage = join(
+  repoRoot,
+  "test/fixtures/packages/@pactia--kernel@1.0.0",
+);
 
 function registryFromPackage(packageRoot: string, coordinate: string) {
   const indexSource = readFileSync(join(packageRoot, "index.pactia"), "utf8");
-  const program = parseSyntaxTree({ source: indexSource, entryFile: "index.pactia" }).root;
+  const program = parseSyntaxTree({
+    source: indexSource,
+    entryFile: "index.pactia",
+  }).root;
   const parsed = registryEntriesFromProgram(program, coordinate);
   return {
     tags: new Map(parsed.tags.map((entry) => [entry.name, entry])),
@@ -64,9 +73,18 @@ describe("ir-slot-writer", () => {
       name: "output",
       source: "@pactia/test-ir",
       in: [],
-      fields: { required: ["bodyRef"], optional: [], modifier: true, openExtension: false },
+      fields: {
+        required: ["bodyRef"],
+        optional: [],
+        modifier: true,
+        openExtension: false,
+      },
       modifier: true,
-      ir: { file: IrFile.Service, path: "response", merge: IrMerge.MergeIntoHost },
+      ir: {
+        file: IrFile.Service,
+        path: "response",
+        merge: IrMerge.MergeIntoHost,
+      },
     };
     assert.equal(primaryModifierField(entry), "bodyRef");
   });
@@ -93,7 +111,9 @@ product Demo {
     const { lowered } = compileThroughLower(source);
     assert.equal(lowered.diagnostics.length, 0);
 
-    const serviceJson = lowered.files.get("input/modules/billing/services/order.service.json");
+    const serviceJson = lowered.files.get(
+      "input/modules/billing/services/order.service.json",
+    );
     assert.ok(serviceJson);
     const parsed = JSON.parse(serviceJson!) as {
       service: {
@@ -132,7 +152,9 @@ product Demo {
     assert.ok(lowered.files.get("input/manifest.json"));
     assert.ok(lowered.files.get("input/product.json"));
     assert.ok(lowered.files.get("input/workspace.json"));
-    const workspace = JSON.parse(lowered.files.get("input/workspace.json")!) as {
+    const workspace = JSON.parse(
+      lowered.files.get("input/workspace.json")!,
+    ) as {
       manifest: { manifest: { modules: Array<{ name: string }> } };
       product: { product: { name?: string } };
       modules: Array<{ module: { module: { name?: string } } }>;
@@ -162,7 +184,9 @@ product Demo {
     const { lowered } = compileThroughLower(source, kernelRegistry());
     assert.equal(lowered.diagnostics.length, 0);
 
-    const modelJson = lowered.files.get("input/modules/billing/billing.model.json");
+    const modelJson = lowered.files.get(
+      "input/modules/billing/billing.model.json",
+    );
     assert.ok(modelJson);
     const parsed = JSON.parse(modelJson!) as {
       model: {
@@ -171,9 +195,15 @@ product Demo {
     };
 
     assert.equal(parsed.model.extensions[0]?.["name"], "Status");
-    assert.deepEqual(parsed.model.extensions[0]?.["values"], ["PENDING", "FULFILLED"]);
+    assert.deepEqual(parsed.model.extensions[0]?.["values"], [
+      "PENDING",
+      "FULFILLED",
+    ]);
     assert.equal(parsed.model.extensions[1]?.["name"], "Item");
-    const fields = parsed.model.extensions[1]?.["fields"] as Array<{ name: string; type: string }>;
+    const fields = parsed.model.extensions[1]?.["fields"] as Array<{
+      name: string;
+      type: string;
+    }>;
     assert.equal(fields[0]?.name, "id");
     assert.equal(fields[0]?.type, "UUID");
   });
@@ -202,16 +232,24 @@ product Demo {
     assert.equal(lowered.diagnostics.length, 0);
     const productJson = lowered.files.get("input/product.json");
     assert.ok(productJson);
-    const parsed = JSON.parse(productJson!) as { product: { extensions?: unknown[] } };
+    const parsed = JSON.parse(productJson!) as {
+      product: { extensions?: unknown[] };
+    };
     assert.equal(parsed.product.extensions?.length, 2);
     assert.equal(parsed.product.extensions?.[0], "First guidance line");
     assert.equal(parsed.product.extensions?.[1], "Second guidance line");
   });
 
   it("expands product-level stack macro into product extensions", () => {
-    const rustAnbRoot = join(repoRoot, "test/fixtures/packages/@pactia--rust-anb@1.0.0");
-    const kernelRoot = join(repoRoot, "test/fixtures/packages/@pactia--kernel@1.0.0");
-    const rustAnb = registryFromPackage(rustAnbRoot, "@pactia/rust-anb");
+    const rustAnbRoot = join(
+      repoRoot,
+      "test/fixtures/packages/@pactia--rust-stack@1.0.0",
+    );
+    const kernelRoot = join(
+      repoRoot,
+      "test/fixtures/packages/@pactia--kernel@1.0.0",
+    );
+    const rustAnb = registryFromPackage(rustAnbRoot, "@pactia/rust-stack");
     const kernel = registryFromPackage(kernelRoot, "@pactia/kernel");
     const registry = {
       tags: new Map([...kernel.tags, ...rustAnb.tags]),
@@ -220,12 +258,12 @@ product Demo {
 
     const source = `pactia 1.0
 import @pactia/kernel;
-import { #rust_anb } from @pactia/rust-anb;
+import { #rust-stack } from @pactia/rust-stack;
 
 product Demo {
   > Demo product
 
-  #rust_anb
+  #rust-stack
 
   module billing {
     service OrderService {
@@ -248,10 +286,11 @@ product Demo {
     };
     assert.match(parsed.product.description ?? "", /Demo product/);
     const stackFields = parsed.product.extensions?.[0]?.fields ?? [];
-    const field = (name: string) => stackFields.find((entry) => entry.name === name)?.type;
+    const field = (name: string) =>
+      stackFields.find((entry) => entry.name === name)?.type;
     assert.equal(field("language"), "RUST");
     assert.equal(field("framework"), "ACTIX-WEB");
-    assert.equal(field("package"), "@PACTIA/RUST-ANB");
+    assert.equal(field("package"), "@PACTIA/rust-stack");
     assert.match(field("allowedCrates") ?? "", /tokio/i);
     assert.match(field("deniedCrates") ?? "", /rocket/i);
   });

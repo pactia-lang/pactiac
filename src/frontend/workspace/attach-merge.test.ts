@@ -3,7 +3,11 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { discoverWorkspace } from "./discover.js";
 import { mergeWorkspaceSources } from "./merge.js";
-import { readTestFixture, repoRoot, TestFixtureId } from "../../../test/fixture-paths.js";
+import {
+  readTestFixture,
+  repoRoot,
+  TestFixtureId,
+} from "../../../test/fixture-paths.js";
 
 const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 
@@ -16,10 +20,11 @@ test("mergeAttachedWorkspace produces monolith-equivalent kernel source", () => 
   assert.match(merged.source, /module orders/);
   assert.match(merged.source, /service OrderService/);
   assert.match(merged.source, /@api list_orders/);
-  assert.match(merged.source, /#rust_anb/);
+  assert.match(merged.source, /#rust-stack/);
   assert.match(merged.source, /@@output OrderListResponse/);
 
-  const mergedModuleBody = /module orders\s*\{([\s\S]*)\n  \}/.exec(merged.source)?.[1] ?? "";
+  const mergedModuleBody =
+    /module orders\s*\{([\s\S]*)\n  \}/.exec(merged.source)?.[1] ?? "";
   assert.match(mergedModuleBody, /@actor operators/);
   assert.match(mergedModuleBody, /@entity Order/);
   assert.match(mergedModuleBody, /#database/);

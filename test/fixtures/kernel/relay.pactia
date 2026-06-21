@@ -3,12 +3,12 @@
 pactia 1.0
 
 import @pactia/kernel;
-import @pactia/rust-anb;
+import @pactia/rust-stack;
 
 product Relay {
   > B2B order relay between suppliers and retailers
 
-  #rust_anb
+  #rust-stack
 
   @topology {
     mode: microservices,

@@ -1,0 +1,7 @@
+[package]
+name = "pactia-lang-website"
+version = "0.1.0"
+
+[dependencies]
+"@pactia/kernel" = "^1.0"
+"@pactia/html-css-js" = "^1.0"

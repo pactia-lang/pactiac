@@ -1,0 +1,15 @@
+pactia 1.0
+// Package: @pactia/html-css-js — HTML / CSS / JavaScript surface stack
+
+export def #html_css_js in product {
+  > HTML, CSS, and JavaScript surface stack — static or progressively enhanced pages with responsive layout.
+  > Primary delivery is markup and styles; JavaScript enhances interactivity after first paint when declared.
+  > No server-side product API is required unless a separate backend stack is imported.
+
+  @stack {
+    package: "@pactia/html-css-js",
+    surface: html-css-js,
+    delivery: static,
+    responsive: true,
+  }
+}

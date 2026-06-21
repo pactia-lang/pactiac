@@ -61,7 +61,7 @@
             },
             {
               "name": "package",
-              "type": "@PACTIA/RUST-ANB",
+              "type": "@PACTIA/rust-stack",
               "array": false,
               "optional": false
             },
@@ -156,9 +156,7 @@
             {
               "id": "operators",
               "role": "Operator",
-              "capabilities": [
-                "manage_orders"
-              ],
+              "capabilities": ["manage_orders"],
               "provenance": "Pactia"
             },
             "Each order belongs to exactly one supplier.",
@@ -197,10 +195,7 @@
           "extensions": [
             {
               "name": "OrderStatus",
-              "values": [
-                "PENDING",
-                "FULFILLED"
-              ],
+              "values": ["PENDING", "FULFILLED"],
               "provenance": "Pactia"
             },
             {
@@ -324,9 +319,7 @@
             },
             "extensions": [
               {
-                "roles": [
-                  "Operator"
-                ],
+                "roles": ["Operator"],
                 "provenance": "Pactia"
               },
               {
