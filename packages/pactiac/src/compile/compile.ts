@@ -1,7 +1,7 @@
 import { type Diagnostic, Provenance } from "../diagnostics/diagnostic.js";
-import { assembleWorkspace } from "../frontend/workspace/assemble.js";
 import { compileIrWorkspace } from "../lower/ir.js";
 import { detectPactiaVersion } from "./version.js";
+import { compileWorkspaceV2 } from "../application/compile-workspace-v2.js";
 
 export interface CompileResult {
   /** Relative output paths under the IR workspace root. */
@@ -26,17 +26,5 @@ export function compile(source: string): CompileResult {
 
 /** Compile a multi-file Pactia workspace directory to module-scoped IR. */
 export function compileWorkspace(workspaceRoot: string): CompileResult {
-  const assembled = assembleWorkspace(workspaceRoot);
-  assertSupportedVersion(assembled.merged.source);
-
-  const hasLock = assembled.lockfileDigest !== undefined;
-  const { files, diagnostics } = compileIrWorkspace(assembled.merged.source, {
-    entry: assembled.merged.entry,
-    lockfileDigest: assembled.lockfileDigest,
-    packagesResolved: hasLock,
-    effectiveRegistry: assembled.effectiveRegistry,
-    loadedPackages: assembled.loadedPackages,
-  });
-
-  return { files, diagnostics };
+  return compileWorkspaceV2(workspaceRoot);
 }

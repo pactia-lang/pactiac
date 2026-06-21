@@ -12,6 +12,7 @@ import type { DefDeclNode, ProgramNode } from "../../domain/syntax-tree.js";
 import { DefSigil as DefSigilEnum } from "../../domain/syntax-tree.js";
 import { parsePackageManifest, registryBlockFromManifest } from "../../resolve/package-manifest.js";
 import { fieldSpecFromDefBody } from "../parse/recursive-descent-parser.js";
+import { deriveIrSlotForTag } from "./derive-tag-ir.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -68,7 +69,7 @@ function defToRegistryEntries(
     };
   }
 
-  const ir = manifestTagIr(manifestSource, def.name);
+  const ir = manifestTagIr(manifestSource, def.name) ?? deriveIrSlotForTag(def);
   if (!ir) return undefined;
 
   return {

@@ -3,19 +3,35 @@
   "version": "1.0.0",
   "kind": "stack",
   "registry": {
+    "tags": [],
     "macros": [
       {
-        "name": "paginated",
-        "in": ["service"],
+        "name": "rust_anb",
+        "in": [
+          "product"
+        ],
         "expandsTo": [
-          "modifiers.pageSize: 50",
-          "modifiers.paginated: true"
+          "> Rust / Actix / Node stack profile for Relay"
+        ]
+      },
+      {
+        "name": "paginated",
+        "in": [
+          "service"
+        ],
+        "expandsTo": [
+          "modifiers.pageSize: 50,",
+          "modifiers.paginated: true,"
         ]
       },
       {
         "name": "list",
-        "in": ["service"],
-        "expandsTo": ["#[paginated]"]
+        "in": [
+          "service"
+        ],
+        "expandsTo": [
+          "#paginated"
+        ]
       }
     ]
   }

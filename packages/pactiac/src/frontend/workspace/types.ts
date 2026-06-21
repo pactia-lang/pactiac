@@ -29,4 +29,5 @@ export interface MergedWorkspaceSource {
   readonly source: string;
   readonly entry: string;
   readonly lockfileDigest: string | undefined;
+  readonly diagnostics?: readonly import("../../domain/diagnostics.js").Diagnostic[];
 }

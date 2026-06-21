@@ -1,6 +1,7 @@
 import { dirname, resolve } from "node:path";
 import { extractBlockAfter } from "../kernel/brace.js";
 import { hasAttachComposition, mergeAttachedWorkspace } from "./attach-merge.js";
+import { collectImportUnusedDiagnostics } from "../../passes/workspace/workspace-diagnostics.js";
 import type { MergedWorkspaceSource, WorkspaceFiles, WorkspaceModuleFiles } from "./types.js";
 
 const PRODUCT_FILE = "product.pactia";
@@ -103,11 +104,11 @@ function extractProductHeader(productSource: string): {
   const versionLine = versionMatch?.[1] ?? "pactia 1.0";
 
   const imports: string[] = [];
-  const importPattern = /^\s*import\s+(@[\w/-]+)\s*;/gm;
-  let importMatch: RegExpExecArray | null = importPattern.exec(productSource);
+  const importLinePattern = /^\s*import\s+.+;/gm;
+  let importMatch: RegExpExecArray | null = importLinePattern.exec(productSource);
   while (importMatch) {
     imports.push(importMatch[0]!.trim());
-    importMatch = importPattern.exec(productSource);
+    importMatch = importLinePattern.exec(productSource);
   }
 
   const productBlock = extractBlockAfter(productSource, /product\s+(\w+)\s*\{/);
@@ -131,7 +132,16 @@ function extractProductHeader(productSource: string): {
 
 export function mergeWorkspaceSources(files: WorkspaceFiles): MergedWorkspaceSource {
   if (hasAttachComposition(files.productSource)) {
-    return mergeAttachedWorkspace(files);
+    const merged = mergeAttachedWorkspace(files);
+    return {
+      source: merged.source,
+      entry: merged.entry,
+      lockfileDigest: merged.lockfileDigest,
+      diagnostics: [
+        ...merged.diagnostics,
+        ...collectImportUnusedDiagnostics(files.productSource, files.productPath),
+      ],
+    };
   }
 
   const { versionLine, imports, productName, productBody } = extractProductHeader(files.productSource);
@@ -147,5 +157,6 @@ export function mergeWorkspaceSources(files: WorkspaceFiles): MergedWorkspaceSou
     source,
     entry: PRODUCT_FILE,
     lockfileDigest: undefined,
+    diagnostics: collectImportUnusedDiagnostics(files.productSource, files.productPath),
   };
 }

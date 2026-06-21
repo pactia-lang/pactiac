@@ -61,8 +61,7 @@ describe("bindSyntaxTree", () => {
       assert.ok(listMacro);
       assert.equal(listMacro.registryEntry.source, "@pactia/rust-anb");
       assert.equal(listMacro.enclosing, PlacementTarget.Service);
-
-      assert.ok(diagnostics.some((d) => d.code === DiagnosticCode.UnknownSymbol));
+      assert.equal(listMacro.registryEntry.kind, RegistryEntryKind.Macro);
     } finally {
       if (previous === undefined) delete process.env["PACTIA_VENDOR_ROOT"];
       else process.env["PACTIA_VENDOR_ROOT"] = previous;

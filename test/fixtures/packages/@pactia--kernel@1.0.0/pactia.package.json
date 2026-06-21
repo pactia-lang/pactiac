@@ -3,7 +3,374 @@
   "version": "1.0.0",
   "kind": "library",
   "registry": {
-    "tags": [],
-    "macros": []
+    "tags": [
+      {
+        "name": "stack",
+        "in": [
+          "product"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "product",
+          "path": "stack",
+          "merge": "merge_fields"
+        }
+      },
+      {
+        "name": "topology",
+        "in": [
+          "product"
+        ],
+        "fields": {
+          "required": [
+            "mode"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "product",
+          "path": "topology",
+          "merge": "merge_fields"
+        }
+      },
+      {
+        "name": "tenancy",
+        "in": [
+          "product"
+        ],
+        "fields": {
+          "required": [
+            "mode"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "product",
+          "path": "tenancy",
+          "merge": "merge_fields"
+        }
+      },
+      {
+        "name": "guide",
+        "in": [
+          "product"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "product",
+          "path": "guidance[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "actor",
+        "in": [
+          "module"
+        ],
+        "fields": {
+          "required": [
+            "role",
+            "capabilities"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "module",
+          "path": "actors[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "rule",
+        "in": [
+          "module"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "module",
+          "path": "rules[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "deploy",
+        "in": [
+          "module"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "module",
+          "path": "deployments[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "environment",
+        "in": [
+          "module"
+        ],
+        "fields": {
+          "required": [
+            "replicas",
+            "region"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "module",
+          "path": "environments[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "gate",
+        "in": [
+          "module"
+        ],
+        "fields": {
+          "required": [
+            "scenarios",
+            "coverage"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "module",
+          "path": "gates[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "security",
+        "in": [
+          "module"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "module",
+          "path": "security[]",
+          "merge": "merge_fields"
+        }
+      },
+      {
+        "name": "enum",
+        "in": [
+          "model"
+        ],
+        "fields": {
+          "required": [
+            "values"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "model",
+          "path": "enums[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "entity",
+        "in": [
+          "model"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "model",
+          "path": "entities[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "pk",
+        "in": [
+          "field"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "model",
+          "path": "fields[]",
+          "merge": "field_annotation"
+        }
+      },
+      {
+        "name": "nullable",
+        "in": [
+          "field"
+        ],
+        "fields": {
+          "required": [],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "model",
+          "path": "fields[]",
+          "merge": "field_annotation"
+        }
+      },
+      {
+        "name": "auth",
+        "in": [
+          "service"
+        ],
+        "fields": {
+          "required": [
+            "roles"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "service",
+          "path": "auth",
+          "merge": "merge_into_host"
+        }
+      },
+      {
+        "name": "output",
+        "in": [
+          "service"
+        ],
+        "fields": {
+          "required": [
+            "bodyRef"
+          ],
+          "optional": [],
+          "modifier": true,
+          "openExtension": true
+        },
+        "modifier": true,
+        "ir": {
+          "file": "service",
+          "path": "response",
+          "merge": "merge_into_host"
+        }
+      },
+      {
+        "name": "api",
+        "in": [
+          "service"
+        ],
+        "fields": {
+          "required": [
+            "method",
+            "path",
+            "summary"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "service",
+          "path": "endpoints[]",
+          "merge": "append_host"
+        }
+      },
+      {
+        "name": "surface",
+        "in": [
+          "service"
+        ],
+        "fields": {
+          "required": [
+            "platform",
+            "screen",
+            "route",
+            "nav"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "service",
+          "path": "surfaces[]",
+          "merge": "merge_fields"
+        }
+      },
+      {
+        "name": "test",
+        "in": [
+          "service"
+        ],
+        "fields": {
+          "required": [
+            "name",
+            "when",
+            "then"
+          ],
+          "optional": [],
+          "modifier": false,
+          "openExtension": true
+        },
+        "ir": {
+          "file": "service",
+          "path": "tests[]",
+          "merge": "append_host"
+        }
+      }
+    ],
+    "macros": [
+      {
+        "name": "database",
+        "in": [
+          "service"
+        ],
+        "expandsTo": [
+          "flags.database: true,"
+        ]
+      }
+    ]
   }
 }

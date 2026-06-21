@@ -1,5 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import type { Diagnostic } from "../../domain/diagnostics.js";
+import {
+  attachKindMismatchDiagnostic,
+  attachUndefinedDiagnostic,
+} from "../../passes/workspace/workspace-diagnostics.js";
 import { extractBlockAfter, findMatchingBrace } from "../kernel/brace.js";
 import type { MergedWorkspaceSource, WorkspaceFiles } from "./types.js";
 
@@ -141,43 +146,87 @@ function parseAttachModules(productBody: string): AttachModuleRef[] {
   return modules;
 }
 
-function resolveExport(
+export interface MergedAttachWorkspaceSource extends MergedWorkspaceSource {
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+interface ResolveExportResult {
+  readonly exportDecl?: FragmentExport;
+  readonly diagnostic?: Diagnostic;
+}
+
+function tryResolveExport(
   registry: Map<string, FragmentExport>,
   symbol: string,
   expected: FragmentExportKind,
-): FragmentExport {
+  contextFile: string,
+): ResolveExportResult {
   const exportDecl = registry.get(symbol);
   if (!exportDecl) {
-    throw new Error(`Attach references undefined symbol '${symbol}'`);
+    return { diagnostic: attachUndefinedDiagnostic(symbol, contextFile) };
   }
   if (exportDecl.kind !== expected) {
-    throw new Error(
-      `Attach kind mismatch for '${symbol}': expected ${expected}, got ${exportDecl.kind}`,
-    );
+    return {
+      diagnostic: attachKindMismatchDiagnostic(symbol, expected, exportDecl.kind, exportDecl.filePath),
+    };
   }
-  return exportDecl;
+  return { exportDecl };
 }
 
 function buildAttachedModuleBlock(
   attach: AttachModuleRef,
   registry: Map<string, FragmentExport>,
-): string {
-  const moduleExport = resolveExport(registry, attach.moduleSymbol, FragmentExportKind.Module);
+  productPath: string,
+): { readonly block?: string; readonly diagnostics: Diagnostic[] } {
+  const diagnostics: Diagnostic[] = [];
+  const moduleResult = tryResolveExport(
+    registry,
+    attach.moduleSymbol,
+    FragmentExportKind.Module,
+    productPath,
+  );
+  if (moduleResult.diagnostic) {
+    diagnostics.push(moduleResult.diagnostic);
+    return { diagnostics };
+  }
+  const moduleExport = moduleResult.exportDecl!;
   const parts: string[] = [moduleExport.body];
 
   for (const serviceRef of attach.services) {
-    const modelExport = serviceRef.modelSymbol
-      ? resolveExport(registry, serviceRef.modelSymbol, FragmentExportKind.Model)
-      : undefined;
-    if (modelExport) {
-      parts.push(["model {", indentBlock(modelExport.body, 2), "}"].join("\n"));
+    if (serviceRef.modelSymbol) {
+      const modelResult = tryResolveExport(
+        registry,
+        serviceRef.modelSymbol,
+        FragmentExportKind.Model,
+        productPath,
+      );
+      if (modelResult.diagnostic) {
+        diagnostics.push(modelResult.diagnostic);
+        continue;
+      }
+      parts.push(
+        ["model {", indentBlock(modelResult.exportDecl!.body, 2), "}"].join("\n"),
+      );
     }
-    const serviceExport = resolveExport(registry, serviceRef.serviceSymbol, FragmentExportKind.Service);
+    const serviceResult = tryResolveExport(
+      registry,
+      serviceRef.serviceSymbol,
+      FragmentExportKind.Service,
+      productPath,
+    );
+    if (serviceResult.diagnostic) {
+      diagnostics.push(serviceResult.diagnostic);
+      continue;
+    }
+    const serviceExport = serviceResult.exportDecl!;
     parts.push(`service ${serviceExport.name} {\n${indentBlock(serviceExport.body, 2)}\n}`);
   }
 
   const combined = parts.filter((part) => part.length > 0).join("\n\n");
-  return [`module ${moduleExport.name} {`, indentBlock(combined, 2), "}"].join("\n");
+  return {
+    block: [`module ${moduleExport.name} {`, indentBlock(combined, 2), "}"].join("\n"),
+    diagnostics,
+  };
 }
 
 function extractProductHeader(productSource: string): {
@@ -190,11 +239,16 @@ function extractProductHeader(productSource: string): {
   const versionLine = versionMatch?.[1] ?? "pactia 1.0";
 
   const imports: string[] = [];
-  const packageImportPattern = /^\s*import\s+(@[\w/-]+)\s*;/gm;
-  let importMatch: RegExpExecArray | null = packageImportPattern.exec(productSource);
+  const importLinePattern = /^\s*import\s+.+;/gm;
+  let importMatch: RegExpExecArray | null = importLinePattern.exec(productSource);
   while (importMatch) {
-    imports.push(importMatch[0]!.trim());
-    importMatch = packageImportPattern.exec(productSource);
+    const line = importMatch[0]!.trim();
+    const fromMatch = /\bfrom\s+(\S+)\s*;/.exec(line);
+    const fromPath = fromMatch?.[1]?.replace(/^["']|["']$/g, "") ?? "";
+    if (!fromPath.startsWith("./") && !fromPath.startsWith("../")) {
+      imports.push(line);
+    }
+    importMatch = importLinePattern.exec(productSource);
   }
 
   const productBlock = extractBlockAfter(productSource, /product\s+(\w+)\s*\{/);
@@ -216,7 +270,7 @@ function extractProductHeader(productSource: string): {
   };
 }
 
-export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedWorkspaceSource {
+export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedAttachWorkspaceSource {
   const productDir = dirname(files.productPath);
   const registry = buildFragmentRegistry(files.productSource, productDir);
   const productBlock = extractBlockAfter(files.productSource, /product\s+(\w+)\s*\{/);
@@ -230,7 +284,14 @@ export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedWorkspaceSo
   }
 
   const { versionLine, imports, productName, productBody } = extractProductHeader(files.productSource);
-  const moduleBlocks = attachModules.map((attach) => buildAttachedModuleBlock(attach, registry));
+  const diagnostics: Diagnostic[] = [];
+  const moduleBlocks: string[] = [];
+  for (const attach of attachModules) {
+    const built = buildAttachedModuleBlock(attach, registry, files.productPath);
+    diagnostics.push(...built.diagnostics);
+    if (built.block) moduleBlocks.push(built.block);
+  }
+
   const productInner = [productBody, ...moduleBlocks].filter((part) => part.length > 0).join("\n\n");
   const source = [versionLine, imports, "", `product ${productName} {`, productInner, "}"]
     .filter((part) => part.length > 0)
@@ -241,5 +302,6 @@ export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedWorkspaceSo
     source,
     entry: PRODUCT_FILE,
     lockfileDigest: undefined,
+    diagnostics,
   };
 }
