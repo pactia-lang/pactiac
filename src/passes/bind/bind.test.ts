@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { describe, it } from "node:test";
+import { repoRoot } from "../../../test/fixture-paths.js";
 import {
   BoundNodeKind,
   DiagnosticCode,
@@ -14,7 +15,6 @@ import { SyntaxNodeKind } from "../../domain/syntax-tree.js";
 import { bindSyntaxTree } from "./bind-syntax-tree.js";
 import type { BoundBlockNode, BoundMacroNode } from "../../domain/bound-tree.js";
 
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
 const relayWorkspace = join(repoRoot, "test/fixtures/workspace/relay");
 const relaySource = readFileSync(join(repoRoot, "test/fixtures/kernel/relay.pactia"), "utf8");
 

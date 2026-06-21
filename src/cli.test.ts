@@ -4,10 +4,9 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { test } from "node:test";
-import { readTestFixture, TestFixtureId } from "../../../test/fixture-paths.js";
+import { readTestFixture, repoRoot, TestFixtureId } from "../test/fixture-paths.js";
 
 const cliPath = resolve(import.meta.dirname, "../dist/cli.js");
-const repoRoot = resolve(import.meta.dirname, "../../..");
 const relayFixture = resolve(repoRoot, "test/fixtures/kernel/relay.pactia");
 const relayWorkspace = resolve(repoRoot, "test/fixtures/workspace/relay");
 const vendorRoot = resolve(repoRoot, "test/fixtures/packages");

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { describe, it } from "node:test";
+import { repoRoot } from "../../../test/fixture-paths.js";
 import {
   BoundNodeKind,
   DiagnosticCode,
@@ -14,7 +15,6 @@ import { bindSyntaxTree } from "../bind/bind-syntax-tree.js";
 import { parseSyntaxTree } from "../parse/recursive-descent-parser.js";
 import { expandBoundTree } from "./expand-bound-tree.js";
 
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
 const relayWorkspace = join(repoRoot, "test/fixtures/workspace/relay");
 
 function findServiceBlock(root: BoundBlockNode, serviceName: string): BoundBlockNode | undefined {

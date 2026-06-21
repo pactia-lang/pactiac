@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { test } from "node:test";
 import { discoverWorkspace } from "./discover.js";
 import { mergeWorkspaceSources } from "./merge.js";
-import { readTestFixture, TestFixtureId } from "../../../../../test/fixture-paths.js";
+import { readTestFixture, repoRoot, TestFixtureId } from "../../../test/fixture-paths.js";
 
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
 const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 
 test("mergeAttachedWorkspace produces monolith-equivalent kernel source", () => {

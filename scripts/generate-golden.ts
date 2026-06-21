@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { assembleWorkspace } from "../packages/pactiac/src/frontend/workspace/assemble.js";
-import { compileSource } from "../packages/pactiac/src/application/compile-source.js";
+import { assembleWorkspace } from "../src/frontend/workspace/assemble.js";
+import { compileSource } from "../src/application/compile-source.js";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 const outputRoot = join(repoRoot, "test/fixtures/expected/relay");

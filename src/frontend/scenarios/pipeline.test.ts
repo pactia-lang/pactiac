@@ -1,12 +1,11 @@
 import assert from "node:assert/strict";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
-import { readTestFixture, TestFixtureId } from "../../../../../test/fixture-paths.js";
+import { readTestFixture, repoRoot, TestFixtureId } from "../../../test/fixture-paths.js";
 import { compileSource } from "../../application/compile-source.js";
 import { parseThenClause, parseWhenClause } from "./clauses.js";
 import { extractScenarios } from "./extract-tests.js";
 
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
 const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 const relaySource = readTestFixture(TestFixtureId.Relay);
 
