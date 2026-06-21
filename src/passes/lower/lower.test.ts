@@ -18,9 +18,8 @@ const kernelPackage = join(repoRoot, "test/fixtures/packages/@pactia--kernel@1.0
 
 function registryFromPackage(packageRoot: string, coordinate: string) {
   const indexSource = readFileSync(join(packageRoot, "index.pactia"), "utf8");
-  const manifestSource = readFileSync(join(packageRoot, "pactia.package.json"), "utf8");
   const program = parseSyntaxTree({ source: indexSource, entryFile: "index.pactia" }).root;
-  const parsed = registryEntriesFromProgram(program, coordinate, manifestSource);
+  const parsed = registryEntriesFromProgram(program, coordinate);
   return {
     tags: new Map(parsed.tags.map((entry) => [entry.name, entry])),
     macros: new Map(parsed.macros.map((entry) => [entry.name, entry])),
@@ -205,5 +204,55 @@ product Demo {
     assert.ok(productJson);
     const parsed = JSON.parse(productJson!) as { product: { guide?: string[] } };
     assert.deepEqual(parsed.product.guide, ["First guidance line", "Second guidance line"]);
+  });
+
+  it("expands product-level stack macro into description prose only", () => {
+    const rustAnbRoot = join(repoRoot, "test/fixtures/packages/@pactia--rust-anb@1.0.0");
+    const kernelRoot = join(repoRoot, "test/fixtures/packages/@pactia--kernel@1.0.0");
+    const rustAnb = registryFromPackage(rustAnbRoot, "@pactia/rust-anb");
+    const kernel = registryFromPackage(kernelRoot, "@pactia/kernel");
+    const registry = {
+      tags: new Map([...kernel.tags, ...rustAnb.tags]),
+      macros: new Map([...kernel.macros, ...rustAnb.macros]),
+    };
+
+    const source = `pactia 1.0
+import @pactia/kernel;
+import { #rust_anb } from @pactia/rust-anb;
+
+product Demo {
+  > Demo product
+
+  #rust_anb
+
+  module billing {
+    service OrderService {
+      @api ping {
+        method: GET,
+        path: "/ping",
+      }
+    }
+  }
+}`;
+
+    const { lowered } = compileThroughLower(source, registry);
+    const productJson = lowered.files.get("input/product.json");
+    assert.ok(productJson);
+    const parsed = JSON.parse(productJson!) as {
+      product: {
+        description?: string;
+        stack?: Record<string, string>;
+      };
+    };
+    assert.match(parsed.product.description ?? "", /Demo product/);
+    assert.equal(parsed.product.stack?.language, "rust");
+    assert.equal(parsed.product.stack?.framework, "actix-web");
+    assert.equal(parsed.product.stack?.package, "@pactia/rust-anb");
+    assert.ok(Array.isArray(parsed.product.stack?.guide));
+    assert.match(String(parsed.product.stack?.guide?.[0] ?? ""), /actix-web and tokio/);
+    assert.ok(parsed.product.stack?.allowedCrates?.includes("tokio"));
+    assert.ok(parsed.product.stack?.allowedCrates?.includes("actix-web"));
+    assert.ok(parsed.product.stack?.deniedCrates?.includes("rocket"));
+    assert.ok(parsed.product.stack?.deniedCrates?.includes("openssl"));
   });
 });

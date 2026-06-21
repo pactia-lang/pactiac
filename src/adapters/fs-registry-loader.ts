@@ -13,8 +13,8 @@ import {
   assertLockEntries,
   parsePactiaLock,
   parsePactiaToml,
-  resolveStackPackage,
 } from "../resolve/manifest.js";
+import { isStackPackage } from "../resolve/package-kind.js";
 import { parseSyntaxTree } from "../passes/parse/recursive-descent-parser.js";
 import {
   mergeEffectiveRegistry,
@@ -42,15 +42,13 @@ export class FsRegistryLoader implements RegistryLoaderSync {
     const imports = input.importCoordinates;
 
     const importPackages: LoadedPackage[] = [];
-    let stackCoordinate: string | undefined;
 
     if (tomlSource && lockSource) {
       const toml = parsePactiaToml(tomlSource);
       const lock = parsePactiaLock(lockSource);
       assertImportsDeclared(imports, toml);
-      stackCoordinate = resolveStackPackage(toml);
 
-      const coordinates = [...new Set([...imports, ...(stackCoordinate ? [stackCoordinate] : [])])];
+      const coordinates = [...new Set(imports)];
       assertLockEntries(coordinates, lock);
 
       for (const coordinate of coordinates) {
@@ -65,14 +63,16 @@ export class FsRegistryLoader implements RegistryLoaderSync {
         ? parseSyntaxTree({ source: indexSource, entryFile: INDEX_FILE }).root
         : undefined;
       const parsed = program
-        ? registryEntriesFromProgram(program, pkg.coordinate, pkg.manifestSource)
+        ? registryEntriesFromProgram(program, pkg.coordinate)
         : { tags: [], macros: [] };
 
-      const partialSymbols = input.partialImports?.get(pkg.coordinate);
+      const partialSymbols = input.macroExpansion
+        ? undefined
+        : input.partialImports?.get(pkg.coordinate);
       const filtered = applyPartialImportFilter(parsed.tags, parsed.macros, partialSymbols);
 
       let tier = RegistryPrecedenceTier.Dependency;
-      if (stackCoordinate && pkg.coordinate === stackCoordinate) {
+      if (isStackPackage(pkg.manifestSource)) {
         tier = RegistryPrecedenceTier.Stack;
       } else if (imports.includes(pkg.coordinate)) {
         tier = RegistryPrecedenceTier.ExplicitImport;

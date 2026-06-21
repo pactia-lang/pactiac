@@ -47,14 +47,20 @@ export function tagBodyItemsToObject(items: readonly TagBodyItem[]): WritableRec
 
 export function boundLeafBodyToObject(items: readonly BoundTreeItem[]): WritableRecord {
   const object: WritableRecord = {};
+  const proseLines: string[] = [];
   for (const item of items) {
     if (item.kind === SyntaxNodeKind.FieldLine) {
       appendBodyField(object, item);
       continue;
     }
     if (item.kind === SyntaxNodeKind.Prose && item.text.length > 0) {
-      object["summary"] = item.text;
+      proseLines.push(item.text);
     }
+  }
+  if (proseLines.length === 1) {
+    object["summary"] = proseLines[0];
+  } else if (proseLines.length > 1) {
+    object["guide"] = proseLines;
   }
   return object;
 }
@@ -136,12 +142,16 @@ export function collectProse(items: readonly TagBodyItem[]): string | undefined 
 }
 
 export function collectBlockProse(items: readonly BoundTreeItem[]): string | undefined {
+  const lines: string[] = [];
   for (const item of items) {
     if (item.kind === SyntaxNodeKind.Prose && item.text.length > 0) {
-      return item.text;
+      lines.push(item.text);
     }
   }
-  return undefined;
+  if (lines.length === 0) {
+    return undefined;
+  }
+  return lines.join(" ");
 }
 
 export function collectServiceProse(items: readonly BoundTreeItem[]): string | undefined {

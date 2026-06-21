@@ -70,10 +70,12 @@ function bindAndExpand(source: string) {
 describe("expandBoundTree", () => {
   it("splices #paginated into modifier field lines", () => {
     const source = `pactia 1.0
+import { #paginated } from @pactia/rust-anb;
+
 product X {
   module orders {
     service OrderService {
-      #[paginated]
+      #paginated
     }
   }
 }`;
@@ -96,10 +98,12 @@ product X {
 
   it("follows nested macro chain list -> paginated", () => {
     const source = `pactia 1.0
+import { #list, #paginated } from @pactia/rust-anb;
+
 product X {
   module orders {
     service OrderService {
-      #[list]
+      #list
     }
   }
 }`;

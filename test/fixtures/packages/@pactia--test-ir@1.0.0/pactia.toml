@@ -1,0 +1,4 @@
+[package]
+name = "@pactia/test-ir"
+version = "1.0.0"
+kind = "library"

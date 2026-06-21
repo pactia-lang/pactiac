@@ -33,13 +33,14 @@ export interface ExpandBoundTreeResult {
 export function expandBoundTree(
   tree: BoundTree,
   registry: EffectiveRegistry,
+  expansionRegistry: EffectiveRegistry = registry,
 ): ExpandBoundTreeResult {
   const diagnostics: Diagnostic[] = [];
   let root = tree.root;
   let pass = 0;
 
   while (containsMacroNode(root) && pass < MAX_EXPANSION_PASSES) {
-    const expander = new MacroExpander(registry, diagnostics);
+    const expander = new MacroExpander(registry, expansionRegistry, diagnostics);
     root = expander.expandBlock(root, new Set());
     pass += 1;
   }
@@ -61,9 +62,10 @@ class MacroExpander {
 
   constructor(
     private readonly registry: EffectiveRegistry,
+    expansionRegistry: EffectiveRegistry,
     private readonly diagnostics: Diagnostic[],
   ) {
-    this.binder = new BodyItemBinder(registry, diagnostics);
+    this.binder = new BodyItemBinder(expansionRegistry, diagnostics);
   }
 
   expandBlock(block: BoundBlockNode, visiting: Set<string>): BoundBlockNode {

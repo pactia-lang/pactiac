@@ -11,10 +11,11 @@ export interface PackageManifestRef {
 export interface RegistryLoaderInput {
   readonly workspaceRoot: string;
   readonly importCoordinates: readonly string[];
-  readonly stackCoordinate?: string;
   readonly syntax?: SyntaxTree;
   /** Partial symbol lists per package coordinate (from `import { … } from @scope/name`). */
   readonly partialImports?: ReadonlyMap<string, readonly string[]>;
+  /** When true, ignore partial imports — used for macro expansion splice binding. */
+  readonly macroExpansion?: boolean;
 }
 
 export interface RegistryLoader {

@@ -88,7 +88,7 @@ product X { module m { service S { } } }`;
     const { diagnostics, tree } = bindSyntaxTree(syntax, registry);
     assert.equal(diagnostics.filter((d) => d.code === DiagnosticCode.DefInProduct).length, 0);
     assert.equal(tree.root.children.length, 0);
-    assert.equal(syntax.root.exportDefs.length, 3);
+    assert.equal(syntax.root.exportDefs.length, 4);
     assert.equal(syntax.root.exportDefs[0]?.kind, SyntaxNodeKind.DefExport);
     assert.equal(syntax.root.exportDefs[0]?.name, "rust_anb");
   });

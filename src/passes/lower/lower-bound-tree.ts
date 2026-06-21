@@ -14,7 +14,7 @@ import {
 } from "../../domain/index.js";
 import type { Diagnostic } from "../../domain/diagnostics.js";
 import type { RegistryTagEntry } from "../../domain/registry.js";
-import { SyntaxNodeKind, type FieldLineNode } from "../../domain/syntax-tree.js";
+import { SyntaxNodeKind, type FieldLineNode, type ProseNode } from "../../domain/syntax-tree.js";
 import { emitIrFileMap } from "../../adapters/json-emitter.js";
 import { serviceFileStem } from "../../frontend/kernel/text.js";
 import {
@@ -22,7 +22,7 @@ import {
   moduleIrPaths,
   serviceIrPath,
 } from "../../domain/workspace-ir.js";
-import { mergeDeep, parseScalarValue, setAtPath } from "../../lower/ir-path.js";
+import { mergeDeep, getAtPath, parseScalarValue, setAtPath } from "../../lower/ir-path.js";
 import {
   appendHostObject,
   boundLeafBodyToObject,
@@ -40,7 +40,6 @@ export interface LowerBoundTreeInput {
   readonly pactiaVersion: string;
   readonly entryFile: string;
   readonly lockfileDigest?: string;
-  readonly stackCoordinate?: string;
 }
 
 export interface LowerBoundTreeResult {
@@ -85,6 +84,7 @@ class BoundTreeLowerer {
   private currentModule: LazyModuleBundle | undefined;
   private serviceRoot: WritableRecord | undefined;
   private pendingHost: WritableRecord = {};
+  private pendingStackGuide: string[] = [];
 
   constructor(
     private readonly input: LowerBoundTreeInput,
@@ -96,7 +96,6 @@ class BoundTreeLowerer {
     if (root.hostName && root.placement === PlacementTarget.Product) {
       this.productDoc = {
         name: root.hostName,
-        stackId: this.input.stackCoordinate ?? "unknown",
       };
       this.lowerBlock(root);
     } else {
@@ -159,11 +158,33 @@ class BoundTreeLowerer {
   private lowerBlock(block: BoundBlockNode): void {
     switch (block.placement) {
       case PlacementTarget.Product: {
-        const description = collectBlockProse(block.children);
-        if (description) {
-          this.productDoc["description"] = description;
+        const stackIndex = block.children.findIndex(
+          (child) => child.kind === BoundNodeKind.BoundTag && child.tagName === "stack",
+        );
+        if (stackIndex >= 0) {
+          const leadingProse = block.children
+            .slice(0, stackIndex)
+            .filter(
+              (child): child is ProseNode =>
+                child.kind === SyntaxNodeKind.Prose && child.text.length > 0,
+            );
+          if (leadingProse.length > 0) {
+            this.productDoc["description"] = leadingProse[0]!.text;
+            if (leadingProse.length > 1) {
+              this.pendingStackGuide = leadingProse.slice(1).map((line) => line.text);
+            }
+          }
+        } else {
+          const description = collectBlockProse(block.children);
+          if (description) {
+            this.productDoc["description"] = description;
+          }
         }
-        for (const child of block.children) {
+        for (let index = 0; index < block.children.length; index += 1) {
+          const child = block.children[index]!;
+          if (stackIndex >= 0 && index < stackIndex && child.kind === SyntaxNodeKind.Prose) {
+            continue;
+          }
           this.lowerTreeItem(child, IrFile.Product);
         }
         break;
@@ -251,6 +272,14 @@ class BoundTreeLowerer {
         break;
       case IrMerge.MergeFields:
         mergeTagBlock(this.documentRoot(entry.ir.file), entry, tag.children);
+        if (scopeFile === IrFile.Product && this.pendingStackGuide.length > 0) {
+          const { containerPath } = parseIrPath(entry.ir.path);
+          const stackRoot = getAtPath(this.productDoc, containerPath);
+          if (stackRoot && typeof stackRoot === "object" && !Array.isArray(stackRoot)) {
+            (stackRoot as WritableRecord)["guide"] = [...this.pendingStackGuide];
+          }
+          this.pendingStackGuide = [];
+        }
         break;
       case IrMerge.FieldAnnotation:
         break;
