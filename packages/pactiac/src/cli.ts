@@ -1,45 +1,60 @@
 #!/usr/bin/env node
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { PackageBuildPipeline } from "./application/package-build-pipeline.js";
 import { compile, compileWorkspace } from "./compile/compile.js";
 import type { CompileResult } from "./compile/compile.js";
+import { DiagnosticSeverity } from "./domain/diagnostic-code.js";
 import { Provenance } from "./diagnostics/diagnostic.js";
 
 interface CliArgs {
   readonly command: string;
+  readonly subcommand: string | undefined;
   readonly input: string | undefined;
   readonly workspace: string | undefined;
   readonly output: string | undefined;
+  readonly packageRoot: string | undefined;
   readonly report: boolean;
   readonly provenance: string | undefined;
 }
 
 function parseArgs(argv: string[]): CliArgs {
   const [command = "", ...rest] = argv;
+  let subcommand: string | undefined;
+  let optionArgs = rest;
+  if (command === "package") {
+    subcommand = rest[0];
+    optionArgs = rest.slice(1);
+  }
+
   let input: string | undefined;
   let workspace: string | undefined;
   let output: string | undefined;
+  let packageRoot: string | undefined;
   let report = false;
   let provenance: string | undefined;
-  for (let i = 0; i < rest.length; i += 1) {
-    const arg = rest[i];
-    if ((arg === "-i" || arg === "--input") && rest[i + 1]) {
-      input = rest[i + 1];
+  for (let i = 0; i < optionArgs.length; i += 1) {
+    const arg = optionArgs[i];
+    if ((arg === "-i" || arg === "--input") && optionArgs[i + 1]) {
+      input = optionArgs[i + 1];
       i += 1;
-    } else if ((arg === "-w" || arg === "--workspace") && rest[i + 1]) {
-      workspace = rest[i + 1];
+    } else if ((arg === "-w" || arg === "--workspace") && optionArgs[i + 1]) {
+      workspace = optionArgs[i + 1];
       i += 1;
-    } else if ((arg === "-o" || arg === "--output") && rest[i + 1]) {
-      output = rest[i + 1];
+    } else if ((arg === "-o" || arg === "--output") && optionArgs[i + 1]) {
+      output = optionArgs[i + 1];
       i += 1;
-    } else if (arg === "--provenance" && rest[i + 1]) {
-      provenance = rest[i + 1];
+    } else if ((arg === "-C" || arg === "--directory") && optionArgs[i + 1]) {
+      packageRoot = optionArgs[i + 1];
+      i += 1;
+    } else if (arg === "--provenance" && optionArgs[i + 1]) {
+      provenance = optionArgs[i + 1];
       i += 1;
     } else if (arg === "--report") {
       report = true;
     }
   }
-  return { command, input, workspace, output, report, provenance };
+  return { command, subcommand, input, workspace, output, packageRoot, report, provenance };
 }
 
 function printProvenanceSummary(diagnostics: CompileResult["diagnostics"]): void {
@@ -69,16 +84,7 @@ function writeOutput(result: CompileResult, outputDir: string): void {
   }
 }
 
-function main(): void {
-  const args = parseArgs(process.argv.slice(2));
-
-  if (args.command !== "compile") {
-    process.stderr.write(
-      "Usage: pactiac compile (-i <file.pactia> | -w <workspace-dir>) -o <output-dir> [--report]\n",
-    );
-    process.exit(1);
-    return;
-  }
+function runCompile(args: CliArgs): void {
   if (!args.output) {
     process.stderr.write("Error: -o <output-dir> is required\n");
     process.exit(1);
@@ -113,6 +119,42 @@ function main(): void {
 
   printProvenanceSummary(result.diagnostics);
   if (args.report) printNotDerivable(result.diagnostics);
+}
+
+function runPackageBuild(args: CliArgs): void {
+  const packageRoot = resolve(args.packageRoot ?? ".");
+  const result = new PackageBuildPipeline().build({ packageRoot });
+  const errors = result.diagnostics.filter((d) => d.severity === DiagnosticSeverity.Error);
+  if (errors.length > 0) {
+    for (const error of errors) {
+      process.stderr.write(`error: ${error.message}\n`);
+    }
+    process.exit(1);
+    return;
+  }
+  for (const warning of result.diagnostics) {
+    process.stdout.write(`warning: ${warning.message}\n`);
+  }
+  process.stdout.write(`wrote ${result.manifestPath}\n`);
+}
+
+function main(): void {
+  const args = parseArgs(process.argv.slice(2));
+
+  if (args.command === "compile") {
+    runCompile(args);
+    return;
+  }
+
+  if (args.command === "package" && args.subcommand === "build") {
+    runPackageBuild(args);
+    return;
+  }
+
+  process.stderr.write(
+    "Usage:\n  pactiac compile (-i <file.pactia> | -w <workspace-dir>) -o <output-dir> [--report]\n  pactiac package build [-C <package-dir>]\n",
+  );
+  process.exit(1);
 }
 
 main();

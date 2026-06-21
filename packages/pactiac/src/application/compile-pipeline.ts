@@ -8,6 +8,11 @@ import { bindSyntaxTree } from "../passes/bind/bind-syntax-tree.js";
 import { expandBoundTree } from "../passes/expand-macros/expand-bound-tree.js";
 import { lowerBoundTree } from "../passes/lower/lower-bound-tree.js";
 import { collectLegacyMacroDiagnostics } from "../passes/parse/collect-parse-diagnostics.js";
+import {
+  applyConstantSubstitution,
+  importedConstantsFromProgram,
+} from "../passes/parse/apply-constant-substitution.js";
+import { collectImportUnusedDiagnostics } from "../passes/workspace/workspace-diagnostics.js";
 import type {
   CompileContext,
   CompilePipelineOptions,
@@ -69,6 +74,12 @@ export class CompilePipeline {
     }
 
     diagnostics.push(...collectLegacyMacroDiagnostics(syntax));
+    diagnostics.push(...collectImportUnusedDiagnostics(context.source, context.entryFile));
+
+    const importConstants = importedConstantsFromProgram(syntax.root, context.workspaceRoot);
+    const substituted = applyConstantSubstitution(syntax, importConstants);
+    syntax = substituted.tree;
+    diagnostics.push(...substituted.diagnostics);
 
     if (stopAfter < CompilePhase.ResolvePackages) {
       return { files: new Map(), diagnostics, provenanceGaps: [], registry: emptyRegistry, syntax };

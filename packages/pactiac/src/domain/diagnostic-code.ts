@@ -35,6 +35,11 @@ export enum DiagnosticCode {
   UnsupportedVersion = "UNSUPPORTED_VERSION",
   ParseError = "PARSE_ERROR",
   ConstantUndefined = "CONSTANT_UNDEFINED",
+
+  // Workspace attach
+  ImportUnused = "IMPORT_UNUSED",
+  AttachUndefined = "ATTACH_UNDEFINED",
+  AttachKindMismatch = "ATTACH_KIND_MISMATCH",
 }
 
 export enum DiagnosticSeverity {
@@ -46,6 +51,7 @@ export enum DiagnosticSeverity {
 export const diagnosticWarningCodes: ReadonlySet<DiagnosticCode> = new Set([
   DiagnosticCode.TagBodyUnknownField,
   DiagnosticCode.LegacyMacroSyntax,
+  DiagnosticCode.ImportUnused,
 ]);
 
 export function defaultSeverityForCode(code: DiagnosticCode): DiagnosticSeverity {

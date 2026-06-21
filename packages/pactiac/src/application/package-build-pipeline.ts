@@ -3,7 +3,6 @@ import { join } from "node:path";
 import type { Diagnostic } from "../domain/diagnostics.js";
 import { DiagnosticCode, createDiagnostic } from "../domain/index.js";
 import type { RegistryMacroEntry, RegistryTagEntry } from "../domain/registry.js";
-import { DefSigil } from "../domain/syntax-tree.js";
 import { emitJson } from "../adapters/json-emitter.js";
 import { parseSyntaxTree } from "../passes/parse/recursive-descent-parser.js";
 import { registryEntriesFromProgram } from "../passes/registry/build-effective-registry.js";
@@ -95,20 +94,6 @@ export class PackageBuildPipeline {
       identity.name,
       existingManifestSource,
     );
-
-    for (const def of program.exportDefs) {
-      if (def.sigil !== DefSigil.Tag) continue;
-      const hasTag = tags.some((tag) => tag.name === def.name);
-      if (!hasTag) {
-        diagnostics.push(
-          createDiagnostic(
-            DiagnosticCode.TagBodyInvalid,
-            `export def @${def.name} has no IR slot in existing pactia.package.json — tag omitted from registry`,
-            { target: `def.${def.name}` },
-          ),
-        );
-      }
-    }
 
     const manifest = {
       name: identity.name,
