@@ -1,0 +1,6 @@
+lockVersion = 1
+
+[[package]]
+name = "@pactia/test-ir"
+version = "1.0.0"
+digest = "sha256:f13b0ebca06c63b973c840e54438c1ca9729602886757aa4c52db0dda37b5489"

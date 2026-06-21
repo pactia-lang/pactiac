@@ -1,0 +1,86 @@
+pactia 1.0
+// Package: @pactia/kernel
+
+export def @stack in product {
+  > Optional stack profile block — invoke stack-package macros and tags inside
+}
+
+export def @topology in product {
+  mode,
+}
+
+export def @tenancy in product {
+  mode,
+}
+
+export def @guide in product {
+}
+
+export def @actor in module {
+  role,
+  capabilities,
+}
+
+export def @rule in module {
+}
+
+export def @deploy in module {
+}
+
+export def @environment in module {
+  replicas,
+  region,
+}
+
+export def @gate in module {
+  scenarios,
+  coverage,
+}
+
+export def @security in module {
+}
+
+export def @enum in model {
+  values,
+}
+
+export def @entity in model {
+}
+
+export def @pk in field {
+}
+
+export def @nullable in field {
+}
+
+export def @auth in service {
+  roles,
+}
+
+export def @output in service {
+  bodyRef,
+  modifier,
+}
+
+export def @api in service {
+  method,
+  path,
+  summary,
+}
+
+export def @surface in service {
+  platform,
+  screen,
+  route,
+  nav,
+}
+
+export def @test in service {
+  name,
+  when,
+  then,
+}
+
+export def #database in service {
+  flags.database: true,
+}

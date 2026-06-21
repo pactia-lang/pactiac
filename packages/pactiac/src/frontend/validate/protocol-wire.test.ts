@@ -13,8 +13,8 @@ test("resolveProtocolRestWireSchemaPath finds bundled protocol-rest schema", () 
   assert.ok(resolveProtocolRestWireSchemaPath());
 });
 
-test("validateProtocolRestWire passes fleet fixture", () => {
-  const program = extractKernel(readTestFixture(TestFixtureId.FleetManagementV2));
+test("validateProtocolRestWire passes relay fixture", () => {
+  const program = extractKernel(readTestFixture(TestFixtureId.Relay));
   assert.equal(validateProtocolRestWire(program).length, 0);
 });
 

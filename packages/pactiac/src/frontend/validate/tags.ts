@@ -20,14 +20,14 @@ export function validateKernelTagsStructural(program: KernelProgram): Diagnostic
       for (const endpoint of service.endpoints) {
         if (!endpoint.method) {
           diagnostics.push({
-            provenance: Provenance.NOT_DERIVABLE,
+            provenance: Provenance.NotDerivable,
             target: `tag.${KernelTag.Api}.${endpoint.id}.method`,
             message: `@api ${endpoint.id} is missing method:`,
           });
         }
         if (!endpoint.path) {
           diagnostics.push({
-            provenance: Provenance.NOT_DERIVABLE,
+            provenance: Provenance.NotDerivable,
             target: `tag.${KernelTag.Api}.${endpoint.id}.path`,
             message: `@api ${endpoint.id} is missing path:`,
           });
@@ -38,7 +38,7 @@ export function validateKernelTagsStructural(program: KernelProgram): Diagnostic
           !endpoint.macros.some((macro) => /^(owner|buyer|seller|participant)/.test(macro))
         ) {
           diagnostics.push({
-            provenance: Provenance.NOT_DERIVABLE,
+            provenance: Provenance.NotDerivable,
             target: `tag.${KernelTag.Api}.${endpoint.id}.auth`,
             message: `@api ${endpoint.id} has no @auth, @public, or ownership macro`,
           });
@@ -49,7 +49,7 @@ export function validateKernelTagsStructural(program: KernelProgram): Diagnostic
     for (const entity of mod.entities) {
       if (entity.fields.length === 0) {
         diagnostics.push({
-          provenance: Provenance.NOT_DERIVABLE,
+          provenance: Provenance.NotDerivable,
           target: `tag.${KernelTag.Entity}.${entity.name}`,
           message: `@entity ${entity.name} has no fields`,
         });
@@ -59,7 +59,7 @@ export function validateKernelTagsStructural(program: KernelProgram): Diagnostic
 
   if (!program.product.stackPackage) {
     diagnostics.push({
-      provenance: Provenance.NOT_DERIVABLE,
+      provenance: Provenance.NotDerivable,
       target: `tag.${KernelTag.Stack}`,
       message: "product is missing @stack target",
     });

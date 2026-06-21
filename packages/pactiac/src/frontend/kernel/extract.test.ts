@@ -3,61 +3,54 @@ import { test } from "node:test";
 import { readTestFixture, TestFixtureId } from "../../../../../test/fixture-paths.js";
 import { extractKernel } from "./extract.js";
 
-const fleetSource = readTestFixture(TestFixtureId.FleetManagementV2);
+const relaySource = readTestFixture(TestFixtureId.Relay);
 
-test("extractKernel reads product-level facts from fleet fixture", () => {
-  const program = extractKernel(fleetSource);
+test("extractKernel reads product-level facts from relay fixture", () => {
+  const program = extractKernel(relaySource);
 
-  assert.equal(program.product.name, "FleetManagement");
-  assert.equal(program.product.stackPackage, "rust-anb");
+  assert.equal(program.product.name, "Relay");
+  assert.equal(program.product.stackPackage, "@pactia/rust-anb");
   assert.equal(program.product.topologyMode, "MICROSERVICES");
   assert.equal(program.product.tenancyMode, "SINGLE_TENANT");
   assert.ok(program.imports.includes("@pactia/protocol-rest"));
+  assert.ok(program.imports.includes("@pactia/kernel"));
+  assert.ok(program.imports.includes("@pactia/rust-anb"));
 });
 
 test("extractKernel collects hoisted surfaces from nested @api blocks", () => {
-  const program = extractKernel(fleetSource);
-  assert.equal(program.product.surfaces.length, 4);
-  assert.ok(
-    program.product.surfaces.every(
-      (surface) => surface.serviceName === "FleetService" && surface.apiId.length > 0,
-    ),
-  );
+  const program = extractKernel(relaySource);
+  assert.equal(program.product.surfaces.length, 1);
+  assert.equal(program.product.surfaces[0]?.serviceName, "OrderService");
+  assert.equal(program.product.surfaces[0]?.apiId, "list_orders");
 });
 
-test("extractKernel extracts module deploy security and policies", () => {
-  const fleet = programModule(fleetSource);
+test("extractKernel extracts module deploy security", () => {
+  const orders = programModule(relaySource);
 
-  assert.equal(fleet.deploy?.environments.length, 2);
-  assert.equal(fleet.securityStatements[0]?.text, "All admin mutations must be audit-logged");
-  assert.equal(fleet.policies[0]?.retainEntity, "GpsPosition");
-  assert.equal(fleet.policies[0]?.residency, "EU");
+  assert.equal(orders.deploy?.environments.length, 2);
+  assert.equal(orders.securityStatements[0]?.text, "All order mutations must be audit-logged");
 });
 
 test("extractKernel reads service flags from lines above service block", () => {
-  const fleet = programModule(fleetSource);
-  const fleetService = fleet.services.find((service) => service.name === "FleetService");
-  const notificationService = fleet.services.find(
-    (service) => service.name === "NotificationService",
-  );
+  const orders = programModule(relaySource);
+  const orderService = orders.services.find((service) => service.name === "OrderService");
 
-  assert.deepEqual(fleetService?.flags, { database: true, cache: true, events: true });
-  assert.deepEqual(notificationService?.flags, { database: true, cache: false, events: true });
+  assert.deepEqual(orderService?.flags, { database: true, cache: false, events: false });
 });
 
 test("extractKernel maps entities enums and endpoints", () => {
-  const fleet = programModule(fleetSource);
-  const fleetService = fleet.services.find((service) => service.name === "FleetService");
+  const orders = programModule(relaySource);
+  const orderService = orders.services.find((service) => service.name === "OrderService");
 
-  assert.ok(fleet.entities.some((entity) => entity.name === "Vehicle"));
-  assert.ok(fleet.enums.some((enumDecl) => enumDecl.name === "VehicleStatus"));
-  assert.equal(fleetService?.endpoints.length, 4);
-  assert.equal(fleetService?.scenarios.length, 3);
+  assert.ok(orders.entities.some((entity) => entity.name === "Order"));
+  assert.ok(orders.enums.some((enumDecl) => enumDecl.name === "OrderStatus"));
+  assert.equal(orderService?.endpoints.length, 2);
+  assert.equal(orderService?.scenarios.length, 3);
 });
 
 function programModule(source: string) {
   const program = extractKernel(source);
-  const fleet = program.modules.find((module) => module.name === "fleet");
-  assert.ok(fleet, "expected fleet module");
-  return fleet;
+  const orders = program.modules.find((module) => module.name === "orders");
+  assert.ok(orders, "expected orders module");
+  return orders;
 }

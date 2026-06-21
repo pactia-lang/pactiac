@@ -1,0 +1,8 @@
+{
+  "name": "@pactia/protocol-rest",
+  "version": "1.0.0",
+  "kind": "protocol",
+  "registry": {
+    "wireSchema": "schemas/api-wire-v1.json"
+  }
+}

@@ -1,5 +1,4 @@
 import { type Diagnostic, Provenance } from "../diagnostics/diagnostic.js";
-import { emitYaml } from "../emit/yaml.js";
 import { assembleWorkspace } from "../frontend/workspace/assemble.js";
 import { compileIrWorkspace } from "../lower/ir.js";
 import { detectPactiaVersion } from "./version.js";
@@ -41,5 +40,3 @@ export function compileWorkspace(workspaceRoot: string): CompileResult {
 
   return { files, diagnostics };
 }
-
-export { emitYaml };

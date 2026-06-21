@@ -187,14 +187,14 @@ export enum IntegrationAuthType {
 }
 
 export enum IrRootFile {
-  Manifest = "manifest.yaml",
-  Product = "product.yaml",
+  Manifest = "input/manifest.json",
+  Product = "input/product.json",
 }
 
 export enum IrModuleRelativePattern {
-  Module = "modules/{moduleKebab}/{moduleKebab}.module.yaml",
-  Model = "modules/{moduleKebab}/{moduleKebab}.model.yaml",
-  Service = "modules/{moduleKebab}/services/{serviceKebab}.service.yaml",
+  Module = "input/modules/{moduleKebab}/{moduleKebab}.module.json",
+  Model = "input/modules/{moduleKebab}/{moduleKebab}.model.json",
+  Service = "input/modules/{moduleKebab}/services/{serviceKebab}.service.json",
 }
 
 export const stackLanguageValues = Object.values(StackLanguage);

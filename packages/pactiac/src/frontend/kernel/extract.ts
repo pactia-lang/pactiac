@@ -1,4 +1,5 @@
 import type { MustDecl, ScenarioDecl } from "../scenarios/types.js";
+import { parseMacroName } from "../../lower/macros.js";
 import { extractMustObligations } from "../scenarios/extract-obligations.js";
 import { extractScenarios } from "../scenarios/extract-tests.js";
 import { collectTagBlocks, extractBlockAfter, findMatchingBrace } from "./brace.js";
@@ -205,7 +206,7 @@ export interface KernelModule {
 export interface KernelProduct {
   readonly name: string;
   readonly description?: string;
-  readonly stackPackage: string;
+  readonly stackPackage?: string;
   readonly topologyMode?: string;
   readonly tenancyMode?: string;
   readonly guide?: string | string[];
@@ -217,6 +218,21 @@ export interface KernelProgram {
   readonly imports: string[];
   readonly product: KernelProduct;
   readonly modules: KernelModule[];
+}
+
+/** Match `@tag` or `@@tag` at line start (field or endpoint prefix). */
+function lineStartsWithTag(line: string, tagName: string): boolean {
+  return new RegExp(`^@+${tagName}\\b`).test(line);
+}
+
+function parseBareMacroLine(trimmed: string): string | undefined {
+  const bracketMatch = /^#\[([\w(.,\s\d]+)\]/.exec(trimmed);
+  if (bracketMatch) return bracketMatch[1]!;
+  const bareMatch = /^#([\w-]+)(?:\(([^)]*)\))?\s*,?\s*$/.exec(trimmed);
+  if (!bareMatch) return undefined;
+  const name = bareMatch[1]!;
+  const args = bareMatch[2]?.trim();
+  return args && args.length > 0 ? `${name}(${args})` : name;
 }
 
 function parseBracketList(value: string): string[] {
@@ -237,23 +253,23 @@ function parseEntityBlock(body: string, entityName: string): KernelEntity {
     const line = rawLine.trim();
     if (!line || line.startsWith(">")) continue;
 
-    if (line.startsWith("@pk")) {
+    if (lineStartsWithTag(line, "pk")) {
       pendingAnnotations = { ...pendingAnnotations, primary: true };
       continue;
     }
-    if (line.startsWith("@unique")) {
+    if (lineStartsWithTag(line, "unique")) {
       pendingAnnotations = { ...pendingAnnotations, unique: true };
       continue;
     }
-    if (line.startsWith("@nullable")) {
+    if (lineStartsWithTag(line, "nullable")) {
       pendingAnnotations = { ...pendingAnnotations, nullable: true };
       continue;
     }
-    if (line.startsWith("@pii")) {
+    if (lineStartsWithTag(line, "pii")) {
       pendingAnnotations = { ...pendingAnnotations, pii: true };
       continue;
     }
-    if (line.startsWith("@fk")) {
+    if (lineStartsWithTag(line, "fk")) {
       const entityMatch = /entity:\s*(\w+)/.exec(line);
       if (entityMatch) {
         pendingAnnotations = {
@@ -263,11 +279,11 @@ function parseEntityBlock(body: string, entityName: string): KernelEntity {
       }
       continue;
     }
-    if (line.startsWith("@index")) {
+    if (lineStartsWithTag(line, "index")) {
       pendingAnnotations = { ...pendingAnnotations, index: true };
       continue;
     }
-    if (line.startsWith("@retain")) {
+    if (lineStartsWithTag(line, "retain")) {
       const periodMatch =
         /period:\s*(\w+)/.exec(line) ?? /\{\s*(\w+)\s*\}/.exec(line.replace("@retain", "").trim());
       const afterMatch = /after:\s*(\w+)/.exec(line);
@@ -282,7 +298,7 @@ function parseEntityBlock(body: string, entityName: string): KernelEntity {
       }
       continue;
     }
-    if (line.startsWith("@encrypt")) {
+    if (lineStartsWithTag(line, "encrypt")) {
       const scopeMatch =
         /scope:\s*(\w+)/.exec(line) ??
         /\{\s*(\w+)\s*\}/.exec(line.replace("@encrypt", "").trim());
@@ -321,6 +337,9 @@ function parseTransitionFromBody(body: string): { from: string; to: string } | u
   return { from: fromMatch[1]!, to: toMatch[1]! };
 }
 
+/** Service-scoped macros — not endpoint modifiers; exclude from endpoint prefix parsing. */
+const SERVICE_LEVEL_MACROS = new Set(["database", "cache", "events"]);
+
 function parseEndpointModifiers(lines: readonly string[]): {
   roles: string[];
   isPublic: boolean;
@@ -349,10 +368,10 @@ function parseEndpointModifiers(lines: readonly string[]): {
       if (rolesMatch) roles = parseBracketList(`[${rolesMatch[1]}]`);
     } else if (trimmed.startsWith("@public")) {
       isPublic = true;
-    } else if (trimmed.startsWith("@input")) {
-      inputType = stripFieldValue(trimmed.replace("@input", ""));
-    } else if (trimmed.startsWith("@output")) {
-      outputType = stripFieldValue(trimmed.replace("@output", ""));
+    } else if (lineStartsWithTag(trimmed, "output")) {
+      outputType = stripFieldValue(trimmed.replace(/^@+output/, ""));
+    } else if (lineStartsWithTag(trimmed, "input")) {
+      inputType = stripFieldValue(trimmed.replace(/^@+input/, ""));
     } else if (trimmed.startsWith("@status")) {
       status = Number.parseInt(stripFieldValue(trimmed.replace("@status", "")), 10);
     } else if (trimmed.startsWith("@throws")) {
@@ -362,9 +381,11 @@ function parseEndpointModifiers(lines: readonly string[]): {
       emits.push(stripFieldValue(trimmed.replace("@emit", "")));
     } else if (trimmed.startsWith("@transition")) {
       transition = parseTransitionFromBody(trimmed);
-    } else if (trimmed.startsWith("#[")) {
-      const macroMatch = /#\[([\w(.,\s\d]+)\]/.exec(trimmed);
-      if (macroMatch) macros.push(macroMatch[1]!);
+    } else {
+      const macroText = parseBareMacroLine(trimmed);
+      if (macroText && !SERVICE_LEVEL_MACROS.has(parseMacroName(macroText))) {
+        macros.push(macroText);
+      }
     }
   }
 
@@ -451,11 +472,15 @@ function parseApiBlock(
   };
 }
 
+function hasServiceMacro(source: string, name: string): boolean {
+  return new RegExp(`#\\[${name}\\]|^\\s*#${name}\\b`, "m").test(source);
+}
+
 function parseServicePrefixFlags(prefix: string): KernelService["flags"] {
   return {
-    database: /#\[database\]/.test(prefix),
-    cache: /#\[cache\]/.test(prefix),
-    events: /#\[events\]/.test(prefix),
+    database: hasServiceMacro(prefix, "database"),
+    cache: hasServiceMacro(prefix, "cache"),
+    events: hasServiceMacro(prefix, "events"),
   };
 }
 
@@ -488,9 +513,9 @@ function parseServiceBody(
 ): KernelService {
   const prefixFlags = parseServicePrefixFlags(prefix);
   const flags = {
-    database: prefixFlags.database || /#\[database\]/.test(body),
-    cache: prefixFlags.cache || /#\[cache\]/.test(body),
-    events: prefixFlags.events || /#\[events\]/.test(body),
+    database: prefixFlags.database || hasServiceMacro(body, "database"),
+    cache: prefixFlags.cache || hasServiceMacro(body, "cache"),
+    events: prefixFlags.events || hasServiceMacro(body, "events"),
   };
 
   const endpoints: KernelEndpoint[] = [];
@@ -728,6 +753,34 @@ function parseModuleBody(
   };
 }
 
+function extractStackPackageFromProduct(
+  productBody: string,
+  imports: readonly string[],
+): string | undefined {
+  const productMacroMatch = /^\s*#([\w-]+)\s*$/m.exec(productBody);
+  if (productMacroMatch) {
+    const coordinate = `@pactia/${productMacroMatch[1]!.replace(/_/g, "-")}`;
+    if (imports.includes(coordinate)) {
+      return coordinate;
+    }
+  }
+
+  const stackBlock = collectTagBlocks(productBody, "stack")[0];
+  if (!stackBlock) {
+    return undefined;
+  }
+  const macroFromStack =
+    parseBareMacroLine(stackBlock.body.trim()) ??
+    /#\[\s*([\w-]+)\s*\]/.exec(stackBlock.body)?.[1];
+  if (macroFromStack) {
+    const coordinate = `@pactia/${macroFromStack.replace(/_/g, "-")}`;
+    if (imports.includes(coordinate)) {
+      return coordinate;
+    }
+  }
+  return undefined;
+}
+
 export function extractKernel(source: string): KernelProgram {
   const versionMatch = /^\s*pactia\s+([0-9]+(?:\.[0-9]+)?)/m.exec(source);
   const version = versionMatch?.[1] ?? "1.0";
@@ -745,8 +798,9 @@ export function extractKernel(source: string): KernelProgram {
     throw new Error("Missing product block");
   }
 
-  const productProse = proseToGuidance(extractProseLines(productBlock.body.split("module")[0] ?? ""));
-  const stackMatch = /@stack\s+([\w-]+)/.exec(productBlock.body);
+  const productShell = productBlock.body.split("module")[0] ?? "";
+  const productProse = proseToGuidance(extractProseLines(productShell));
+  const stackPackage = extractStackPackageFromProduct(productShell, imports);
   const topologyBlock = collectTagBlocks(productBlock.body, "topology")[0];
   const tenancyBlock = collectTagBlocks(productBlock.body, "tenancy")[0];
   const guideBlock = collectTagBlocks(productBlock.body, "guide")[0];
@@ -775,7 +829,7 @@ export function extractKernel(source: string): KernelProgram {
     product: {
       name: productBlock.id,
       description: typeof productProse === "string" ? productProse : productProse?.[0],
-      stackPackage: stackMatch?.[1] ?? "rust-anb",
+      stackPackage,
       topologyMode: topologyBlock
         ? normalizeTopologyMode(/mode:\s*(\w+)/.exec(topologyBlock.body)?.[1] ?? "")
         : undefined,

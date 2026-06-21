@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { parse as parseYaml } from "yaml";
 import {
   resolveKernelTagsCatalogPath,
   resolveSpecRoot,
@@ -43,12 +42,13 @@ function isNormativeSchema(schema: Record<string, unknown>): boolean {
   return false;
 }
 
+/** Transitional bundled tag catalog for v0.1 extract path — JSON only. */
 export function loadKernelTagCatalog(specRoot?: string): KernelTagCatalog | undefined {
   const root = specRoot ?? resolveSpecRoot();
   if (!root) return undefined;
 
   const catalogSource = readFileSync(resolveKernelTagsCatalogPath(root), "utf8");
-  const parsed = parseYaml(catalogSource);
+  const parsed: unknown = JSON.parse(catalogSource);
   if (!isRecord(parsed) || !Array.isArray(parsed["tags"])) {
     return undefined;
   }

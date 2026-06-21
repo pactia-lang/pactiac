@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { parse as parseYaml } from "yaml";
+import { parsePactiaLockToml } from "./toml-lock.js";
 import { PackageErrorCode, PackageResolutionError } from "./errors.js";
 
 export interface PactiaTomlManifest {
@@ -52,39 +52,8 @@ export function parsePactiaToml(source: string): PactiaTomlManifest {
   return { stackPackage, dependencies };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
 export function parsePactiaLock(source: string): PactiaLockManifest {
-  const parsed = parseYaml(source);
-  if (!isRecord(parsed) || !Array.isArray(parsed["packages"])) {
-    throw new PackageResolutionError(
-      PackageErrorCode.LockEntryMissing,
-      "pactia.lock must contain a packages array",
-    );
-  }
-
-  const packages = (parsed["packages"] as unknown[]).map((entry, index) => {
-    if (!isRecord(entry)) {
-      throw new PackageResolutionError(
-        PackageErrorCode.LockEntryMissing,
-        `pactia.lock packages[${index}] must be an object`,
-      );
-    }
-    const name = entry["name"];
-    const version = entry["version"];
-    const digest = entry["digest"];
-    if (typeof name !== "string" || typeof version !== "string" || typeof digest !== "string") {
-      throw new PackageResolutionError(
-        PackageErrorCode.LockEntryMissing,
-        `pactia.lock packages[${index}] must include name, version, and digest`,
-      );
-    }
-    return { name, version, digest };
-  });
-
-  return { packages };
+  return parsePactiaLockToml(source);
 }
 
 export function lockfileDigest(source: string): string {
@@ -97,8 +66,18 @@ export function normalizePackageCoordinate(coordinate: string): string {
   return `@pactia/${coordinate}`;
 }
 
-export function resolveStackCoordinate(stackTagTarget: string): string {
-  return normalizePackageCoordinate(stackTagTarget);
+export function resolveStackPackage(manifest: PactiaTomlManifest): string | undefined {
+  const coordinate = manifest.stackPackage;
+  if (!coordinate) {
+    return undefined;
+  }
+  if (!manifest.dependencies.has(coordinate)) {
+    throw new PackageResolutionError(
+      PackageErrorCode.DependencyNotDeclared,
+      `Stack package '${coordinate}' is not declared in pactia.toml [dependencies]`,
+    );
+  }
+  return coordinate;
 }
 
 export function assertImportsDeclared(
@@ -113,32 +92,6 @@ export function assertImportsDeclared(
       );
     }
   }
-}
-
-export function assertStackBinding(
-  stackTagTarget: string,
-  manifest: PactiaTomlManifest,
-): string {
-  const coordinate = resolveStackCoordinate(stackTagTarget);
-  if (!manifest.stackPackage) {
-    throw new PackageResolutionError(
-      PackageErrorCode.StackBindingMismatch,
-      `pactia.toml [stack].package is missing but product declares @stack ${stackTagTarget}`,
-    );
-  }
-  if (manifest.stackPackage !== coordinate) {
-    throw new PackageResolutionError(
-      PackageErrorCode.StackBindingMismatch,
-      `@stack ${stackTagTarget} resolves to '${coordinate}' but pactia.toml [stack].package is '${manifest.stackPackage}'`,
-    );
-  }
-  if (!manifest.dependencies.has(coordinate)) {
-    throw new PackageResolutionError(
-      PackageErrorCode.DependencyNotDeclared,
-      `Stack package '${coordinate}' is not declared in pactia.toml [dependencies]`,
-    );
-  }
-  return coordinate;
 }
 
 export function assertLockEntries(

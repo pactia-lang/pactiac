@@ -1,0 +1,22 @@
+{
+  "name": "@pactia/rust-anb",
+  "version": "1.0.0",
+  "kind": "stack",
+  "registry": {
+    "macros": [
+      {
+        "name": "paginated",
+        "in": ["service"],
+        "expandsTo": [
+          "modifiers.pageSize: 50",
+          "modifiers.paginated: true"
+        ]
+      },
+      {
+        "name": "list",
+        "in": ["service"],
+        "expandsTo": ["#[paginated]"]
+      }
+    ]
+  }
+}

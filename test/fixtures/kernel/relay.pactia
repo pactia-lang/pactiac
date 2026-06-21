@@ -1,0 +1,140 @@
+// Pactia 1.2 — Relay (canonical monolith; packages in test/fixtures/packages/)
+
+pactia 1.0
+
+import @pactia/kernel;
+import @pactia/protocol-rest;
+import @pactia/rust-anb;
+
+product Relay {
+  > B2B order relay between suppliers and retailers
+
+  #rust_anb
+
+  @topology {
+    mode: microservices,
+  }
+
+  @tenancy {
+    mode: single,
+  }
+
+  @guide {
+    > Handlers return errors via the platform envelope only
+    > List endpoints use cursor pagination — not offset
+  }
+
+  module orders {
+
+    @actor operators {
+      role: Operator,
+      capabilities: [manage_orders],
+    }
+
+    @rule single_supplier {
+      > Each order belongs to exactly one supplier.
+    }
+
+    @deploy orders {
+      @environment staging {
+        replicas: 2,
+        region: "eu-west-1",
+      },
+      @environment production {
+        replicas: 3,
+        region: "eu-west-1",
+      },
+      @gate production {
+        scenarios: pass,
+        coverage: ">= 80%",
+      },
+    }
+
+    @security orders {
+      > All order mutations must be audit-logged
+    }
+
+    model {
+      @enum OrderStatus {
+        values: [PENDING, FULFILLED],
+      }
+
+      @entity OrderListItem {
+        id: uuid,
+        sku: string,
+        status: OrderStatus,
+      }
+
+      @entity OrderListResponse {
+        orders: OrderListItem[],
+        @@nullable
+        nextCursor: string,
+      }
+
+      @entity CreateOrderRequest {
+        sku: string,
+        quantity: int,
+      }
+
+      @entity CreateOrderResponse {
+        orderId: uuid,
+      }
+
+      @entity Order {
+        @@pk
+        id: uuid,
+        sku: string,
+        quantity: int,
+        status: OrderStatus,
+        createdAt: datetime,
+      }
+    }
+
+    service OrderService {
+      #database
+      > Core order relay API
+
+      @auth { roles: [Operator] }
+
+      #list
+      @@output OrderListResponse
+      @api list_orders {
+        method: GET,
+        path: "/api/v1/orders",
+
+        @surface order_list {
+          platform: web,
+          screen: { id: order_list },
+          route: { path: "/orders" },
+          > Operator browses orders in a paginated table
+        }
+      }
+
+      #create
+      #idempotent
+      @@output CreateOrderResponse
+      @api create_order {
+        method: POST,
+        path: "/api/v1/orders",
+      }
+
+      @test operator_creates_order {
+        name: "Operator creates an order",
+        when: "Operator is logged in and POST /api/v1/orders with valid body",
+        then: "status is 201 and order.created is emitted",
+      }
+
+      @test operator_lists_orders {
+        name: "Operator lists orders",
+        when: "Operator is logged in and GET /api/v1/orders",
+        then: "status is 200 and response matches OrderListResponse",
+      }
+
+      @test unauthorized_create {
+        name: "Unauthorized create rejected",
+        when: "Anonymous POST /api/v1/orders",
+        then: "status is 403",
+      }
+    }
+  }
+}

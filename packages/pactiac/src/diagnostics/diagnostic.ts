@@ -1,14 +1,6 @@
-/** Compile-time provenance and diagnostic reporting (shared by pactiac and future lowerers). */
-
-export enum Provenance {
-  Pactia = "Pactia",
-  INFERRED = "INFERRED",
-  STACK_DEFAULT = "STACK_DEFAULT",
-  NOT_DERIVABLE = "NOT_DERIVABLE",
-}
-
-export interface Diagnostic {
-  readonly provenance: Provenance;
-  readonly target: string;
-  readonly message: string;
-}
+/**
+ * v0.1 provenance gap reporting — kept for YAML fleet prototype compatibility.
+ * v2 compiler diagnostics live in domain/diagnostics.ts (DiagnosticCode).
+ */
+export { Provenance } from "../domain/provenance.js";
+export type { ProvenanceGap as Diagnostic } from "../domain/diagnostics.js";

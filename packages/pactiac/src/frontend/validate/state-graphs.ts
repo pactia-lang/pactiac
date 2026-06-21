@@ -76,7 +76,7 @@ function resolveStateMachine(
   const entityField = parseEntityField(machine.entity);
   if (!entityField) {
     diagnostics.push({
-      provenance: Provenance.NOT_DERIVABLE,
+      provenance: Provenance.NotDerivable,
       target,
       message: `${StateGraphErrorCode.BindingInvalid}: @states ${machine.id} entity must be Entity.field`,
     });
@@ -86,7 +86,7 @@ function resolveStateMachine(
   const enumBinding = resolveEnumForField(mod.entities, mod.enums, entityField);
   if (!enumBinding) {
     diagnostics.push({
-      provenance: Provenance.NOT_DERIVABLE,
+      provenance: Provenance.NotDerivable,
       target,
       message: `${StateGraphErrorCode.BindingInvalid}: @states ${machine.id} entity ${machine.entity} does not resolve to an enum field`,
     });
@@ -99,7 +99,7 @@ function resolveStateMachine(
   for (const transition of machine.transitions) {
     if (!enumBinding.enumValues.has(transition.from) || !enumBinding.enumValues.has(transition.to)) {
       diagnostics.push({
-        provenance: Provenance.NOT_DERIVABLE,
+        provenance: Provenance.NotDerivable,
         target,
         message: `${StateGraphErrorCode.BindingInvalid}: @states ${machine.id} transition ${transition.from} → ${transition.to} uses values outside ${enumBinding.enumName}`,
       });
@@ -109,7 +109,7 @@ function resolveStateMachine(
     const key = edgeKey(transition.from, transition.to);
     if (seen.has(key)) {
       diagnostics.push({
-        provenance: Provenance.NOT_DERIVABLE,
+        provenance: Provenance.NotDerivable,
         target,
         message: `${StateGraphErrorCode.DuplicateTransition}: @states ${machine.id} repeats edge ${transition.from} → ${transition.to}`,
       });
@@ -138,7 +138,7 @@ function validateModuleStateGraphs(mod: KernelModule): Diagnostic[] {
     const existingId = bindings.get(bindingKey);
     if (existingId) {
       diagnostics.push({
-        provenance: Provenance.NOT_DERIVABLE,
+        provenance: Provenance.NotDerivable,
         target: `states.${machine.id}`,
         message: `${StateGraphErrorCode.MachineDuplicate}: @states ${machine.id} and @states ${existingId} both bind ${bindingKey}`,
       });
@@ -170,7 +170,7 @@ function validateModuleStateGraphs(mod: KernelModule): Diagnostic[] {
       );
       if (!validValues) {
         diagnostics.push({
-          provenance: Provenance.NOT_DERIVABLE,
+          provenance: Provenance.NotDerivable,
           target,
           message: `${StateGraphErrorCode.BindingInvalid}: @transition on @api ${endpoint.id} uses values not in any module state enum`,
         });
@@ -179,7 +179,7 @@ function validateModuleStateGraphs(mod: KernelModule): Diagnostic[] {
 
       if (!allEdges.has(key)) {
         diagnostics.push({
-          provenance: Provenance.NOT_DERIVABLE,
+          provenance: Provenance.NotDerivable,
           target,
           message: `${StateGraphErrorCode.TransitionUndefined}: @transition on @api ${endpoint.id} declares ${from} → ${to} but no @states block defines that edge`,
         });

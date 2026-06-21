@@ -1,0 +1,46 @@
+export service OrderService {
+  #database
+  > Core order relay API
+
+  @auth { roles: [Operator] }
+
+  #list
+  @@output OrderListResponse
+  @api list_orders {
+    method: GET,
+    path: "/api/v1/orders",
+
+    @surface order_list {
+      platform: web,
+      screen: { id: order_list },
+      route: { path: "/orders" },
+      > Operator browses orders in a paginated table
+    }
+  }
+
+  #create
+  #idempotent
+  @@output CreateOrderResponse
+  @api create_order {
+    method: POST,
+    path: "/api/v1/orders",
+  }
+
+  @test operator_creates_order {
+    name: "Operator creates an order",
+    when: "Operator is logged in and POST /api/v1/orders with valid body",
+    then: "status is 201 and order.created is emitted",
+  }
+
+  @test operator_lists_orders {
+    name: "Operator lists orders",
+    when: "Operator is logged in and GET /api/v1/orders",
+    then: "status is 200 and response matches OrderListResponse",
+  }
+
+  @test unauthorized_create {
+    name: "Unauthorized create rejected",
+    when: "Anonymous POST /api/v1/orders",
+    then: "status is 403",
+  }
+}

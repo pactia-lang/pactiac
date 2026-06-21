@@ -126,7 +126,7 @@ product Demo {
   assert.deepEqual(validateStateGraphs(program), []);
 });
 
-test("fleet fixture state graph validates cleanly", () => {
-  const source = readTestFixture(TestFixtureId.FleetManagementV2);
+test("relay fixture state graph validates cleanly", () => {
+  const source = readTestFixture(TestFixtureId.Relay);
   assert.deepEqual(validateStateGraphs(extractKernel(source)), []);
 });

@@ -1,5 +1,6 @@
 import { dirname, resolve } from "node:path";
 import { extractBlockAfter } from "../kernel/brace.js";
+import { hasAttachComposition, mergeAttachedWorkspace } from "./attach-merge.js";
 import type { MergedWorkspaceSource, WorkspaceFiles, WorkspaceModuleFiles } from "./types.js";
 
 const PRODUCT_FILE = "product.pactia";
@@ -129,6 +130,10 @@ function extractProductHeader(productSource: string): {
 }
 
 export function mergeWorkspaceSources(files: WorkspaceFiles): MergedWorkspaceSource {
+  if (hasAttachComposition(files.productSource)) {
+    return mergeAttachedWorkspace(files);
+  }
+
   const { versionLine, imports, productName, productBody } = extractProductHeader(files.productSource);
   const moduleBlocks = files.modules.map((mod) => buildModuleBlock(mod));
 

@@ -3,23 +3,30 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { readTestFixture, TestFixtureId } from "../../../../test/fixture-paths.js";
-import { compile } from "./compile.js";
+import { assembleWorkspace } from "../frontend/workspace/assemble.js";
+import { compileIrWorkspace } from "../lower/ir.js";
 
 const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..");
-const expectedRoot = join(repoRoot, "test/fixtures/expected/fleet");
+const expectedRoot = join(repoRoot, "test/fixtures/expected/relay");
+const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 
 const expectedFiles = [
-  "manifest.yaml",
-  "product.yaml",
-  "modules/fleet/fleet.module.yaml",
-  "modules/fleet/fleet.model.yaml",
-  "modules/fleet/services/fleet.service.yaml",
-  "modules/fleet/services/notification.service.yaml",
+  "input/manifest.json",
+  "input/product.json",
+  "input/modules/orders/orders.module.json",
+  "input/modules/orders/orders.model.json",
+  "input/modules/orders/services/order.service.json",
 ] as const;
 
-test("compile fleet fixture matches golden IR workspace", () => {
-  const source = readTestFixture(TestFixtureId.FleetManagementV2);
-  const { files } = compile(source);
+test("compile relay fixture matches golden IR workspace", () => {
+  const source = readTestFixture(TestFixtureId.Relay);
+  const assembled = assembleWorkspace(relayWorkspaceRoot);
+  const { files } = compileIrWorkspace(source, {
+    effectiveRegistry: assembled.effectiveRegistry,
+    packagesResolved: assembled.lockfileDigest !== undefined,
+    lockfileDigest: assembled.lockfileDigest,
+    loadedPackages: assembled.loadedPackages,
+  });
 
   assert.deepEqual([...files.keys()].sort(), [...expectedFiles].sort());
 
@@ -30,10 +37,10 @@ test("compile fleet fixture matches golden IR workspace", () => {
   }
 });
 
-test("compile fleet fixture validates against @pactia/schema", async () => {
+test("compile relay fixture validates against @pactia/schema", async () => {
   const { irWorkspaceSchema } = await import("@pactia/schema");
   const { compileIrWorkspace } = await import("../lower/ir.js");
-  const source = readTestFixture(TestFixtureId.FleetManagementV2);
+  const source = readTestFixture(TestFixtureId.Relay);
   const { workspace } = compileIrWorkspace(source);
   irWorkspaceSchema.parse(workspace);
 });

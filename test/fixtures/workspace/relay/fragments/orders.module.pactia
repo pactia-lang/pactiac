@@ -1,0 +1,29 @@
+export module orders {
+  @actor operators {
+    role: Operator,
+    capabilities: [manage_orders],
+  }
+
+  @rule single_supplier {
+    > Each order belongs to exactly one supplier.
+  }
+
+  @deploy orders {
+    @environment staging {
+      replicas: 2,
+      region: "eu-west-1",
+    },
+    @environment production {
+      replicas: 3,
+      region: "eu-west-1",
+    },
+    @gate production {
+      scenarios: pass,
+      coverage: ">= 80%",
+    },
+  }
+
+  @security orders {
+    > All order mutations must be audit-logged
+  }
+}

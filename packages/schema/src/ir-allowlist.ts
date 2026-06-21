@@ -1,11 +1,11 @@
 import { IrModuleRelativePattern, IrRootFile } from "./enums.js";
 
 const MODULE_FILE_PATTERN =
-  /^modules\/[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*\.module\.yaml$/;
+  /^input\/modules\/[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*\.module\.json$/;
 const MODEL_FILE_PATTERN =
-  /^modules\/[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*\.model\.yaml$/;
+  /^input\/modules\/[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*\.model\.json$/;
 const SERVICE_FILE_PATTERN =
-  /^modules\/[a-z0-9]+(?:-[a-z0-9]+)*\/services\/[a-z0-9]+(?:-[a-z0-9]+)*\.service\.yaml$/;
+  /^input\/modules\/[a-z0-9]+(?:-[a-z0-9]+)*\/services\/[a-z0-9]+(?:-[a-z0-9]+)*\.service\.json$/;
 
 const PLACEHOLDER_MODULE = "{moduleKebab}";
 const PLACEHOLDER_SERVICE = "{serviceKebab}";

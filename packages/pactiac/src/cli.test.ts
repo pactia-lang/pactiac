@@ -7,28 +7,28 @@ import { test } from "node:test";
 import { readTestFixture, TestFixtureId } from "../../../test/fixture-paths.js";
 
 const cliPath = resolve(import.meta.dirname, "../dist/cli.js");
-const fleetFixture = resolve(import.meta.dirname, "../../../test/fixtures/kernel/fleet-management-v2.pactia");
+const relayFixture = resolve(import.meta.dirname, "../../../test/fixtures/kernel/relay.pactia");
 
 test("cli compile writes IR workspace files to output directory", () => {
   const outputDir = mkdtempSync(join(tmpdir(), "pactiac-cli-"));
   try {
     const result = spawnSync(
       process.execPath,
-      [cliPath, "compile", "-i", fleetFixture, "-o", outputDir],
+      [cliPath, "compile", "-i", relayFixture, "-o", outputDir],
       { encoding: "utf8" },
     );
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /wrote manifest\.yaml/);
-    assert.match(readFileSync(join(outputDir, "manifest.yaml"), "utf8"), /pactiaVersion: "1.0"/);
-    assert.match(readFileSync(join(outputDir, "product.yaml"), "utf8"), /FleetManagement/);
+    assert.match(result.stdout, /wrote input\/manifest\.json/);
+    assert.match(readFileSync(join(outputDir, "input/manifest.json"), "utf8"), /"pactiaVersion": "1.0"/);
+    assert.match(readFileSync(join(outputDir, "input/product.json"), "utf8"), /Relay/);
   } finally {
     rmSync(outputDir, { recursive: true, force: true });
   }
 });
 
 test("cli compile -w writes IR from multi-file workspace", () => {
-  const workspaceRoot = resolve(import.meta.dirname, "../../../test/fixtures/workspace/fleet");
+  const workspaceRoot = resolve(import.meta.dirname, "../../../test/fixtures/workspace/relay");
   const outputDir = mkdtempSync(join(tmpdir(), "pactiac-cli-ws-"));
   try {
     const result = spawnSync(
@@ -38,8 +38,8 @@ test("cli compile -w writes IR from multi-file workspace", () => {
     );
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /wrote modules\/fleet\/services\/fleet\.service\.yaml/);
-    assert.match(readFileSync(join(outputDir, "manifest.yaml"), "utf8"), /lockfileDigest: sha256:/);
+    assert.match(result.stdout, /wrote input\/modules\/orders\/services\/order\.service\.json/);
+    assert.match(readFileSync(join(outputDir, "input/manifest.json"), "utf8"), /"lockfileDigest": "sha256:/);
   } finally {
     rmSync(outputDir, { recursive: true, force: true });
   }
@@ -54,7 +54,7 @@ test("cli compile rejects missing required flags", () => {
 test("cli compile rejects both -i and -w", () => {
   const result = spawnSync(
     process.execPath,
-    [cliPath, "compile", "-i", fleetFixture, "-w", ".", "-o", "/tmp/out"],
+    [cliPath, "compile", "-i", relayFixture, "-w", ".", "-o", "/tmp/out"],
     { encoding: "utf8" },
   );
   assert.notEqual(result.status, 0);
@@ -66,7 +66,7 @@ test("cli compile writes provenance report when requested", () => {
   const provenancePath = join(outputDir, "provenance.json");
   const sourcePath = join(outputDir, "input.pactia");
   try {
-    const source = readTestFixture(TestFixtureId.FleetManagementV2);
+    const source = readTestFixture(TestFixtureId.Relay);
     writeFileSync(sourcePath, source, "utf8");
 
     const result = spawnSync(

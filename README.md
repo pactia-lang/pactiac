@@ -43,7 +43,7 @@ npm run build
 npm test
 ```
 
-Golden tests bundle [fleet-management-v2.pactia](test/fixtures/kernel/fleet-management-v2.pactia) (synced from [pactia-lang/spec](https://github.com/pactia-lang/spec)). Override the input fixture root with:
+Golden tests bundle [relay.pactia](test/fixtures/kernel/relay.pactia) (synced from [pactia-lang/spec](https://github.com/pactia-lang/spec)). Override the input fixture root with:
 
 ```bash
 export PACTIA_SPEC_ROOT=/path/to/spec
@@ -75,9 +75,9 @@ pactiac/
   test/
     fixtures/
       kernel/               bundled .pactia input
-      workspace/fleet/      multi-file workspace fixture
+      workspace/relay/      multi-file workspace fixture
       packages/             shared vendored package stubs for tests
-      expected/fleet/       golden IR workspace output
+      expected/relay/       golden IR workspace output
     fixture-paths.ts
   .githooks/                  pre-commit (test), pre-push (IR schema drift)
   scripts/

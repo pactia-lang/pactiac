@@ -21,6 +21,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Fleet product/service tag validation:** JSON Schema bodies for `@topology`, `@tenancy`, `@guide`, `@security`, `@surface`, and `@test`; `@must` schema bundled for future obligation extraction.
 - **Complete kernel tag validation:** all 41 kernel tags validated — `@bind`, `@compliance`, `@environment`, `@gate`, `@retain`, `@encrypt`, `@must` extraction and instances; catalog detects `oneOf`/`anyOf` normative schemas.
 - **State graph validation (phase 10):** `validateStateGraphs` checks `@states` enum bindings, duplicate edges, and `@transition` on `@api` against module state machines.
+- **Inference (phase 11):** `applyInference` derives integration wire bodies from `maps_to`, `#[owner]` FK fields, and `#[create]` / `#[detail]` / `#[list]` request/response when tags are omitted.
 
 ### Changed
 

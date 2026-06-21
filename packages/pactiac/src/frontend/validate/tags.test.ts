@@ -88,11 +88,11 @@ product X { @stack rust-anb { }
   assert.ok(diagnostics.some((d) => d.target.includes("api.broken")));
 });
 
-test("validateKernelTags passes fleet-management-v2 fixture", () => {
+test("validateKernelTags passes relay fixture", () => {
   const catalog = loadKernelTagCatalog();
   assert.ok(catalog);
 
-  const program = extractKernel(readTestFixture(TestFixtureId.FleetManagementV2));
+  const program = extractKernel(readTestFixture(TestFixtureId.Relay));
   assert.equal(validateKernelTags(program, catalog).length, 0);
 });
 

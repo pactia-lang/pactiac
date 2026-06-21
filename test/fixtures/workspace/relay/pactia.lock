@@ -1,0 +1,16 @@
+lockVersion = 1
+
+[[package]]
+name = "@pactia/kernel"
+version = "1.0.0"
+digest = "sha256:8c1e2f3a4b5c6d7e8f901234567890abcdef1234567890abcdef1234567890ab"
+
+[[package]]
+name = "@pactia/protocol-rest"
+version = "1.0.0"
+digest = "sha256:a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+
+[[package]]
+name = "@pactia/rust-anb"
+version = "1.0.0"
+digest = "sha256:b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678"

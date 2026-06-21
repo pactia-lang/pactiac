@@ -52,7 +52,7 @@ function printProvenanceSummary(diagnostics: CompileResult["diagnostics"]): void
 }
 
 function printNotDerivable(diagnostics: CompileResult["diagnostics"]): void {
-  const gaps = diagnostics.filter((d) => d.provenance === Provenance.NOT_DERIVABLE);
+  const gaps = diagnostics.filter((d) => d.provenance === Provenance.NotDerivable);
   if (gaps.length === 0) return;
   process.stdout.write("\nNOT_DERIVABLE (invented by any hand-authored golden):\n");
   for (const gap of gaps) {

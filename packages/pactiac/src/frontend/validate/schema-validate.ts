@@ -49,7 +49,7 @@ export function validateTagSchemas(
       validate = getValidator(entry.schemaPath);
     } catch {
       diagnostics.push({
-        provenance: Provenance.NOT_DERIVABLE,
+        provenance: Provenance.NotDerivable,
         target: `tag.${instance.tag}.${instance.target}`,
         message: `${TagValidationErrorCode.TagSchemaMissing}: could not load schema for @${instance.tag}`,
       });
@@ -61,7 +61,7 @@ export function validateTagSchemas(
         .map((error: ErrorObject) => `${error.instancePath || "/"} ${error.message ?? "invalid"}`)
         .join("; ");
       diagnostics.push({
-        provenance: Provenance.NOT_DERIVABLE,
+        provenance: Provenance.NotDerivable,
         target: `tag.${instance.tag}.${instance.target}`,
         message: `${TagValidationErrorCode.TagBodyInvalid}: @${instance.tag} ${instance.target} — ${detail}`,
       });

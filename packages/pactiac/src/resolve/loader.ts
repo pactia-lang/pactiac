@@ -10,6 +10,7 @@ export interface LoadedPackage {
   readonly digest: string;
   readonly rootDir: string;
   readonly manifestSource: string | undefined;
+  readonly indexSource: string | undefined;
 }
 
 function readOptional(path: string): string | undefined {
@@ -37,7 +38,7 @@ export function loadVendoredPackage(
     const dir = join(vendorRoot, packageDirName(coordinate, lockEntry.version));
     if (!existsSync(dir)) continue;
 
-    const manifestPath = join(dir, "pactia.package.yaml");
+    const manifestPath = join(dir, "pactia.package.json");
     const tarballDigestPath = join(dir, ".digest");
     const onDiskDigest = readOptional(tarballDigestPath);
     if (onDiskDigest && onDiskDigest.trim() !== lockEntry.digest) {
@@ -53,6 +54,7 @@ export function loadVendoredPackage(
       digest: lockEntry.digest,
       rootDir: dir,
       manifestSource: readOptional(manifestPath),
+      indexSource: readOptional(join(dir, "index.pactia")),
     };
   }
 
@@ -67,7 +69,7 @@ export function hashDirectoryMarker(rootDir: string): string {
   if (existsSync(marker)) {
     return readFileSync(marker, "utf8").trim();
   }
-  const manifest = readOptional(join(rootDir, "pactia.package.yaml")) ?? "";
+  const manifest = readOptional(join(rootDir, "pactia.package.json")) ?? "";
   const hash = createHash("sha256").update(manifest, "utf8").digest("hex");
   return `sha256:${hash}`;
 }

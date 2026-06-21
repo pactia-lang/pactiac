@@ -2,11 +2,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Ajv2020, type ErrorObject, type ValidateFunction } from "ajv/dist/2020.js";
-import { parse as parseYaml } from "yaml";
 import type { Diagnostic } from "../../diagnostics/diagnostic.js";
 import { Provenance } from "../../diagnostics/diagnostic.js";
 import type { KernelProgram } from "../kernel/extract.js";
 import type { LoadedPackage } from "../../resolve/loader.js";
+import { parsePackageManifest, registryBlockFromManifest } from "../../resolve/package-manifest.js";
 
 export enum ProtocolWireErrorCode {
   WireInvalid = "WIRE_INVALID",
@@ -64,11 +64,14 @@ function packageDirName(coordinate: string, version = "1.0.0"): string {
 
 function wireSchemaRelativeFromManifest(manifestSource: string | undefined): string {
   if (!manifestSource) return DEFAULT_WIRE_SCHEMA_RELATIVE;
-  const parsed = parseYaml(manifestSource);
-  if (!isRecord(parsed)) return DEFAULT_WIRE_SCHEMA_RELATIVE;
-  const registry = isRecord(parsed["registry"]) ? parsed["registry"] : parsed;
-  const wireSchema = registry["wireSchema"];
-  return typeof wireSchema === "string" ? wireSchema : DEFAULT_WIRE_SCHEMA_RELATIVE;
+  try {
+    const parsed = parsePackageManifest(manifestSource);
+    const registry = registryBlockFromManifest(parsed);
+    const wireSchema = registry["wireSchema"];
+    return typeof wireSchema === "string" ? wireSchema : DEFAULT_WIRE_SCHEMA_RELATIVE;
+  } catch {
+    return DEFAULT_WIRE_SCHEMA_RELATIVE;
+  }
 }
 
 export function resolveProtocolRestPackageRoot(
@@ -91,7 +94,7 @@ export function resolveProtocolRestWireSchemaPath(
   const packageRoot = resolveProtocolRestPackageRoot(loadedPackages);
   if (!packageRoot) return undefined;
 
-  const manifestPath = join(packageRoot, "pactia.package.yaml");
+  const manifestPath = join(packageRoot, "pactia.package.json");
   const manifestSource = existsSync(manifestPath) ? readFileSync(manifestPath, "utf8") : undefined;
   const relative = wireSchemaRelativeFromManifest(manifestSource);
   const schemaPath = join(packageRoot, relative);
@@ -114,7 +117,7 @@ export function validateProtocolRestWire(
   if (!schemaPath) {
     return [
       {
-        provenance: Provenance.NOT_DERIVABLE,
+        provenance: Provenance.NotDerivable,
         target: "import.protocol-rest",
         message: `${ProtocolWireErrorCode.WireSchemaMissing}: @pactia/protocol-rest wire schema not found`,
       },
@@ -136,7 +139,7 @@ export function validateProtocolRestWire(
             .map((error: ErrorObject) => `${error.instancePath || "/"} ${error.message ?? "invalid"}`)
             .join("; ");
           diagnostics.push({
-            provenance: Provenance.NOT_DERIVABLE,
+            provenance: Provenance.NotDerivable,
             target: `wire.protocol-rest.${endpoint.id}`,
             message: `${ProtocolWireErrorCode.WireInvalid}: @api ${endpoint.id} — ${detail}`,
           });
