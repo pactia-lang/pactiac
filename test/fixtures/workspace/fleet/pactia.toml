@@ -1,6 +1,0 @@
-[stack]
-package = "@pactia/rust-anb"
-
-[dependencies]
-"@pactia/protocol-rest" = "^1.0"
-"@pactia/rust-anb" = "^1.0"

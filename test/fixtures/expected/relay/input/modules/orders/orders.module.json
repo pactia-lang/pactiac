@@ -1,0 +1,24 @@
+{
+  "module": {
+    "name": "orders",
+    "actors": [
+      {
+        "id": "operators",
+        "role": "Operator",
+        "capabilities": [
+          "manage_orders"
+        ]
+      }
+    ],
+    "rules": [
+      {
+        "id": "single_supplier",
+        "text": "Each order belongs to exactly one supplier."
+      }
+    ],
+    "integrations": [],
+    "events": [],
+    "eventHandlers": [],
+    "dependsOn": []
+  }
+}

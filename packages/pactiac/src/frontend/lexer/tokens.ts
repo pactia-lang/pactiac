@@ -18,6 +18,8 @@ export enum TokenType {
   LT = "LT",
   LPAREN = "LPAREN",
   RPAREN = "RPAREN",
+  SEMICOLON = "SEMICOLON",
+  EQUALS = "EQUALS",
   EOF = "EOF",
 }
 
@@ -54,6 +56,8 @@ const SINGLE_CHAR_TOKENS: Readonly<Record<string, TokenType>> = {
   "<": TokenType.LT,
   "(": TokenType.LPAREN,
   ")": TokenType.RPAREN,
+  ";": TokenType.SEMICOLON,
+  "=": TokenType.EQUALS,
 };
 
 function isIdentStart(ch: string): boolean {
@@ -156,6 +160,14 @@ export function tokenize(source: string): Token[] {
       advance();
       advance();
       tokens.push({ type: TokenType.ARROW, value: "->", line: startLine, col: startCol });
+      continue;
+    }
+
+    // Relative path: ./foo or ../foo
+    if (ch === "." && (source[i + 1] === "/" || source[i + 1] === ".")) {
+      let value = "";
+      while (i < source.length && isPathPart(source[i] ?? "")) value += advance();
+      tokens.push({ type: TokenType.PATH, value, line: startLine, col: startCol });
       continue;
     }
 

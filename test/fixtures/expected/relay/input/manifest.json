@@ -1,0 +1,23 @@
+{
+  "manifest": {
+    "pactiaVersion": "1.0",
+    "compiledAt": "1970-01-01T00:00:00.000Z",
+    "entry": "product.pactia",
+    "lockfileDigest": "sha256:70f16ae125e0e49416bc78a421b996573e7951a7151a99655131d488ee924c7c",
+    "modules": [
+      {
+        "name": "orders",
+        "path": "modules/orders/",
+        "module": "orders.module.json",
+        "model": "orders.model.json",
+        "services": [
+          {
+            "name": "order",
+            "file": "services/order.service.json"
+          }
+        ]
+      }
+    ],
+    "references": []
+  }
+}

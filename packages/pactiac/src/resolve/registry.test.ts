@@ -11,7 +11,7 @@ import {
 
 function stubPackage(
   coordinate: string,
-  manifestSource: string | undefined,
+    manifestSource: string | undefined,
 ): LoadedPackage {
   return {
     coordinate,
@@ -19,18 +19,23 @@ function stubPackage(
     digest: "sha256:abc",
     rootDir: "/tmp",
     manifestSource,
+    indexSource: undefined,
   };
 }
 
-test("parsePackageMacros reads registry.macros expands_to", () => {
+test("parsePackageMacros reads registry.macros expandsTo", () => {
   const macros = parsePackageMacros(
-    `registry:
-  macros:
-    - name: paginated
-      version: 1
-      expands_to:
-        - "modifiers.pageSize: 50"
-        - "modifiers.paginated: true"`,
+    JSON.stringify({
+      registry: {
+        macros: [
+          {
+            name: "paginated",
+            version: 1,
+            expandsTo: ["modifiers.pageSize: 50", "modifiers.paginated: true"],
+          },
+        ],
+      },
+    }),
     "@pactia/rust-anb",
     RegistryMacroTier.Stack,
   );
@@ -49,21 +54,25 @@ test("buildEffectiveRegistry applies stack over std import", () => {
     loaded: [
       stubPackage(
         "@pactia/api-patterns",
-        `registry:
-  macros:
-    - name: paginated
-      expands_to:
-        - "modifiers.pageSize: 20"`,
+        JSON.stringify({
+          registry: {
+            macros: [{ name: "paginated", expandsTo: ["modifiers.pageSize: 20"] }],
+          },
+        }),
       ),
       stubPackage("@pactia/protocol-rest", undefined),
       stubPackage(
         "@pactia/rust-anb",
-        `registry:
-  macros:
-    - name: paginated
-      expands_to:
-        - "modifiers.pageSize: 50"
-        - "modifiers.paginated: true"`,
+        JSON.stringify({
+          registry: {
+            macros: [
+              {
+                name: "paginated",
+                expandsTo: ["modifiers.pageSize: 50", "modifiers.paginated: true"],
+              },
+            ],
+          },
+        }),
       ),
     ],
   });
@@ -86,19 +95,15 @@ test("buildEffectiveRegistry rejects import macro collisions", () => {
         loaded: [
           stubPackage(
             "@pactia/pkg-a",
-            `registry:
-  macros:
-    - name: list
-      expands_to:
-        - "#[paginated]"`,
+            JSON.stringify({
+              registry: { macros: [{ name: "list", expandsTo: ["#[paginated]"] }] },
+            }),
           ),
           stubPackage(
             "@pactia/pkg-b",
-            `registry:
-  macros:
-    - name: list
-      expands_to:
-        - "#[detail]"`,
+            JSON.stringify({
+              registry: { macros: [{ name: "list", expandsTo: ["#[detail]"] }] },
+            }),
           ),
           stubPackage("@pactia/rust-anb", undefined),
         ],

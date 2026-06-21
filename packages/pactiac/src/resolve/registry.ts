@@ -1,6 +1,6 @@
-import { parse as parseYaml } from "yaml";
 import type { LoadedPackage } from "./loader.js";
 import { normalizePackageCoordinate } from "./manifest.js";
+import { parsePackageManifest, registryBlockFromManifest } from "./package-manifest.js";
 
 export enum RegistryMacroTier {
   StdImport = "std-import",
@@ -59,10 +59,14 @@ export function parsePackageMacros(
 ): RegistryMacroDefinition[] {
   if (!manifestSource) return [];
 
-  const parsed = parseYaml(manifestSource);
-  if (!isRecord(parsed)) return [];
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = parsePackageManifest(manifestSource);
+  } catch {
+    return [];
+  }
 
-  const registryBlock = isRecord(parsed["registry"]) ? parsed["registry"] : parsed;
+  const registryBlock = registryBlockFromManifest(parsed);
   const macrosRaw = registryBlock["macros"];
   if (!Array.isArray(macrosRaw)) return [];
 
@@ -79,7 +83,7 @@ function isStdPackage(coordinate: string): boolean {
 }
 
 export interface BuildEffectiveRegistryInput {
-  readonly stackCoordinate: string;
+  readonly stackCoordinate?: string;
   readonly importCoordinates: readonly string[];
   readonly loaded: readonly LoadedPackage[];
 }
@@ -116,7 +120,9 @@ function registerImportTier(
  */
 export function buildEffectiveRegistry(input: BuildEffectiveRegistryInput): EffectiveRegistry {
   const macros = new Map<string, RegistryMacroDefinition>();
-  const stackCoordinate = normalizePackageCoordinate(input.stackCoordinate);
+  const stackCoordinate = input.stackCoordinate
+    ? normalizePackageCoordinate(input.stackCoordinate)
+    : undefined;
 
   const importPackages = input.importCoordinates
     .map((coordinate) => packageByCoordinate(input.loaded, normalizePackageCoordinate(coordinate)))
@@ -129,7 +135,7 @@ export function buildEffectiveRegistry(input: BuildEffectiveRegistryInput): Effe
   registerImportTier(macros, stdPackages, RegistryMacroTier.StdImport);
   registerImportTier(macros, otherPackages, RegistryMacroTier.Import);
 
-  const stackPackage = packageByCoordinate(input.loaded, stackCoordinate);
+  const stackPackage = stackCoordinate ? packageByCoordinate(input.loaded, stackCoordinate) : undefined;
   if (stackPackage) {
     for (const macro of parsePackageMacros(
       stackPackage.manifestSource,

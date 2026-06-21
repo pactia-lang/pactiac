@@ -5,53 +5,55 @@ import { compile } from "../../compile/compile.js";
 import { parseThenClause, parseWhenClause } from "./clauses.js";
 import { extractScenarios } from "./extract-tests.js";
 
-const fleetSource = readTestFixture(TestFixtureId.FleetManagementV2);
+const relaySource = readTestFixture(TestFixtureId.Relay);
 
-test("extractScenarios finds FleetService acceptance scenarios", () => {
-  const scenarios = extractScenarios(fleetSource);
+test("extractScenarios finds OrderService acceptance scenarios", () => {
+  const scenarios = extractScenarios(relaySource);
   assert.equal(scenarios.length, 3);
-  assert.equal(scenarios[0]!.service, "FleetService");
-  assert.equal(scenarios[0]!.name, "Admin registers a vehicle");
-  assert.match(scenarios[0]!.whenText ?? "", /POST \/api\/v1\/vehicles/);
-  assert.match(scenarios[2]!.whenText ?? "", /as owner/);
+  assert.equal(scenarios[0]!.service, "OrderService");
+  assert.equal(scenarios[0]!.name, "Operator creates an order");
+  assert.match(scenarios[0]!.whenText ?? "", /POST \/api\/v1\/orders/);
+  assert.match(scenarios[1]!.whenText ?? "", /GET \/api\/v1\/orders/);
 });
 
 test("parseWhenClause normalizes actor, auth, ownership, and HTTP call", () => {
   const parsed = parseWhenClause(
-    "Customer is logged in as owner and GET /api/v1/vehicles",
+    "Operator is logged in and GET /api/v1/orders",
   );
-  assert.equal(parsed.given.actor, "Customer");
+  assert.equal(parsed.given.actor, "Operator");
   assert.equal(parsed.given.auth, "logged_in");
-  assert.equal(parsed.given.ownership, "owner");
   assert.equal(parsed.when.method, "GET");
-  assert.equal(parsed.when.path, "/api/v1/vehicles");
+  assert.equal(parsed.when.path, "/api/v1/orders");
 });
 
 test("parseThenClause normalizes status, body ref, and kafka emit", () => {
   const parsed = parseThenClause(
-    "status is 201 and vehicle.created is emitted",
+    "status is 201 and order.created is emitted",
   );
   assert.equal(parsed.httpStatus, "201");
-  assert.equal(parsed.kafkaEmits, "vehicle.created");
+  assert.equal(parsed.kafkaEmits, "order.created");
 });
 
-test("compile fleet fixture emits module-scoped service YAML with scenarios", () => {
-  const { files } = compile(fleetSource);
-  const fleetService = files.get("modules/fleet/services/fleet.service.yaml") ?? "";
+test("compile relay fixture emits module-scoped service JSON with scenarios", () => {
+  const { files } = compile(relaySource);
+  const orderService = files.get("input/modules/orders/services/order.service.json") ?? "";
+  const parsed = JSON.parse(orderService) as {
+    service: { scenarios: Array<{ name: string; when?: { method?: string } }> };
+  };
 
-  assert.match(fleetService, /name: Admin registers a vehicle/);
-  assert.match(fleetService, /service: FleetService/);
-  assert.match(fleetService, /method: POST/);
-  assert.match(fleetService, /path: \/api\/v1\/vehicles/);
-  assert.match(fleetService, /httpStatus: "403"/);
-  assert.match(fleetService, /bodyRef: VehicleListResponse/);
-  assert.match(fleetService, /kafkaEmits: vehicle\.created/);
-  assert.match(fleetService, /provenance: Pactia/);
+  assert.equal(parsed.service.scenarios[0]?.name, "Operator creates an order");
+  assert.match(orderService, /OrderService/);
+  assert.match(orderService, /"method": "POST"/);
+  assert.match(orderService, /"path": "\/api\/v1\/orders"/);
+  assert.match(orderService, /"httpStatus": "403"/);
+  assert.match(orderService, /"bodyRef": "OrderListResponse"/);
+  assert.match(orderService, /"kafkaEmits": "order\.created"/);
+  assert.match(orderService, /"provenance": "Pactia"/);
 });
 
 test("compile is deterministic", () => {
-  const first = compile(fleetSource);
-  const second = compile(fleetSource);
+  const first = compile(relaySource);
+  const second = compile(relaySource);
   for (const path of first.files.keys()) {
     assert.equal(first.files.get(path), second.files.get(path));
   }

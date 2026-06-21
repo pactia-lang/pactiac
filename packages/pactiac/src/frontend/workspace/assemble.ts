@@ -17,11 +17,7 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
   const files = discoverWorkspace(rootDir);
   const merged = mergeWorkspaceSources(files);
   const kernel = extractKernel(merged.source);
-  const resolved = resolveWorkspacePackages(
-    files,
-    kernel.imports,
-    kernel.product.stackPackage,
-  );
+  const resolved = resolveWorkspacePackages(files, kernel.imports);
 
   return {
     merged: {

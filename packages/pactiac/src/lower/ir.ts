@@ -4,7 +4,7 @@ import {
   ScenarioProvenance,
 } from "@pactia/schema";
 import { type Diagnostic, Provenance } from "../diagnostics/diagnostic.js";
-import { emitYaml } from "../emit/yaml.js";
+import { emitJson } from "../adapters/json-emitter.js";
 import { validateKernelTags } from "../frontend/validate/tags.js";
 import { validateProtocolRestWire } from "../frontend/validate/protocol-wire.js";
 import { validateStateGraphs } from "../frontend/validate/state-graphs.js";
@@ -12,8 +12,10 @@ import { lowerScenarios } from "../frontend/scenarios/lower.js";
 import { parseThenClause, parseWhenClause } from "../frontend/scenarios/clauses.js";
 import { extractKernel, type KernelDeploy, type KernelEndpoint, type KernelProgram, type KernelModule } from "../frontend/kernel/extract.js";
 import { serviceFileStem } from "../frontend/kernel/text.js";
+import { normalizePackageCoordinate } from "../resolve/manifest.js";
 import { BuiltinMacro, expandEndpointMacros, parseMacroName } from "./macros.js";
 import { collectManifestReferences } from "./references.js";
+import { applyInference } from "./infer.js";
 import type { EffectiveRegistry } from "../resolve/registry.js";
 import type { LoadedPackage } from "../resolve/loader.js";
 
@@ -227,7 +229,10 @@ function aggregateSecurity(modules: readonly KernelModule[]): Record<string, unk
   };
 }
 
-export function lowerIrWorkspace(program: KernelProgram, options: LowerIrOptions = {}): IrWorkspace {
+export function buildIrWorkspace(
+  program: KernelProgram,
+  options: LowerIrOptions = {},
+): Record<string, unknown> {
   const effectiveRegistry = options.effectiveRegistry;
   const moduleBundles = program.modules.map((module) => ({
     module: lowerModuleSlice(module),
@@ -240,15 +245,15 @@ export function lowerIrWorkspace(program: KernelProgram, options: LowerIrOptions
   const manifestModules = program.modules.map((module) => ({
     name: module.name,
     path: `modules/${module.name}/`,
-    module: `${module.name}.module.yaml`,
-    model: `${module.name}.model.yaml`,
+    module: `${module.name}.module.json`,
+    model: `${module.name}.model.json`,
     services: module.services.map((service) => ({
       name: serviceFileStem(service.name),
-      file: `services/${serviceFileStem(service.name)}.service.yaml`,
+      file: `services/${serviceFileStem(service.name)}.service.json`,
     })),
   }));
 
-  const workspace: IrWorkspace = {
+  return {
     manifest: {
       manifest: {
         pactiaVersion: program.version,
@@ -263,7 +268,9 @@ export function lowerIrWorkspace(program: KernelProgram, options: LowerIrOptions
       product: {
         name: program.product.name,
         description: program.product.description,
-        stackId: `@pactia/${program.product.stackPackage}`,
+        stackId: program.product.stackPackage
+          ? normalizePackageCoordinate(program.product.stackPackage)
+          : "unknown",
         topology: program.product.topologyMode
           ? { mode: program.product.topologyMode }
           : undefined,
@@ -301,27 +308,28 @@ export function lowerIrWorkspace(program: KernelProgram, options: LowerIrOptions
     },
     modules: moduleBundles,
   };
+}
 
+export function lowerIrWorkspace(program: KernelProgram, options: LowerIrOptions = {}): IrWorkspace {
+  const workspace = buildIrWorkspace(program, options);
+  applyInference(program, workspace);
   return irWorkspaceSchema.parse(workspace);
 }
 
 export function emitIrWorkspace(workspace: IrWorkspace): Map<string, string> {
   const files = new Map<string, string>();
-  files.set("manifest.yaml", emitYaml(workspace.manifest));
-  files.set("product.yaml", emitYaml(workspace.product));
+  files.set("input/manifest.json", emitJson(workspace.manifest));
+  files.set("input/product.json", emitJson(workspace.product));
 
   for (const moduleBundle of workspace.modules) {
     const moduleName = moduleBundle.module.module.name;
-    const moduleBase = `modules/${moduleName}`;
-    files.set(`${moduleBase}/${moduleName}.module.yaml`, emitYaml(moduleBundle.module));
-    files.set(`${moduleBase}/${moduleName}.model.yaml`, emitYaml(moduleBundle.model));
+    const moduleBase = `input/modules/${moduleName}`;
+    files.set(`${moduleBase}/${moduleName}.module.json`, emitJson(moduleBundle.module));
+    files.set(`${moduleBase}/${moduleName}.model.json`, emitJson(moduleBundle.model));
 
     for (const serviceSlice of moduleBundle.services) {
       const stem = serviceFileStem(serviceSlice.service.name);
-      files.set(
-        `${moduleBase}/services/${stem}.service.yaml`,
-        emitYaml(serviceSlice),
-      );
+      files.set(`${moduleBase}/services/${stem}.service.json`, emitJson(serviceSlice));
     }
   }
 
@@ -337,15 +345,17 @@ export function compileIrWorkspace(
   diagnostics: Diagnostic[];
 } {
   const program = extractKernel(source);
-  const workspace = lowerIrWorkspace(program, options);
+  const workspaceDraft = buildIrWorkspace(program, options);
+  const inferenceResult = applyInference(program, workspaceDraft);
+  const workspace = irWorkspaceSchema.parse(workspaceDraft);
   const files = emitIrWorkspace(workspace);
 
-  const diagnostics: Diagnostic[] = [];
+  const diagnostics: Diagnostic[] = [...inferenceResult.diagnostics];
 
   const protocolRestImported = program.imports.includes("@pactia/protocol-rest");
   if (!protocolRestImported) {
     diagnostics.push({
-      provenance: Provenance.NOT_DERIVABLE,
+      provenance: Provenance.NotDerivable,
       target: "import.protocol-rest",
       message: "REST wire validation skipped — @pactia/protocol-rest not imported",
     });
@@ -366,7 +376,7 @@ export function compileIrWorkspace(
   );
   if (macroEndpoints.length > 0) {
     diagnostics.push({
-      provenance: Provenance.NOT_DERIVABLE,
+      provenance: Provenance.NotDerivable,
       target: "macro.expansion",
       message: `Unknown macros: ${macroEndpoints.join(", ")}`,
     });

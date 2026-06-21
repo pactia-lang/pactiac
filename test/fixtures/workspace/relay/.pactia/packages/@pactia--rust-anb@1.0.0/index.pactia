@@ -1,0 +1,15 @@
+pactia 1.0
+// Package: @pactia/rust-anb
+
+export def #rust_anb in product {
+  > Rust / Actix / Node stack profile for Relay
+}
+
+export def #paginated in service {
+  modifiers.pageSize: 50,
+  modifiers.paginated: true,
+}
+
+export def #list in service {
+  #paginated
+}

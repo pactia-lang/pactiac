@@ -12,8 +12,9 @@ test("compile rejects unsupported pactia versions", () => {
 test("compile accepts pactia 1.0 patch versions", () => {
   const result = compile(`pactia 1.0.1\nproduct X {
     module m {
-      #[database]
-      service S { }
+      service S {
+        #[database]
+      }
     }
   }`);
   assert.ok(result.files.size > 0);

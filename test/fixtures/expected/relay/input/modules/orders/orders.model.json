@@ -1,0 +1,128 @@
+{
+  "model": {
+    "name": "orders",
+    "entities": [
+      {
+        "name": "OrderListItem",
+        "fields": [
+          {
+            "name": "id",
+            "type": "UUID",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "sku",
+            "type": "STRING",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "status",
+            "type": "ORDERSTATUS",
+            "array": false,
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "OrderListResponse",
+        "fields": [
+          {
+            "name": "orders",
+            "type": "ORDERLISTITEM",
+            "array": true,
+            "optional": false
+          },
+          {
+            "name": "nextCursor",
+            "type": "STRING",
+            "array": false,
+            "optional": true,
+            "annotations": {
+              "nullable": true
+            }
+          }
+        ]
+      },
+      {
+        "name": "CreateOrderRequest",
+        "fields": [
+          {
+            "name": "sku",
+            "type": "STRING",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "quantity",
+            "type": "INTEGER",
+            "array": false,
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "CreateOrderResponse",
+        "fields": [
+          {
+            "name": "orderId",
+            "type": "UUID",
+            "array": false,
+            "optional": false
+          }
+        ]
+      },
+      {
+        "name": "Order",
+        "fields": [
+          {
+            "name": "id",
+            "type": "UUID",
+            "array": false,
+            "optional": false,
+            "annotations": {
+              "primary": true
+            }
+          },
+          {
+            "name": "sku",
+            "type": "STRING",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "quantity",
+            "type": "INTEGER",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "status",
+            "type": "ORDERSTATUS",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "createdAt",
+            "type": "DATETIME",
+            "array": false,
+            "optional": false
+          }
+        ]
+      }
+    ],
+    "enums": [
+      {
+        "name": "OrderStatus",
+        "values": [
+          "PENDING",
+          "FULFILLED"
+        ]
+      }
+    ],
+    "relations": [],
+    "stateMachines": [],
+    "rules": []
+  }
+}

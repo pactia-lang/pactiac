@@ -30,11 +30,11 @@ export function resolveSpecRoot(): string | undefined {
   candidates.push(resolve(pactiacRepoRoot, "spec"));
   candidates.push(bundledSpecRootPath);
 
-  return candidates.find((path) => existsSync(resolve(path, "registry", "kernel-tags.yaml")));
+  return candidates.find((path) => existsSync(resolve(path, "registry", "kernel-tags.json")));
 }
 
 export function resolveKernelTagsCatalogPath(specRoot: string): string {
-  return resolve(specRoot, "registry", "kernel-tags.yaml");
+  return resolve(specRoot, "registry", "kernel-tags.json");
 }
 
 export function resolveTagSchemaPath(specRoot: string, relativeSchema: string): string {

@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { parse as parseYaml } from "yaml";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -18,30 +17,30 @@ import {
   serviceSliceSchema,
 } from "./index.js";
 
-const fixturesRoot = resolve(import.meta.dirname, "../test/fixtures");
+const fixturesRoot = resolve(import.meta.dirname, "../../../test/fixtures/expected/relay");
 
-function loadYaml<T>(relativePath: string): T {
+function loadJson<T>(relativePath: string): T {
   const content = readFileSync(join(fixturesRoot, relativePath), "utf-8");
-  return parseYaml(content) as T;
+  return JSON.parse(content) as T;
 }
 
 test("module-scoped IR slice files validate individually", () => {
-  manifestSchema.parse(loadYaml("manifest.yaml"));
-  productSchema.parse(loadYaml("product.yaml"));
-  moduleSliceSchema.parse(loadYaml("modules/fleet/fleet.module.yaml"));
-  modelSliceSchema.parse(loadYaml("modules/fleet/fleet.model.yaml"));
-  serviceSliceSchema.parse(loadYaml("modules/fleet/services/fleet.service.yaml"));
+  manifestSchema.parse(loadJson("input/manifest.json"));
+  productSchema.parse(loadJson("input/product.json"));
+  moduleSliceSchema.parse(loadJson("input/modules/orders/orders.module.json"));
+  modelSliceSchema.parse(loadJson("input/modules/orders/orders.model.json"));
+  serviceSliceSchema.parse(loadJson("input/modules/orders/services/order.service.json"));
 });
 
 test("module-scoped IR workspace validates as a whole", () => {
   const workspace = {
-    manifest: loadYaml("manifest.yaml"),
-    product: loadYaml("product.yaml"),
+    manifest: loadJson("input/manifest.json"),
+    product: loadJson("input/product.json"),
     modules: [
       {
-        module: loadYaml("modules/fleet/fleet.module.yaml"),
-        model: loadYaml("modules/fleet/fleet.model.yaml"),
-        services: [loadYaml("modules/fleet/services/fleet.service.yaml")],
+        module: loadJson("input/modules/orders/orders.module.json"),
+        model: loadJson("input/modules/orders/orders.model.json"),
+        services: [loadJson("input/modules/orders/services/order.service.json")],
       },
     ],
   };
@@ -50,21 +49,21 @@ test("module-scoped IR workspace validates as a whole", () => {
   assert.equal(parsed.product.product.stackId, "@pactia/rust-anb");
   assert.equal(parsed.modules.length, 1);
   assert.equal(parsed.modules[0]?.services.length, 1);
-  assert.equal(parsed.modules[0]?.services[0]?.service.endpoints.length, 1);
+  assert.equal(parsed.modules[0]?.services[0]?.service.endpoints.length, 2);
 });
 
 test("IR path allowlist accepts root and module-scoped paths", () => {
-  assert.equal(isAllowlistedIrFilePath("manifest.yaml"), true);
-  assert.equal(isAllowlistedIrFilePath("product.yaml"), true);
-  assert.equal(isAllowlistedIrFilePath("modules/fleet/fleet.module.yaml"), true);
-  assert.equal(isAllowlistedIrFilePath("modules/fleet/fleet.model.yaml"), true);
-  assert.equal(isAllowlistedIrFilePath("modules/fleet/services/fleet.service.yaml"), true);
+  assert.equal(isAllowlistedIrFilePath("input/manifest.json"), true);
+  assert.equal(isAllowlistedIrFilePath("input/product.json"), true);
+  assert.equal(isAllowlistedIrFilePath("input/modules/orders/orders.module.json"), true);
+  assert.equal(isAllowlistedIrFilePath("input/modules/orders/orders.model.json"), true);
+  assert.equal(isAllowlistedIrFilePath("input/modules/orders/services/order.service.json"), true);
   assert.equal(
-    isAllowlistedIrFilePath("modules/{moduleKebab}/services/{serviceKebab}.service.yaml"),
+    isAllowlistedIrFilePath("input/modules/{moduleKebab}/services/{serviceKebab}.service.json"),
     true,
   );
-  assert.equal(isAllowlistedIrFilePath("project.yaml"), false);
-  assert.equal(isAllowlistedIrFilePath("domain.yaml"), false);
+  assert.equal(isAllowlistedIrFilePath("project.json"), false);
+  assert.equal(isAllowlistedIrFilePath("domain.json"), false);
 });
 
 test("JSON schema exporters produce named root schemas", () => {

@@ -1,19 +1,26 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { compile } from "../packages/pactiac/dist/compile.js";
+import { assembleWorkspace } from "../packages/pactiac/src/frontend/workspace/assemble.js";
+import { compileIrWorkspace } from "../packages/pactiac/src/lower/ir.js";
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const outputRoot = join(repoRoot, "test/fixtures/expected/fleet");
-const sourcePath = join(repoRoot, "test/fixtures/kernel/fleet-management-v2.pactia");
+const repoRoot = resolve(import.meta.dirname, "..");
+const outputRoot = join(repoRoot, "test/fixtures/expected/relay");
+const sourcePath = join(repoRoot, "test/fixtures/kernel/relay.pactia");
+const workspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
+
 const source = readFileSync(sourcePath, "utf8");
-const { files } = compile(source);
+const assembled = assembleWorkspace(workspaceRoot);
+const { files } = compileIrWorkspace(source, {
+  effectiveRegistry: assembled.effectiveRegistry,
+  packagesResolved: assembled.lockfileDigest !== undefined,
+  lockfileDigest: assembled.lockfileDigest,
+  loadedPackages: assembled.loadedPackages,
+});
 
 for (const [relativePath, content] of files) {
-  const fullPath = join(outputRoot, relativePath);
-  mkdirSync(dirname(fullPath), { recursive: true });
-  writeFileSync(fullPath, content, "utf8");
-  process.stdout.write(`wrote ${relativePath}\n`);
+  const target = join(outputRoot, relativePath);
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, content);
 }
 
-console.log(`Generated ${files.size} golden files under test/fixtures/expected/fleet/`);
+console.log(`Generated ${files.size} golden files under test/fixtures/expected/relay/`);

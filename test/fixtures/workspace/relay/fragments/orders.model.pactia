@@ -1,0 +1,35 @@
+export model orders_model {
+  @enum OrderStatus {
+    values: [PENDING, FULFILLED],
+  }
+
+  @entity OrderListItem {
+    id: uuid,
+    sku: string,
+    status: OrderStatus,
+  }
+
+  @entity OrderListResponse {
+    orders: OrderListItem[],
+    @@nullable
+    nextCursor: string,
+  }
+
+  @entity CreateOrderRequest {
+    sku: string,
+    quantity: int,
+  }
+
+  @entity CreateOrderResponse {
+    orderId: uuid,
+  }
+
+  @entity Order {
+    @@pk
+    id: uuid,
+    sku: string,
+    quantity: int,
+    status: OrderStatus,
+    createdAt: datetime,
+  }
+}

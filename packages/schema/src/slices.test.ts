@@ -18,9 +18,9 @@ test("manifestSchema requires module index entries", () => {
         {
           name: "fleet",
           path: "modules/fleet/",
-          module: "fleet.module.yaml",
-          model: "fleet.model.yaml",
-          services: [{ name: "fleet", file: "services/fleet.service.yaml" }],
+          module: "fleet.module.json",
+          model: "fleet.model.json",
+          services: [{ name: "fleet", file: "services/fleet.service.json" }],
         },
       ],
     },

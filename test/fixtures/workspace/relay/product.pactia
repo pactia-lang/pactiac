@@ -1,0 +1,36 @@
+// Pactia 1.2 — Relay (workspace product shell; import + attach)
+
+pactia 1.0
+
+import @pactia/kernel;
+import @pactia/protocol-rest;
+import @pactia/rust-anb;
+
+import { orders } from ./fragments/orders.module.pactia;
+import { orders_model } from ./fragments/orders.model.pactia;
+import { OrderService } from ./fragments/order.service.pactia;
+
+product Relay {
+  > B2B order relay between suppliers and retailers
+
+  #rust_anb
+
+  @topology {
+    mode: microservices,
+  }
+
+  @tenancy {
+    mode: single,
+  }
+
+  @guide {
+    > Handlers return errors via the platform envelope only
+    > List endpoints use cursor pagination — not offset
+  }
+
+  module(orders) {
+    service(OrderService) {
+      model(orders_model)
+    }
+  }
+}

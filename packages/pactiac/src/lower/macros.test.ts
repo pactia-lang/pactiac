@@ -52,12 +52,16 @@ test("expandEndpointMacros applies stack registry overrides", () => {
       version: "1.0.0",
       digest: "sha256:abc",
       rootDir: "/tmp",
-      manifestSource: `registry:
-  macros:
-    - name: paginated
-      expands_to:
-        - "modifiers.pageSize: 50"
-        - "modifiers.paginated: true"`,
+      manifestSource: JSON.stringify({
+        registry: {
+          macros: [
+            {
+              name: "paginated",
+              expandsTo: ["modifiers.pageSize: 50", "modifiers.paginated: true"],
+            },
+          ],
+        },
+      }),
     },
   ];
   const registry = buildEffectiveRegistry({
@@ -78,11 +82,11 @@ test("expandEndpointMacros follows registry expands_to macro chain", () => {
       version: "1.0.0",
       digest: "sha256:abc",
       rootDir: "/tmp",
-      manifestSource: `registry:
-  macros:
-    - name: list
-      expands_to:
-        - "#[paginated]"`,
+      manifestSource: JSON.stringify({
+        registry: {
+          macros: [{ name: "list", expandsTo: ["#[paginated]"] }],
+        },
+      }),
     },
   ];
   const registry = buildEffectiveRegistry({
@@ -102,14 +106,14 @@ test("expandEndpointMacros detects registry expansion cycles", () => {
       version: "1.0.0",
       digest: "sha256:abc",
       rootDir: "/tmp",
-      manifestSource: `registry:
-  macros:
-    - name: list
-      expands_to:
-        - "#[paginated]"
-    - name: paginated
-      expands_to:
-        - "#[list]"`,
+      manifestSource: JSON.stringify({
+        registry: {
+          macros: [
+            { name: "list", expandsTo: ["#[paginated]"] },
+            { name: "paginated", expandsTo: ["#[list]"] },
+          ],
+        },
+      }),
     },
   ];
   const registry = buildEffectiveRegistry({

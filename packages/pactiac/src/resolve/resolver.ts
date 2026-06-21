@@ -3,10 +3,10 @@ import { loadVendoredPackage, type LoadedPackage } from "./loader.js";
 import {
   assertImportsDeclared,
   assertLockEntries,
-  assertStackBinding,
   lockfileDigest,
   parsePactiaLock,
   parsePactiaToml,
+  resolveStackPackage,
 } from "./manifest.js";
 import { buildEffectiveRegistry, type EffectiveRegistry } from "./registry.js";
 
@@ -19,7 +19,6 @@ export interface ResolvedWorkspacePackages {
 export function resolveWorkspacePackages(
   files: WorkspaceFiles,
   imports: readonly string[],
-  stackTagTarget: string,
 ): ResolvedWorkspacePackages {
   if (!files.pactiaTomlSource || !files.pactiaLockSource) {
     return { lockfileDigest: undefined, loaded: [], effectiveRegistry: undefined };
@@ -29,9 +28,11 @@ export function resolveWorkspacePackages(
   const lock = parsePactiaLock(files.pactiaLockSource);
 
   assertImportsDeclared(imports, toml);
-  const stackCoordinate = assertStackBinding(stackTagTarget, toml);
+  const stackCoordinate = resolveStackPackage(toml);
 
-  const coordinates = [...new Set([...imports, stackCoordinate])];
+  const coordinates = [
+    ...new Set([...imports, ...(stackCoordinate ? [stackCoordinate] : [])]),
+  ];
   assertLockEntries(coordinates, lock);
 
   const loaded = coordinates.map((coordinate) => {

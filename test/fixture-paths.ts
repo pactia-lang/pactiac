@@ -3,11 +3,11 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export enum TestFixtureId {
-  FleetManagementV2 = "fleet-management-v2",
+  Relay = "relay",
 }
 
 const FIXTURE_RELATIVE: Record<TestFixtureId, string> = {
-  [TestFixtureId.FleetManagementV2]: "kernel/fleet-management-v2.pactia",
+  [TestFixtureId.Relay]: "kernel/relay.pactia",
 };
 
 const testDir = dirname(fileURLToPath(import.meta.url));
