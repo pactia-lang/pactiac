@@ -1,48 +1,16 @@
-import { IrFile, parseIrFile } from "../../domain/ir-file.js";
-import { IrMerge, parseIrMerge } from "../../domain/ir-merge.js";
+import { IrFile } from "../../domain/ir-file.js";
+import { IrMerge } from "../../domain/ir-merge.js";
 import {
   RegistryEntryKind,
   type DefBodyAst,
   type EffectiveRegistry,
-  type IrSlot,
   type RegistryMacroEntry,
   type RegistryTagEntry,
 } from "../../domain/registry.js";
 import type { DefDeclNode, ProgramNode } from "../../domain/syntax-tree.js";
 import { DefSigil as DefSigilEnum } from "../../domain/syntax-tree.js";
-import { parsePackageManifest, registryBlockFromManifest } from "../../resolve/package-manifest.js";
 import { fieldSpecFromDefBody } from "../parse/recursive-descent-parser.js";
 import { deriveIrSlotForTag } from "./derive-tag-ir.js";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function manifestTagIr(
-  manifestSource: string | undefined,
-  tagName: string,
-): IrSlot | undefined {
-  if (!manifestSource) return undefined;
-  try {
-    const manifest = parsePackageManifest(manifestSource);
-    const registry = registryBlockFromManifest(manifest);
-    const tags = registry["tags"];
-    if (!Array.isArray(tags)) return undefined;
-    for (const entry of tags) {
-      if (!isRecord(entry) || entry["name"] !== tagName) continue;
-      const ir = entry["ir"];
-      if (!isRecord(ir)) return undefined;
-      const file = parseIrFile(String(ir["file"] ?? ""));
-      const merge = parseIrMerge(String(ir["merge"] ?? ""));
-      const path = ir["path"];
-      if (!file || !merge || typeof path !== "string") return undefined;
-      return { file, path, merge };
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
-}
 
 function defBodyFromDecl(def: DefDeclNode): DefBodyAst {
   return {
@@ -54,7 +22,6 @@ function defBodyFromDecl(def: DefDeclNode): DefBodyAst {
 function defToRegistryEntries(
   def: DefDeclNode,
   source: string,
-  manifestSource: string | undefined,
 ): RegistryTagEntry | RegistryMacroEntry | undefined {
   const body = defBodyFromDecl(def);
 
@@ -69,8 +36,7 @@ function defToRegistryEntries(
     };
   }
 
-  const ir = manifestTagIr(manifestSource, def.name) ?? deriveIrSlotForTag(def);
-  if (!ir) return undefined;
+  const ir = deriveIrSlotForTag(def);
 
   return {
     kind: RegistryEntryKind.Tag,
@@ -86,13 +52,12 @@ function defToRegistryEntries(
 export function registryEntriesFromProgram(
   program: ProgramNode,
   source: string,
-  manifestSource?: string,
 ): { readonly tags: RegistryTagEntry[]; readonly macros: RegistryMacroEntry[] } {
   const tags: RegistryTagEntry[] = [];
   const macros: RegistryMacroEntry[] = [];
 
   for (const def of program.exportDefs) {
-    const entry = defToRegistryEntries(def, source, manifestSource);
+    const entry = defToRegistryEntries(def, source);
     if (!entry) continue;
     if (entry.kind === RegistryEntryKind.Tag) tags.push(entry);
     else macros.push(entry);

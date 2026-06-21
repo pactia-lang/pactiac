@@ -41,10 +41,10 @@ describe("package index defs", () => {
       "utf8",
     );
     const tree = parseSyntaxTree({ source: indexSource, entryFile: "index.pactia" });
-    assert.equal(tree.root.exportDefs.length, 3);
+    assert.equal(tree.root.exportDefs.length, 4);
     assert.deepEqual(
       tree.root.exportDefs.map((def) => def.name),
-      ["rust_anb", "paginated", "list"],
+      ["rust_anb", "paginated", "list", "detail"],
     );
   });
 });

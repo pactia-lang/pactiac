@@ -38,7 +38,7 @@ export function loadVendoredPackage(
     const dir = join(vendorRoot, packageDirName(coordinate, lockEntry.version));
     if (!existsSync(dir)) continue;
 
-    const manifestPath = join(dir, "pactia.package.json");
+    const manifestPath = join(dir, "pactia.toml");
     const tarballDigestPath = join(dir, ".digest");
     const onDiskDigest = readOptional(tarballDigestPath);
     if (onDiskDigest && onDiskDigest.trim() !== lockEntry.digest) {
@@ -69,7 +69,8 @@ export function hashDirectoryMarker(rootDir: string): string {
   if (existsSync(marker)) {
     return readFileSync(marker, "utf8").trim();
   }
-  const manifest = readOptional(join(rootDir, "pactia.package.json")) ?? "";
-  const hash = createHash("sha256").update(manifest, "utf8").digest("hex");
+  const toml = readOptional(join(rootDir, "pactia.toml")) ?? "";
+  const index = readOptional(join(rootDir, "index.pactia")) ?? "";
+  const hash = createHash("sha256").update(toml, "utf8").update(index, "utf8").digest("hex");
   return `sha256:${hash}`;
 }

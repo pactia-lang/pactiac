@@ -22,8 +22,8 @@ describe("deriveIrSlotForTag", () => {
     };
     assert.deepEqual(deriveIrSlotForTag(apiDef), {
       file: IrFile.Service,
-      path: "extensions[]",
-      merge: IrMerge.MergeFields,
+      path: "endpoints[]",
+      merge: IrMerge.AppendHost,
     });
   });
 
@@ -42,7 +42,7 @@ describe("deriveIrSlotForTag", () => {
     };
     assert.deepEqual(deriveIrSlotForTag(outputDef), {
       file: IrFile.Service,
-      path: "modifiers[]",
+      path: "response",
       merge: IrMerge.MergeIntoHost,
     });
   });

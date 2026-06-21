@@ -1,0 +1,7 @@
+[package]
+name = "@pactia/protocol-rest"
+version = "1.0.0"
+kind = "protocol"
+
+[protocol]
+wire-schema = "schemas/api-wire-v1.json"

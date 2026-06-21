@@ -1,0 +1,4 @@
+[package]
+name = "@pactia/kernel"
+version = "1.0.0"
+kind = "library"

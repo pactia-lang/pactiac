@@ -1,5 +1,9 @@
 export { compile, compileWorkspace, assembleWorkspace } from "./compile/compile.js";
 export type { CompileResult } from "./compile/compile.js";
+export { parsePactiaLock, parsePactiaToml, lockfileDigest } from "./resolve/manifest.js";
+export type { PactiaLockManifest, PactiaTomlManifest } from "./resolve/manifest.js";
+export { parsePackageToml } from "./resolve/package-toml.js";
+export type { PactiaPackageToml } from "./resolve/package-toml.js";
 export { compileSource } from "./application/compile-source.js";
 export { extractScenarios } from "./frontend/scenarios/extract-tests.js";
 export { detectPactiaVersion } from "./compile/version.js";
