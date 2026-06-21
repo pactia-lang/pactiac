@@ -4,11 +4,4 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$repo_root"
 
-npm run build
-npm run export:ir-schemas -w @pactia/schema
-
-if ! git diff --quiet -- packages/schema/generated/ir; then
-  echo "IR JSON Schema drift: run 'npm run export:ir-schemas -w @pactia/schema' and commit packages/schema/generated/ir/"
-  git diff --stat -- packages/schema/generated/ir
-  exit 1
-fi
+npm test

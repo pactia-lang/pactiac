@@ -1,4 +1,5 @@
-import { Provenance, type IrWorkspace } from "@pactia/schema";
+import { Provenance } from "../../domain/provenance.js";
+import type { WorkspaceIr } from "../../domain/workspace-ir.js";
 import {
   BoundNodeKind,
   DiagnosticCode,
@@ -25,12 +26,12 @@ import { mergeDeep, parseScalarValue, setAtPath } from "../../lower/ir-path.js";
 import {
   appendHostObject,
   boundLeafBodyToObject,
+  collectBlockProse,
   collectServiceProse,
   mergePrefixShorthand,
   mergeTagBlock,
   parseIrPath,
 } from "./ir-slot-writer.js";
-import { normalizeIrFileForEmit } from "./normalize-ir-for-emit.js";
 
 const COMPILED_AT = "1970-01-01T00:00:00.000Z";
 
@@ -39,10 +40,11 @@ export interface LowerBoundTreeInput {
   readonly pactiaVersion: string;
   readonly entryFile: string;
   readonly lockfileDigest?: string;
+  readonly stackCoordinate?: string;
 }
 
 export interface LowerBoundTreeResult {
-  readonly workspace: IrWorkspace;
+  readonly workspace: WorkspaceIr;
   readonly files: ReadonlyMap<string, string>;
   readonly diagnostics: readonly Diagnostic[];
 }
@@ -89,14 +91,18 @@ class BoundTreeLowerer {
     private readonly diagnostics: Diagnostic[],
   ) {}
 
-  lower(): IrWorkspace {
+  lower(): WorkspaceIr {
     const root = this.input.tree.root;
-    if (root.hostName) {
-      this.productDoc = { name: root.hostName, stackId: "unknown" };
-    }
-
-    for (const child of root.children) {
-      this.lowerTreeItem(child, IrFile.Product);
+    if (root.hostName && root.placement === PlacementTarget.Product) {
+      this.productDoc = {
+        name: root.hostName,
+        stackId: this.input.stackCoordinate ?? "unknown",
+      };
+      this.lowerBlock(root);
+    } else {
+      for (const child of root.children) {
+        this.lowerTreeItem(child, IrFile.Product);
+      }
     }
 
     if (this.modules.length === 0) {
@@ -133,7 +139,7 @@ class BoundTreeLowerer {
       },
       product: { product: this.productDoc },
       modules: this.modules,
-    } as unknown as IrWorkspace;
+    } as WorkspaceIr;
   }
 
   private lowerTreeItem(item: BoundTreeItem, scopeFile: IrFile): void {
@@ -152,11 +158,16 @@ class BoundTreeLowerer {
 
   private lowerBlock(block: BoundBlockNode): void {
     switch (block.placement) {
-      case PlacementTarget.Product:
+      case PlacementTarget.Product: {
+        const description = collectBlockProse(block.children);
+        if (description) {
+          this.productDoc["description"] = description;
+        }
         for (const child of block.children) {
           this.lowerTreeItem(child, IrFile.Product);
         }
         break;
+      }
       case PlacementTarget.Module:
         this.openModule(block.hostName ?? "module");
         for (const child of block.children) {
@@ -262,10 +273,6 @@ class BoundTreeLowerer {
     mergeTagBlock(target, entry, tag.children);
   }
 
-  private usesStringArrayHost(path: string): boolean {
-    return path.endsWith("guide[]");
-  }
-
   private lowerAppendHost(
     tag: BoundTagNode,
     frame: LowerFrame,
@@ -274,7 +281,7 @@ class BoundTreeLowerer {
     const entry = tag.registryEntry;
     const root = this.documentRoot(entry.ir.file);
 
-    if (this.isProseOnlyBody(tag) && this.usesStringArrayHost(entry.ir.path)) {
+    if (this.isProseOnlyBody(tag) && parseIrPath(entry.ir.path).appendArray) {
       for (const child of tag.children) {
         if (child.kind === SyntaxNodeKind.Prose && child.text.length > 0) {
           appendHostObject(root, entry.ir.path, child.text);
@@ -496,27 +503,22 @@ class BoundTreeLowerer {
   }
 }
 
-function workspaceToFileObjects(workspace: IrWorkspace): Map<string, unknown> {
+function workspaceToFileObjects(workspace: WorkspaceIr): Map<string, unknown> {
   const files = new Map<string, unknown>();
-  files.set(
-    IrRelativePath.Manifest,
-    normalizeIrFileForEmit(IrRelativePath.Manifest, workspace.manifest),
-  );
-  files.set(
-    IrRelativePath.Product,
-    normalizeIrFileForEmit(IrRelativePath.Product, workspace.product),
-  );
+  files.set(IrRelativePath.Workspace, workspace);
+  files.set(IrRelativePath.Manifest, workspace.manifest);
+  files.set(IrRelativePath.Product, workspace.product);
 
   for (const bundle of workspace.modules) {
-    const moduleName = bundle.module.module.name;
+    const moduleName = String((bundle.module as { module: Record<string, unknown> }).module["name"]);
     const paths = moduleIrPaths(moduleName);
-    files.set(paths.module, normalizeIrFileForEmit(paths.module, bundle.module));
-    files.set(paths.model, normalizeIrFileForEmit(paths.model, bundle.model));
+    files.set(paths.module, bundle.module);
+    files.set(paths.model, bundle.model);
 
     for (const serviceSlice of bundle.services) {
-      const stem = serviceFileStem(serviceSlice.service.name);
+      const stem = serviceFileStem(String((serviceSlice as { service: Record<string, unknown> }).service["name"]));
       const servicePath = serviceIrPath(moduleName, stem);
-      files.set(servicePath, normalizeIrFileForEmit(servicePath, serviceSlice));
+      files.set(servicePath, serviceSlice);
     }
   }
 

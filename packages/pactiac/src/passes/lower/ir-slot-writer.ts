@@ -135,11 +135,15 @@ export function collectProse(items: readonly TagBodyItem[]): string | undefined 
   return lines.join("\n");
 }
 
-export function collectServiceProse(items: readonly BoundTreeItem[]): string | undefined {
+export function collectBlockProse(items: readonly BoundTreeItem[]): string | undefined {
   for (const item of items) {
     if (item.kind === SyntaxNodeKind.Prose && item.text.length > 0) {
       return item.text;
     }
   }
   return undefined;
+}
+
+export function collectServiceProse(items: readonly BoundTreeItem[]): string | undefined {
+  return collectBlockProse(items);
 }

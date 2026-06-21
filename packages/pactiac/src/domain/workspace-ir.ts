@@ -1,7 +1,25 @@
-import type { IrWorkspace } from "@pactia/schema";
+/** Registry-written IR tree — slot shapes come from tag ir.path, not a fixed schema. */
+export type IrJsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | IrJsonObject
+  | readonly IrJsonValue[];
 
-/** L2 workspace IR — JSON tree keyed by product/module/model/service paths. */
-export type WorkspaceIr = IrWorkspace;
+export interface IrJsonObject {
+  readonly [key: string]: IrJsonValue;
+}
+
+export interface WorkspaceIr {
+  readonly manifest: IrJsonObject;
+  readonly product: IrJsonObject;
+  readonly modules: ReadonlyArray<{
+    readonly module: IrJsonObject;
+    readonly model: IrJsonObject;
+    readonly services: ReadonlyArray<IrJsonObject>;
+  }>;
+}
 
 export interface WorkspaceIrFiles {
   /** Relative paths under the IR output root (e.g. `input/product.json`). */
@@ -17,6 +35,8 @@ export enum IrOutputRoot {
 export enum IrRelativePath {
   Manifest = "input/manifest.json",
   Product = "input/product.json",
+  /** Single-file IR bundle for BSC — manifest, product, and all module slices inline. */
+  Workspace = "input/workspace.json",
 }
 
 export function moduleIrPaths(moduleKebab: string): {

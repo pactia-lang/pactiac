@@ -14,6 +14,7 @@ const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 const vendorRoot = join(repoRoot, "test/fixtures/packages");
 
 const expectedFiles = [
+  "input/workspace.json",
   "input/manifest.json",
   "input/product.json",
   "input/modules/orders/orders.module.json",

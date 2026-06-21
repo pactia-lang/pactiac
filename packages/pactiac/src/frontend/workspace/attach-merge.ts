@@ -269,6 +269,18 @@ function buildAttachedModuleBlock(
   };
 }
 
+function extractInlineModulesAfterAttach(productBody: string): string {
+  let lastEnd = 0;
+  const attachPattern = /module\s*\(\s*\w+\s*\)\s*\{/g;
+  let match: RegExpExecArray | null = attachPattern.exec(productBody);
+  while (match) {
+    const openBrace = match.index + match[0].length - 1;
+    lastEnd = findMatchingBrace(productBody, openBrace) + 1;
+    match = attachPattern.exec(productBody);
+  }
+  return productBody.slice(lastEnd).trimEnd();
+}
+
 function extractProductHeader(productSource: string, productDir: string): {
   versionLine: string;
   imports: string;
@@ -326,6 +338,7 @@ export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedAttachWorks
   }
 
   const { versionLine, imports, productName, productBody } = extractProductHeader(files.productSource, productDir);
+  const trailingModules = extractInlineModulesAfterAttach(productBlock.body);
   const diagnostics: Diagnostic[] = [];
   const moduleBlocks: string[] = [];
   for (const attach of attachModules) {
@@ -334,7 +347,9 @@ export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedAttachWorks
     if (built.block) moduleBlocks.push(built.block);
   }
 
-  const productInner = [productBody, ...moduleBlocks].filter((part) => part.length > 0).join("\n\n");
+  const productInner = [productBody, ...moduleBlocks, trailingModules]
+    .filter((part) => part.length > 0)
+    .join("\n\n");
   const source = [versionLine, imports, "", `product ${productName} {`, productInner, "}"]
     .filter((part) => part.length > 0)
     .join("\n")

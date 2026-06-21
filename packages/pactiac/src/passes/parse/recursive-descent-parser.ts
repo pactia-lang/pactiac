@@ -501,17 +501,10 @@ export class RecursiveDescentParser {
     }
 
     const parts: string[] = [];
-    while (
-      !stream.atEnd() &&
-      !stream.check(TokenType.RBRACE) &&
-      !(stream.check(TokenType.IDENT) && (isTagToken(stream.peek().value) || this.isBlockKeyword(stream.peek().value))) &&
-      !(stream.check(TokenType.HASH, "#") && (stream.peek(1).type === TokenType.LBRACKET || stream.peek(1).type === TokenType.IDENT))
-    ) {
+    while (!stream.atEnd()) {
       const token = stream.peek();
-      if (token.type === TokenType.IDENT && token.value === "module") break;
-      if (token.type === TokenType.IDENT && token.value === "service") break;
-      if (token.type === TokenType.IDENT && token.value === "model") break;
-      if (token.type === TokenType.IDENT && token.value === "def") break;
+      if (token.line !== start.line) break;
+      if (token.type === TokenType.RBRACE) break;
       parts.push(stream.advance().value);
     }
 

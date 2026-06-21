@@ -10,6 +10,7 @@ const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..");
 const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 
 const expectedFiles = [
+  "input/workspace.json",
   "input/manifest.json",
   "input/product.json",
   "input/modules/orders/orders.module.json",
