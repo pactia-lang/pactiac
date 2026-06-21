@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { describe, it } from "node:test";
+import { repoRoot } from "../../../test/fixture-paths.js";
 import { IrFile } from "../../domain/ir-file.js";
 import { IrMerge } from "../../domain/ir-merge.js";
 import { RegistryEntryKind } from "../../domain/registry.js";
@@ -12,7 +13,6 @@ import { expandBoundTree } from "../expand-macros/expand-bound-tree.js";
 import { parseSyntaxTree } from "../parse/recursive-descent-parser.js";
 import { registryEntriesFromProgram } from "../registry/build-effective-registry.js";
 
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
 const testIrPackage = join(repoRoot, "test/fixtures/packages/@pactia--test-ir@1.0.0");
 const kernelPackage = join(repoRoot, "test/fixtures/packages/@pactia--kernel@1.0.0");
 

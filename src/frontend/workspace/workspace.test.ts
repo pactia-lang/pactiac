@@ -7,9 +7,8 @@ import { compileSource } from "../../application/compile-source.js";
 import { discoverWorkspace } from "./discover.js";
 import { mergeWorkspaceSources } from "./merge.js";
 import { assembleWorkspace } from "./assemble.js";
-import { readTestFixture, TestFixtureId } from "../../../../../test/fixture-paths.js";
+import { readTestFixture, repoRoot, TestFixtureId } from "../../../test/fixture-paths.js";
 
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..", "..");
 const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 const vendorRoot = join(repoRoot, "test/fixtures/packages");
 

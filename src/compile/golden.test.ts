@@ -2,11 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
-import { readTestFixture, TestFixtureId } from "../../../../test/fixture-paths.js";
+import { readTestFixture, repoRoot, TestFixtureId } from "../../test/fixture-paths.js";
 import { assembleWorkspace } from "../frontend/workspace/assemble.js";
 import { compileSource } from "../application/compile-source.js";
 
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..");
 const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 
 const expectedFiles = [

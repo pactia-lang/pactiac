@@ -12,6 +12,9 @@ const FIXTURE_RELATIVE: Record<TestFixtureId, string> = {
 
 const testDir = dirname(fileURLToPath(import.meta.url));
 
+/** Repository root (package.json, src/, test/). */
+export const repoRoot = resolve(testDir, "..");
+
 function candidatePaths(id: TestFixtureId): readonly string[] {
   const relative = FIXTURE_RELATIVE[id];
   const paths: string[] = [

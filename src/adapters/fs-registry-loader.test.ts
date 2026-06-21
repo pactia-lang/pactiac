@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { describe, it } from "node:test";
+import { repoRoot } from "../../test/fixture-paths.js";
 import { loadRegistryFromWorkspace } from "./fs-registry-loader.js";
 import { parseSyntaxTree } from "../passes/parse/recursive-descent-parser.js";
 
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..", "..");
 const relayWorkspace = join(repoRoot, "test/fixtures/workspace/relay");
 const relaySource = readFileSync(join(relayWorkspace, "product.pactia"), "utf8");
 
