@@ -51,7 +51,7 @@ export interface RegistryMacroEntry {
 
 export type RegistryEntry = RegistryTagEntry | RegistryMacroEntry;
 
-/** Resolved symbol table for one compile — packages, stack, and local defs merged. */
+/** Resolved symbol table for one compile — imported packages and local defs merged. */
 export interface EffectiveRegistry {
   readonly tags: ReadonlyMap<string, RegistryTagEntry>;
   readonly macros: ReadonlyMap<string, RegistryMacroEntry>;
@@ -61,15 +61,13 @@ export enum RegistryPrecedenceTier {
   Local = "local",
   Dependency = "dependency",
   ExplicitImport = "explicit-import",
-  Stack = "stack",
 }
 
-/** Precedence order (low → high): dependency < explicit import < stack; local is lowest. */
+/** Precedence order (low → high): dependency < explicit import; local is lowest. */
 export const registryPrecedenceOrder: readonly RegistryPrecedenceTier[] = [
   RegistryPrecedenceTier.Local,
   RegistryPrecedenceTier.Dependency,
   RegistryPrecedenceTier.ExplicitImport,
-  RegistryPrecedenceTier.Stack,
 ];
 
 export function isRegistryTagEntry(entry: RegistryEntry): entry is RegistryTagEntry {

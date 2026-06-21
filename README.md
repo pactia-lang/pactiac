@@ -1,6 +1,6 @@
 # pactiac
 
-Pactia compiler — parse `.pactia` source, lower to module-scoped IR, emit workspace YAML.
+Pactia compiler — parse `.pactia` source, lower to module-scoped IR, emit workspace JSON.
 
 Implements the normative specification in [pactia-lang/spec](https://github.com/pactia-lang/spec).
 
@@ -38,83 +38,53 @@ Vendored package directories use the form `@scope--name@<version>/` (slashes in 
 
 ```bash
 npm install
-npm run hooks:install   # optional — pre-commit runs tests, pre-push checks IR schema drift
+npm run hooks:install   # optional — pre-commit runs tests, pre-push runs tests
 npm run build
 npm test
 ```
 
-Golden tests bundle [relay.pactia](test/fixtures/kernel/relay.pactia) (synced from [pactia-lang/spec](https://github.com/pactia-lang/spec)). Override the input fixture root with:
-
-```bash
-export PACTIA_SPEC_ROOT=/path/to/spec
-npm test
-```
-
-Tag body JSON Schema validation uses the same `PACTIA_SPEC_ROOT` to load `registry/kernel-tags.yaml` and `schemas/tags/*`. Without it, pactiac falls back to bundled fixtures under `test/fixtures/spec/` (CI) or sibling `../spec` when present.
+Golden tests use [relay.pactia](test/fixtures/kernel/relay.pactia) and related fixtures under `test/fixtures/`.
 
 ## Workspace layout
 
 ```
 pactiac/
-  packages/
-    schema/                 @pactia/schema — IR Zod models + JSON Schema export
-      generated/ir/         committed JSON Schema mirror (CI drift-checked)
-      test/fixtures/        hand-authored IR samples for schema unit tests
-    pactiac/                @pactia/pactiac — compile pipeline (frontend, lower, emit, resolve), CLI
-      src/
-        compile/              compile(), compileWorkspace(), version gate
-        frontend/
-          lexer/              token types and tokenizer
-          kernel/             tag/block extract → KernelProgram
-          scenarios/          @test extract, when/then clauses, scenario lower
-          workspace/          multi-file discover, merge, assemble
-        lower/                KernelProgram → IR workspace
-        emit/                 IR → deterministic YAML
-        resolve/              pactia.toml / lock / vendored packages
-        diagnostics/
+  src/
+    application/            compile pipeline orchestrator
+    passes/                 parse, bind, expand-macros, lower
+    adapters/               fs registry loader, TOML lock, JSON emit
+    frontend/workspace/     multi-file discover, merge, assemble
+    domain/                 SyntaxTree, BoundTree, IR types, compile phases
   test/
     fixtures/
       kernel/               bundled .pactia input
       workspace/relay/      multi-file workspace fixture
-      packages/             shared vendored package stubs for tests
+      packages/             vendored package stubs for tests
       expected/relay/       golden IR workspace output
     fixture-paths.ts
-  .githooks/                  pre-commit (test), pre-push (IR schema drift)
+  .githooks/                pre-commit (test), pre-push (test)
   scripts/
     generate-golden.ts
     install-hooks.sh
 ```
 
-## IR JSON Schema sync
-
-Zod models in `@pactia/schema` are the source of truth. Export committed copies:
-
-```bash
-npm run export:ir-schemas
-```
-
-By default this writes to `packages/schema/generated/ir/`. In a monorepo checkout next to `spec/`:
-
-```bash
-PACTIA_SPEC_ROOT=../spec npm run export:ir-schemas -w @pactia/schema
-```
-
-CI fails if `generated/ir` drifts. The optional `sync-ir-schemas` workflow (requires `SPEC_SYNC_TOKEN`) can open commits on `pactia-lang/spec`.
+IR shape is defined in [spec/docs/compilation.md](https://github.com/pactia-lang/spec/blob/main/docs/compilation.md) — there is no JSON Schema for compiler output in the spec repo.
 
 ## Specification coupling
 
 | pactiac release | Implements spec |
 | --- | --- |
-| 0.1.x | Pactia 1.0 — kernel extract + module-scoped IR; workspace compile; macro expansion + effectiveRegistry; JSON Schema tag validation (fleet tags) |
+| 0.1.x | Pactia 1.0 — parse/bind/lower to module-scoped JSON IR; workspace compile; macro expansion from package `export def` |
 
 ### Compile output layout
 
 ```
-manifest.yaml
-product.yaml
-modules/<module>/<module>.module.yaml
-modules/<module>/<module>.model.yaml
-modules/<module>/services/<service>.service.yaml
+input/manifest.json
+input/product.json
+input/modules/<module>/<module>.module.json
+input/modules/<module>/<module>.model.json
+input/modules/<module>/services/<service>.service.json
+input/workspace.json
 ```
 
 ## License

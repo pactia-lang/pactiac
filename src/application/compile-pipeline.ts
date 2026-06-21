@@ -33,7 +33,7 @@ function assertSupportedVersion(source: string): readonly ReturnType<typeof crea
 }
 
 /**
- * v2 compile orchestrator — wires phases 0–13 per spec/docs/compilation.md.
+ * v2 compile orchestrator — wires phases 0–12 per spec/docs/compilation.md.
  */
 export class CompilePipeline {
   constructor(private readonly options: CompilePipelineOptions) {}
@@ -194,33 +194,6 @@ export class CompilePipeline {
     }
 
     if (stopAfter <= CompilePhase.Lower) {
-      return {
-        files: lowerResult.files,
-        diagnostics,
-        provenanceGaps: [],
-        registry,
-        syntax,
-        bound,
-        lowered,
-      };
-    }
-
-    const validation = this.options.ports.irValidator.validate({ workspace: lowerResult.workspace });
-    diagnostics.push(...validation.diagnostics);
-
-    if (hasErrors(diagnostics)) {
-      return {
-        files: new Map(),
-        diagnostics,
-        provenanceGaps: [],
-        registry,
-        syntax,
-        bound,
-        lowered,
-      };
-    }
-
-    if (stopAfter <= CompilePhase.IrValidate) {
       return {
         files: lowerResult.files,
         diagnostics,

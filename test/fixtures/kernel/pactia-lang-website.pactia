@@ -1,0 +1,216 @@
+// Pactia 1.2 — pactia.io landing page (single-page marketing site)
+// Spec-aligned: @surface inside @api, product.yaml surfaces[], module-scoped services
+
+pactia 1.0
+
+import @pactia/rust-anb;
+
+product PactiaLangWebsite {
+  > Official public website for Pactia — introduce the intent language for the AI era.
+  > One scrollable landing page at /. No authenticated product features on v1.
+  > Primary goals: explain the problem, show code, link to spec and GitHub, capture newsletter interest.
+  > All copy must be readable without JavaScript for core message; enhancements are progressive.
+
+  @stack html-css-js {
+    > HTML, CSS, and JavaScript stack.
+    > responsive design for desktop and mobile.
+   }
+
+  @topology {
+    mode: modular_monolith,
+  }
+
+  @guide {
+    > Static-first marketing shell — hydrate interactive sections after first paint
+    > All external links open in a new tab with rel=noopener
+    > Map form errors to a single inline alert region — never raw API bodies
+    > Respect prefers-reduced-motion for hero and section reveal animations
+    > WCAG 2.1 AA contrast on all text and primary CTAs
+  }
+
+  module marketing {
+
+    @actor visitors {
+      role: Anonymous,
+      capabilities: [view_landing, subscribe_newsletter],
+    }
+
+    @rule no_account_on_landing {
+      > The landing page never exposes login, signup, or dashboard entry points.
+    }
+
+    @rule honest_roadmap {
+      > Planned items (pactia.io registry, docs site) must be labeled “coming soon” — never implied GA.
+    }
+
+    model {
+      @entity NewsletterSubscriber {
+        @@pk
+        id: uuid,
+        @@pii
+        @@unique
+        email: string,
+        subscribedAt: datetime,
+        source: string,
+      }
+
+      @entity SubscribeRequest {
+        email: string,
+        source: string,
+      }
+
+      @entity SubscribeResponse {
+        subscribed: boolean,
+      }
+    }
+
+    @config site {
+      GITHUB_ORG_URL: {
+        required: true,
+        default: "https://github.com/pactia-lang",
+        > Public GitHub organization URL for primary CTA.
+      },
+      SPEC_REPO_URL: {
+        required: true,
+        default: "https://github.com/pactia-lang/spec",
+        > Normative specification repository.
+      },
+      DOCS_URL: {
+        required: false,
+        default: "https://docs.pactia.io",
+        > Documentation site — show as coming soon until live.
+      },
+    }
+
+    service SiteService {
+      #database
+      > Public marketing site — landing page and newsletter capture only.
+
+      @public
+      @api show_landing {
+        method: GET,
+        path: "/",
+
+        @surface hero {
+          platform: web,
+          screen: { id: hero },
+          route: { path: "/" },
+          > Full-viewport hero. Eyebrow: “The intent language for the AI era”.
+          > Headline: “You write what must stay true. AI writes how it works.”
+          > Subcopy: Pactia is an AI-native programming language — compiled by pactiac, shared on pactia.io.
+          > Primary CTA button: “Explore on GitHub” → GITHUB_ORG_URL.
+          > Secondary CTA link: “Read the spec” → SPEC_REPO_URL.
+        }
+
+        @surface problem {
+          platform: web,
+          screen: { id: problem },
+          route: { path: "/#problem" },
+          > Section title: “The problem nobody has solved”.
+          > Body: AI agents start cold every session. Intent scatters across READMEs, OpenAPI, ADRs, and chat.
+          > Bullets: auth drift, pagination inconsistency, event contract disagreement, senior engineers fixing invented logic.
+          > Closing line: “Durable product intent lives nowhere.”
+        }
+
+        @surface paradigm {
+          platform: web,
+          screen: { id: paradigm },
+          route: { path: "/#paradigm" },
+          > Section title: “A new paradigm”.
+          > Three-column comparison table: 3GL (execute), 4GL (reconcile), Pactia (implement + verify intent).
+          > Footer note: Pactia sits above Rust, TypeScript, and Swift — not a replacement.
+        }
+
+        @surface intent_line {
+          platform: web,
+          screen: { id: intent_line },
+          route: { path: "/#intent-line" },
+          > Section title: “The intent line”.
+          > Diagram: above the line (entities, APIs, policy, prose, packages) vs below the line (implementation).
+          > Explain conformance gate in plain language — no jargon without definition.
+        }
+
+        @surface prose {
+          platform: web,
+          screen: { id: prose },
+          route: { path: "/#prose" },
+          > Section title: “Prose is programming”.
+          > Side-by-side teaser: fleet-management-mini.pactia vs fleet-management-prose.pactia fixtures.
+          > Message: same language, same pipeline — graded precision from agent rules to full spec.
+        }
+
+        @surface packages {
+          platform: web,
+          screen: { id: packages },
+          route: { path: "/#packages" },
+          > Section title: “Share intent like code”.
+          > Table: stack, surface, and vertical package kinds with @pactia examples.
+          > Tagline: “Users fork packages, not the language.”
+        }
+
+        @surface toolchain {
+          platform: web,
+          screen: { id: toolchain },
+          route: { path: "/#toolchain" },
+          > Section title: “The stack”.
+          > Pipeline diagram: .pactia → pactiac → IR → agent context.
+          > Repo cards: spec, pactiac, pactia (package manager), vscode-pactia — with status badges.
+        }
+
+        @surface newsletter {
+          platform: web,
+          screen: { id: newsletter },
+          route: { path: "/#newsletter" },
+          > Section title: “Stay in the loop”.
+          > Single email field + submit. Success: “Thanks — we will email you when docs and registry launch.”
+          > Privacy note: email used only for Pactia project updates; no third-party resale.
+        }
+
+        @surface footer {
+          platform: web,
+          screen: { id: footer },
+          route: { path: "/#footer" },
+          > Footer links: GitHub org, spec, pactiac, vscode-pactia, license (MIT).
+          > Copyright line: pactia-lang contributors.
+          > docs.pactia.io and pactia.io registry marked coming soon when DOCS_URL unreachable.
+        }
+      }
+
+      @public
+      #create
+      @status 201
+      @@input SubscribeRequest
+      @@output SubscribeResponse
+      @throws { names: [ValidationFailed, Conflict] }
+      @api subscribe_newsletter {
+        method: POST,
+        path: "/api/v1/newsletter",
+
+        @surface newsletter_form {
+          platform: web,
+          screen: { id: newsletter },
+          route: { path: "/#newsletter" },
+          > Inline form posts here. Disable submit while in flight. Show field-level error on invalid email.
+        }
+      }
+
+      @test landing_page_renders_for_anonymous_visitor {
+        name: "Anonymous visitor loads the landing page",
+        when: "Anonymous visitor GET /",
+        then: "status is 200",
+      }
+
+      @test newsletter_accepts_valid_email {
+        name: "Visitor subscribes with a valid email",
+        when: "Anonymous visitor POST /api/v1/newsletter with valid body",
+        then: "status is 201",
+      }
+
+      @test newsletter_rejects_duplicate_email {
+        name: "Duplicate subscription returns conflict",
+        when: "Anonymous visitor POST /api/v1/newsletter with valid body",
+        then: "status is 409",
+      }
+    }
+  }
+}

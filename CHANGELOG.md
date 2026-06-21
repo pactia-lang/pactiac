@@ -14,8 +14,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Effective registry:** `resolve/registry.ts` builds workspace macro precedence (stack package > explicit imports > builtins) from vendored `pactia.package.yaml` manifests.
 - **Package macro overrides:** `lower/macros.ts` flattens package `expands_to` chains (nested `#[macro]` and `modifiers.*` IR assignments) before builtin lowering; detects `MACRO_EXPANSION_CYCLE`.
 - **Registry errors:** `REGISTRY_COLLISION` when two imports export the same macro name.
-- **JSON Schema tag validation:** `frontend/validate/` loads `kernel-tags.yaml` from `PACTIA_SPEC_ROOT`, sibling `../spec`, or bundled `test/fixtures/spec/` (CI), validates normative tag bodies with Ajv (`TAG_BODY_INVALID`).
-- **REST wire validation:** `frontend/validate/protocol-wire.ts` validates `@api` `method`/`path` against `@pactia/protocol-rest` package wire schema (`WIRE_INVALID`).
+- Generic tag lowering to `extensions[]` / `modifiers` / `fields[]` — no kernel tag-name IR routing table.
 - **Fleet module/service tag validation:** JSON Schema bodies for `@input`, `@output`, `@emit`, `@throws`, `@actor`, `@deploy`, `@rule`, `@config`, `@errors`, `@event`, `@integration`, `@observe`, `@policy`, and `@status` in bundled CI catalog.
 - **Fleet model/field tag validation:** JSON Schema bodies for `@enum`, `@relation`, `@states`, and field modifiers (`@pk`, `@fk`, `@unique`, `@index`, `@nullable`, `@pii`).
 - **Fleet product/service tag validation:** JSON Schema bodies for `@topology`, `@tenancy`, `@guide`, `@security`, `@surface`, and `@test`; `@must` schema bundled for future obligation extraction.
@@ -39,7 +38,7 @@ Initial `@pactia/pactiac` release track.
 - Single-file compile (`pactiac compile -i`) from kernel tag extract to module-scoped IR YAML.
 - Multi-file workspace compile (`pactiac compile -w`) with discover, merge, and assemble.
 - Local package resolver stub: `pactia.toml`, `pactia.lock`, vendored `.pactia/packages/`, real `lockfileDigest`.
-- `@pactia/schema` Zod models and committed JSON Schema export under `packages/schema/generated/ir/`.
+- Compile pipeline: parse, bind, expand macros, validate def fields, generic lower to JSON IR.
 - Pipeline-shaped `src/` layout: `frontend/`, `lower/`, `emit/`, `resolve/`, `diagnostics/`.
 - Golden tests: fleet monolith and workspace fixtures (`test/fixtures/expected/fleet/`).
 

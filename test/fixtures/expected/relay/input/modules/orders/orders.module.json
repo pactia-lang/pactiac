@@ -1,24 +1,42 @@
 {
   "module": {
     "name": "orders",
-    "actors": [
+    "extensions": [
       {
         "id": "operators",
         "role": "Operator",
         "capabilities": [
           "manage_orders"
-        ]
-      }
-    ],
-    "rules": [
+        ],
+        "provenance": "Pactia"
+      },
+      "Each order belongs to exactly one supplier.",
       {
-        "id": "single_supplier",
-        "text": "Each order belongs to exactly one supplier."
-      }
-    ],
-    "integrations": [],
-    "events": [],
-    "eventHandlers": [],
-    "dependsOn": []
+        "id": "orders",
+        "fields": [],
+        "extensions": [
+          {
+            "id": "staging",
+            "replicas": 2,
+            "region": "eu-west-1",
+            "provenance": "Pactia"
+          },
+          {
+            "id": "production",
+            "replicas": 3,
+            "region": "eu-west-1",
+            "provenance": "Pactia"
+          },
+          {
+            "id": "production",
+            "scenarios": "pass",
+            "coverage": ">= 80%",
+            "provenance": "Pactia"
+          }
+        ],
+        "provenance": "Pactia"
+      },
+      "All order mutations must be audit-logged"
+    ]
   }
 }

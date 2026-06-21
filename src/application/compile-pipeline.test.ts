@@ -29,7 +29,6 @@ describe("CompilePipeline v2 wiring", () => {
           registryLoader: new FsRegistryLoader(),
           lockReader: new TomlLockReader(),
           irEmitter: { emit: () => ({ writtenPaths: [] }) },
-          irValidator: { validate: () => ({ diagnostics: [] }) },
         },
       });
 
@@ -60,7 +59,6 @@ describe("CompilePipeline v2 wiring", () => {
           registryLoader: new FsRegistryLoader(),
           lockReader: new TomlLockReader(),
           irEmitter: { emit: () => ({ writtenPaths: [] }) },
-          irValidator: { validate: () => ({ diagnostics: [] }) },
         },
       });
 
@@ -94,7 +92,6 @@ describe("CompilePipeline v2 wiring", () => {
           registryLoader: new FsRegistryLoader(),
           lockReader: new TomlLockReader(),
           irEmitter: { emit: () => ({ writtenPaths: [] }) },
-          irValidator: { validate: () => ({ diagnostics: [] }) },
         },
       });
 
@@ -153,7 +150,6 @@ product Demo {
           registryLoader: new FsRegistryLoader(),
           lockReader: new TomlLockReader(),
           irEmitter: { emit: () => ({ writtenPaths: [] }) },
-          irValidator: { validate: () => ({ diagnostics: [] }) },
         },
       });
 

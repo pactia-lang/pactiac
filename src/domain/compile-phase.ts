@@ -1,4 +1,4 @@
-/** Normative compile phases — spec/docs/compilation.md (0–13). */
+/** Normative compile phases — spec/docs/compilation.md (0–11). */
 export enum CompilePhase {
   AssembleWorkspace = 0,
   ValidateVersion = 1,
@@ -12,8 +12,7 @@ export enum CompilePhase {
   CrossCheck = 9,
   Lower = 10,
   Infer = 11,
-  IrValidate = 12,
-  Emit = 13,
+  Emit = 12,
 }
 
 export const compilePhaseOrder: readonly CompilePhase[] = [
@@ -29,7 +28,6 @@ export const compilePhaseOrder: readonly CompilePhase[] = [
   CompilePhase.CrossCheck,
   CompilePhase.Lower,
   CompilePhase.Infer,
-  CompilePhase.IrValidate,
   CompilePhase.Emit,
 ];
 
@@ -59,8 +57,6 @@ export function compilePhaseLabel(phase: CompilePhase): string {
       return "lower";
     case CompilePhase.Infer:
       return "infer";
-    case CompilePhase.IrValidate:
-      return "ir-validate";
     case CompilePhase.Emit:
       return "emit";
     default: {

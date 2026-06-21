@@ -2,7 +2,6 @@
 export enum Provenance {
   Pactia = "Pactia",
   Inferred = "INFERRED",
-  StackDefault = "STACK_DEFAULT",
   Package = "PACKAGE",
   Macro = "MACRO",
   Define = "DEFINE",

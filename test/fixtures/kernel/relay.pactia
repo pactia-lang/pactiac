@@ -3,7 +3,6 @@
 pactia 1.0
 
 import @pactia/kernel;
-import @pactia/protocol-rest;
 import @pactia/rust-anb;
 
 product Relay {

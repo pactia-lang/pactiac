@@ -13,4 +13,3 @@ export type {
   RegistryLoaderInput,
   RegistryLoaderSync,
 } from "./registry-loader.js";
-export type { IrValidator, IrValidatorInput, IrValidatorResult } from "./ir-validator.js";

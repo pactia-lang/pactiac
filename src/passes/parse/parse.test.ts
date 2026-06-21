@@ -14,7 +14,7 @@ describe("RecursiveDescentParser", () => {
     assert.equal(tree.version, "1.0");
     assert.deepEqual(
       tree.root.imports.map((node) => node.path),
-      ["@pactia/kernel", "@pactia/protocol-rest", "@pactia/rust-anb"],
+      ["@pactia/kernel", "@pactia/rust-anb"],
     );
     assert.equal(tree.root.product?.name, "Relay");
     const modules = tree.root.product?.items.filter((item) => item.kind === SyntaxNodeKind.Module) ?? [];

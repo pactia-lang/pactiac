@@ -1,2 +1,2 @@
-/** Phase 9 — wire, protocol, state graph cross-checks. */
+/** Phase 9 — tag field specs and state graph cross-checks. */
 export const passName = "cross-check" as const;

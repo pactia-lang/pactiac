@@ -1,0 +1,391 @@
+{
+  "manifest": {
+    "manifest": {
+      "pactiaVersion": "1.0",
+      "compiledAt": "1970-01-01T00:00:00.000Z",
+      "entry": "product.pactia",
+      "lockfileDigest": "sha256:f45b2da7e267e89a24f196734fd28620ad7a447fe416f5277361783330216104",
+      "modules": [
+        {
+          "name": "orders",
+          "path": "modules/orders/",
+          "module": "orders.module.json",
+          "model": "orders.model.json",
+          "services": [
+            {
+              "name": "order",
+              "file": "services/order.service.json"
+            }
+          ]
+        }
+      ],
+      "references": []
+    }
+  },
+  "product": {
+    "product": {
+      "name": "Relay",
+      "description": "B2B order relay between suppliers and retailers",
+      "extensions": [
+        {
+          "fields": [
+            {
+              "name": "language",
+              "type": "RUST",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "edition",
+              "type": "2021",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "framework",
+              "type": "ACTIX-WEB",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "runtime",
+              "type": "TOKIO",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "nodeRole",
+              "type": "SIDECAR",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "package",
+              "type": "@PACTIA/RUST-ANB",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "errorEnvelope",
+              "type": "PLATFORM",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "pagination",
+              "type": "CURSOR",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "orm",
+              "type": "SQLX",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "database",
+              "type": "POSTGRESQL",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "cache",
+              "type": "REDIS",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "messaging",
+              "type": "KAFKA",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "ci",
+              "type": "GITHUB-ACTIONS",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "container",
+              "type": "DOCKER",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "deploy",
+              "type": "KUBERNETES",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "allowedCrates",
+              "type": "TOKIO,ACTIX-WEB,ACTIX-RT,ACTIX-HTTP,SQLX,SERDE,SERDE_JSON,TRACING,TRACING-SUBSCRIBER,UUID,CHRONO,THISERROR,ANYHOW,RDKAFKA,REDIS,JSONWEBTOKEN,VALIDATOR,CONFIG,DOTENVY",
+              "array": false,
+              "optional": false
+            },
+            {
+              "name": "deniedCrates",
+              "type": "ROCKET,DIESEL,OPENSSL,NATIVE-TLS,HYPER,AXUM,WARP,REQWEST,TONIC,PROST,ASYNC-STD,SMOL",
+              "array": false,
+              "optional": false
+            }
+          ],
+          "provenance": "Pactia"
+        },
+        {
+          "mode": "microservices",
+          "provenance": "Pactia"
+        },
+        {
+          "mode": "single",
+          "provenance": "Pactia"
+        },
+        "Handlers return errors via the platform envelope only",
+        "List endpoints use cursor pagination — not offset"
+      ]
+    }
+  },
+  "modules": [
+    {
+      "module": {
+        "module": {
+          "name": "orders",
+          "extensions": [
+            {
+              "id": "operators",
+              "role": "Operator",
+              "capabilities": [
+                "manage_orders"
+              ],
+              "provenance": "Pactia"
+            },
+            "Each order belongs to exactly one supplier.",
+            {
+              "id": "orders",
+              "fields": [],
+              "extensions": [
+                {
+                  "id": "staging",
+                  "replicas": 2,
+                  "region": "eu-west-1",
+                  "provenance": "Pactia"
+                },
+                {
+                  "id": "production",
+                  "replicas": 3,
+                  "region": "eu-west-1",
+                  "provenance": "Pactia"
+                },
+                {
+                  "id": "production",
+                  "scenarios": "pass",
+                  "coverage": ">= 80%",
+                  "provenance": "Pactia"
+                }
+              ],
+              "provenance": "Pactia"
+            },
+            "All order mutations must be audit-logged"
+          ]
+        }
+      },
+      "model": {
+        "model": {
+          "name": "orders",
+          "extensions": [
+            {
+              "name": "OrderStatus",
+              "values": [
+                "PENDING",
+                "FULFILLED"
+              ],
+              "provenance": "Pactia"
+            },
+            {
+              "name": "OrderListItem",
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "UUID",
+                  "array": false,
+                  "optional": false
+                },
+                {
+                  "name": "sku",
+                  "type": "STRING",
+                  "array": false,
+                  "optional": false
+                },
+                {
+                  "name": "status",
+                  "type": "ORDERSTATUS",
+                  "array": false,
+                  "optional": false
+                }
+              ],
+              "provenance": "Pactia"
+            },
+            {
+              "name": "OrderListResponse",
+              "fields": [
+                {
+                  "name": "orders",
+                  "type": "ORDERLISTITEM [ ]",
+                  "array": false,
+                  "optional": false
+                },
+                {
+                  "name": "nextCursor",
+                  "type": "STRING",
+                  "array": false,
+                  "optional": false
+                }
+              ],
+              "provenance": "Pactia"
+            },
+            {
+              "name": "CreateOrderRequest",
+              "fields": [
+                {
+                  "name": "sku",
+                  "type": "STRING",
+                  "array": false,
+                  "optional": false
+                },
+                {
+                  "name": "quantity",
+                  "type": "INT",
+                  "array": false,
+                  "optional": false
+                }
+              ],
+              "provenance": "Pactia"
+            },
+            {
+              "name": "CreateOrderResponse",
+              "fields": [
+                {
+                  "name": "orderId",
+                  "type": "UUID",
+                  "array": false,
+                  "optional": false
+                }
+              ],
+              "provenance": "Pactia"
+            },
+            {
+              "name": "Order",
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "UUID",
+                  "array": false,
+                  "optional": false
+                },
+                {
+                  "name": "sku",
+                  "type": "STRING",
+                  "array": false,
+                  "optional": false
+                },
+                {
+                  "name": "quantity",
+                  "type": "INT",
+                  "array": false,
+                  "optional": false
+                },
+                {
+                  "name": "status",
+                  "type": "ORDERSTATUS",
+                  "array": false,
+                  "optional": false
+                },
+                {
+                  "name": "createdAt",
+                  "type": "DATETIME",
+                  "array": false,
+                  "optional": false
+                }
+              ],
+              "provenance": "Pactia"
+            }
+          ]
+        }
+      },
+      "services": [
+        {
+          "service": {
+            "name": "OrderService",
+            "description": "Core order relay API",
+            "flags": {
+              "database": true
+            },
+            "extensions": [
+              {
+                "roles": [
+                  "Operator"
+                ],
+                "provenance": "Pactia"
+              },
+              {
+                "modifiers": {
+                  "pageSize": 50,
+                  "paginated": true,
+                  "bodyRef": "OrderListResponse"
+                },
+                "id": "list_orders",
+                "method": "GET",
+                "path": "/api/v1/orders",
+                "extensions": [
+                  {
+                    "id": "order_list",
+                    "platform": "web",
+                    "screen": "{ id : order_list }",
+                    "route": "{ path : /orders }",
+                    "text": "Operator browses orders in a paginated table",
+                    "provenance": "Pactia"
+                  }
+                ],
+                "provenance": "Pactia"
+              },
+              {
+                "modifiers": {
+                  "create": true,
+                  "idempotency": "REQUIRED",
+                  "bodyRef": "CreateOrderResponse"
+                },
+                "id": "create_order",
+                "method": "POST",
+                "path": "/api/v1/orders",
+                "provenance": "Pactia"
+              },
+              {
+                "id": "operator_creates_order",
+                "name": "Operator creates an order",
+                "when": "Operator is logged in and POST /api/v1/orders with valid body",
+                "then": "status is 201 and order.created is emitted",
+                "provenance": "Pactia"
+              },
+              {
+                "id": "operator_lists_orders",
+                "name": "Operator lists orders",
+                "when": "Operator is logged in and GET /api/v1/orders",
+                "then": "status is 200 and response matches OrderListResponse",
+                "provenance": "Pactia"
+              },
+              {
+                "id": "unauthorized_create",
+                "name": "Unauthorized create rejected",
+                "when": "Anonymous POST /api/v1/orders",
+                "then": "status is 403",
+                "provenance": "Pactia"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

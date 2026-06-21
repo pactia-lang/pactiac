@@ -9,8 +9,5 @@ export function createDefaultCompilePipelinePorts(): CompilePipelinePorts {
     registryLoader: new FsRegistryLoader(),
     lockReader: new TomlLockReader(),
     irEmitter: { emit: () => ({ writtenPaths: [] }) },
-    irValidator: {
-      validate: () => ({ diagnostics: [] }),
-    },
   };
 }

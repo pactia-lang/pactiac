@@ -73,7 +73,7 @@ describe("ir-slot-writer", () => {
 });
 
 describe("lowerBoundTree", () => {
-  it("lowers @output prefix and @api append_host into service endpoints", () => {
+  it("lowers @output prefix and @api append_host into service extensions", () => {
     const source = `pactia 1.0
 import @pactia/test-ir;
 
@@ -98,18 +98,18 @@ product Demo {
     const parsed = JSON.parse(serviceJson!) as {
       service: {
         name: string;
-        endpoints: Array<Record<string, unknown>>;
+        extensions: Array<Record<string, unknown>>;
       };
     };
 
     assert.equal(parsed.service.name, "OrderService");
-    assert.equal(parsed.service.endpoints.length, 1);
-    const endpoint = parsed.service.endpoints[0]!;
-    assert.equal(endpoint["id"], "create_order");
-    assert.equal(endpoint["method"], "POST");
-    assert.equal(endpoint["path"], "/api/v1/orders");
-    assert.deepEqual(endpoint["response"], { bodyRef: "OrderResponse" });
-    assert.equal(endpoint["provenance"], "Pactia");
+    assert.equal(parsed.service.extensions.length, 1);
+    const extension = parsed.service.extensions[0]!;
+    assert.equal(extension["id"], "create_order");
+    assert.equal(extension["method"], "POST");
+    assert.equal(extension["path"], "/api/v1/orders");
+    assert.deepEqual(extension["modifiers"], { bodyRef: "OrderResponse" });
+    assert.equal(extension["provenance"], "Pactia");
   });
 
   it("emits manifest and product JSON alongside service IR", () => {
@@ -141,7 +141,7 @@ product Demo {
     assert.equal(workspace.modules[0]?.module.module.name, "billing");
   });
 
-  it("lowers enum hosts from declared registry fields and entity hosts from open fields", () => {
+  it("lowers enum and entity host tags into model extensions", () => {
     const source = `pactia 1.0
 import @pactia/kernel;
 
@@ -166,19 +166,19 @@ product Demo {
     assert.ok(modelJson);
     const parsed = JSON.parse(modelJson!) as {
       model: {
-        enums: Array<{ name: string; values: string[] }>;
-        entities: Array<{ name: string; fields: Array<{ name: string; type: string }> }>;
+        extensions: Array<Record<string, unknown>>;
       };
     };
 
-    assert.equal(parsed.model.enums[0]?.name, "Status");
-    assert.deepEqual(parsed.model.enums[0]?.values, ["PENDING", "FULFILLED"]);
-    assert.equal(parsed.model.entities[0]?.name, "Item");
-    assert.equal(parsed.model.entities[0]?.fields[0]?.name, "id");
-    assert.equal(parsed.model.entities[0]?.fields[0]?.type, "UUID");
+    assert.equal(parsed.model.extensions[0]?.["name"], "Status");
+    assert.deepEqual(parsed.model.extensions[0]?.["values"], ["PENDING", "FULFILLED"]);
+    assert.equal(parsed.model.extensions[1]?.["name"], "Item");
+    const fields = parsed.model.extensions[1]?.["fields"] as Array<{ name: string; type: string }>;
+    assert.equal(fields[0]?.name, "id");
+    assert.equal(fields[0]?.type, "UUID");
   });
 
-  it("lowers product @guide prose lines into guide[] via registry path", () => {
+  it("lowers product @guide prose into product extensions", () => {
     const source = `pactia 1.0
 import @pactia/kernel;
 
@@ -202,11 +202,13 @@ product Demo {
     assert.equal(lowered.diagnostics.length, 0);
     const productJson = lowered.files.get("input/product.json");
     assert.ok(productJson);
-    const parsed = JSON.parse(productJson!) as { product: { guide?: string[] } };
-    assert.deepEqual(parsed.product.guide, ["First guidance line", "Second guidance line"]);
+    const parsed = JSON.parse(productJson!) as { product: { extensions?: unknown[] } };
+    assert.equal(parsed.product.extensions?.length, 2);
+    assert.equal(parsed.product.extensions?.[0], "First guidance line");
+    assert.equal(parsed.product.extensions?.[1], "Second guidance line");
   });
 
-  it("expands product-level stack macro into description prose only", () => {
+  it("expands product-level stack macro into product extensions", () => {
     const rustAnbRoot = join(repoRoot, "test/fixtures/packages/@pactia--rust-anb@1.0.0");
     const kernelRoot = join(repoRoot, "test/fixtures/packages/@pactia--kernel@1.0.0");
     const rustAnb = registryFromPackage(rustAnbRoot, "@pactia/rust-anb");
@@ -241,18 +243,16 @@ product Demo {
     const parsed = JSON.parse(productJson!) as {
       product: {
         description?: string;
-        stack?: Record<string, string>;
+        extensions?: Array<{ fields?: Array<{ name: string; type: string }> }>;
       };
     };
     assert.match(parsed.product.description ?? "", /Demo product/);
-    assert.equal(parsed.product.stack?.language, "rust");
-    assert.equal(parsed.product.stack?.framework, "actix-web");
-    assert.equal(parsed.product.stack?.package, "@pactia/rust-anb");
-    assert.ok(Array.isArray(parsed.product.stack?.guide));
-    assert.match(String(parsed.product.stack?.guide?.[0] ?? ""), /actix-web and tokio/);
-    assert.ok(parsed.product.stack?.allowedCrates?.includes("tokio"));
-    assert.ok(parsed.product.stack?.allowedCrates?.includes("actix-web"));
-    assert.ok(parsed.product.stack?.deniedCrates?.includes("rocket"));
-    assert.ok(parsed.product.stack?.deniedCrates?.includes("openssl"));
+    const stackFields = parsed.product.extensions?.[0]?.fields ?? [];
+    const field = (name: string) => stackFields.find((entry) => entry.name === name)?.type;
+    assert.equal(field("language"), "RUST");
+    assert.equal(field("framework"), "ACTIX-WEB");
+    assert.equal(field("package"), "@PACTIA/RUST-ANB");
+    assert.match(field("allowedCrates") ?? "", /tokio/i);
+    assert.match(field("deniedCrates") ?? "", /rocket/i);
   });
 });

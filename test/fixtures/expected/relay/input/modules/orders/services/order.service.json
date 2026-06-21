@@ -3,107 +3,68 @@
     "name": "OrderService",
     "description": "Core order relay API",
     "flags": {
-      "database": true,
-      "cache": false,
-      "events": false
+      "database": true
     },
-    "endpoints": [
+    "extensions": [
       {
+        "roles": [
+          "Operator"
+        ],
+        "provenance": "Pactia"
+      },
+      {
+        "modifiers": {
+          "pageSize": 50,
+          "paginated": true,
+          "bodyRef": "OrderListResponse"
+        },
         "id": "list_orders",
         "method": "GET",
         "path": "/api/v1/orders",
-        "summary": "Operator browses orders in a paginated table",
-        "authorization": {
-          "type": "ROLE",
-          "roles": [
-            "Operator"
-          ]
-        },
-        "response": {
-          "bodyRef": "OrderListResponse"
-        },
-        "errors": [],
-        "modifiers": {
-          "pageSize": 50,
-          "paginated": true
-        },
-        "emits": [],
+        "extensions": [
+          {
+            "id": "order_list",
+            "platform": "web",
+            "screen": "{ id : order_list }",
+            "route": "{ path : /orders }",
+            "text": "Operator browses orders in a paginated table",
+            "provenance": "Pactia"
+          }
+        ],
         "provenance": "Pactia"
       },
       {
+        "modifiers": {
+          "create": true,
+          "idempotency": "REQUIRED",
+          "bodyRef": "CreateOrderResponse"
+        },
         "id": "create_order",
         "method": "POST",
         "path": "/api/v1/orders",
-        "request": {
-          "bodyRef": "CreateOrderRequest",
-          "provenance": "INFERRED"
-        },
-        "response": {
-          "bodyRef": "CreateOrderResponse"
-        },
-        "errors": [],
-        "modifiers": {
-          "create": true,
-          "idempotency": "REQUIRED"
-        },
-        "emits": [],
+        "provenance": "Pactia"
+      },
+      {
+        "id": "operator_creates_order",
+        "name": "Operator creates an order",
+        "when": "Operator is logged in and POST /api/v1/orders with valid body",
+        "then": "status is 201 and order.created is emitted",
+        "provenance": "Pactia"
+      },
+      {
+        "id": "operator_lists_orders",
+        "name": "Operator lists orders",
+        "when": "Operator is logged in and GET /api/v1/orders",
+        "then": "status is 200 and response matches OrderListResponse",
+        "provenance": "Pactia"
+      },
+      {
+        "id": "unauthorized_create",
+        "name": "Unauthorized create rejected",
+        "when": "Anonymous POST /api/v1/orders",
+        "then": "status is 403",
         "provenance": "Pactia"
       }
-    ],
-    "scenarios": [
-      {
-        "name": "Operator creates an order",
-        "service": "OrderService",
-        "provenance": "Pactia",
-        "given": {
-          "actor": "Operator",
-          "auth": "logged_in"
-        },
-        "when": {
-          "method": "POST",
-          "path": "/api/v1/orders",
-          "body": {
-            "valid": true
-          }
-        },
-        "then": {
-          "httpStatus": "201",
-          "kafkaEmits": "order.created"
-        }
-      },
-      {
-        "name": "Operator lists orders",
-        "service": "OrderService",
-        "provenance": "Pactia",
-        "given": {
-          "actor": "Operator",
-          "auth": "logged_in"
-        },
-        "when": {
-          "method": "GET",
-          "path": "/api/v1/orders"
-        },
-        "then": {
-          "httpStatus": "200",
-          "bodyRef": "OrderListResponse"
-        }
-      },
-      {
-        "name": "Unauthorized create rejected",
-        "service": "OrderService",
-        "provenance": "Pactia",
-        "given": {
-          "actor": "Anonymous"
-        },
-        "when": {
-          "method": "POST",
-          "path": "/api/v1/orders"
-        },
-        "then": {
-          "httpStatus": "403"
-        }
-      }
-    ],
-    "obligations": []
+    ]
   }
 }

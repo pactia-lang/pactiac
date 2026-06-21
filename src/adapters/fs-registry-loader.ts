@@ -14,7 +14,6 @@ import {
   parsePactiaLock,
   parsePactiaToml,
 } from "../resolve/manifest.js";
-import { isStackPackage } from "../resolve/package-kind.js";
 import { parseSyntaxTree } from "../passes/parse/recursive-descent-parser.js";
 import {
   mergeEffectiveRegistry,
@@ -71,12 +70,9 @@ export class FsRegistryLoader implements RegistryLoaderSync {
         : input.partialImports?.get(pkg.coordinate);
       const filtered = applyPartialImportFilter(parsed.tags, parsed.macros, partialSymbols);
 
-      let tier = RegistryPrecedenceTier.Dependency;
-      if (isStackPackage(pkg.manifestSource)) {
-        tier = RegistryPrecedenceTier.Stack;
-      } else if (imports.includes(pkg.coordinate)) {
-        tier = RegistryPrecedenceTier.ExplicitImport;
-      }
+      const tier = imports.includes(pkg.coordinate)
+        ? RegistryPrecedenceTier.ExplicitImport
+        : RegistryPrecedenceTier.Dependency;
 
       return {
         coordinate: pkg.coordinate,
