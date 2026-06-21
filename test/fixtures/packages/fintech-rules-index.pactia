@@ -1,0 +1,20 @@
+// Package source example — @acme/fintech-rules
+// Normative grammar: spec/docs/macros.md
+
+pactia 1.0
+
+export def @sanctions_check in service {
+  level,
+  provider,
+  > Screen against provider list.
+}
+
+export def #sanctions_screen in service {
+  @sanctions_check { level: enhanced, }
+}
+
+model {
+  @enum ScreeningLevel {
+    values: [STANDARD, ENHANCED],
+  }
+}

@@ -1,4 +1,3 @@
 [package]
 name = "@pactia/html-css-js"
 version = "1.0.0"
-kind = "surface"

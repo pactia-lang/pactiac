@@ -84,7 +84,6 @@ class BoundTreeLowerer {
   private currentModule: LazyModuleBundle | undefined;
   private serviceRoot: WritableRecord | undefined;
   private pendingHost: WritableRecord = {};
-  private pendingStackGuide: string[] = [];
 
   constructor(
     private readonly input: LowerBoundTreeInput,
@@ -158,31 +157,12 @@ class BoundTreeLowerer {
   private lowerBlock(block: BoundBlockNode): void {
     switch (block.placement) {
       case PlacementTarget.Product: {
-        const stackIndex = block.children.findIndex(
-          (child) => child.kind === BoundNodeKind.BoundTag && child.tagName === "stack",
-        );
-        if (stackIndex >= 0) {
-          const leadingProse = block.children
-            .slice(0, stackIndex)
-            .filter(
-              (child): child is ProseNode =>
-                child.kind === SyntaxNodeKind.Prose && child.text.length > 0,
-            );
-          if (leadingProse.length > 0) {
-            this.productDoc["description"] = leadingProse[0]!.text;
-            if (leadingProse.length > 1) {
-              this.pendingStackGuide = leadingProse.slice(1).map((line) => line.text);
-            }
-          }
-        } else {
-          const description = collectBlockProse(block.children);
-          if (description) {
-            this.productDoc["description"] = description;
-          }
+        const description = collectBlockProse(block.children);
+        if (description) {
+          this.productDoc["description"] = description;
         }
-        for (let index = 0; index < block.children.length; index += 1) {
-          const child = block.children[index]!;
-          if (stackIndex >= 0 && index < stackIndex && child.kind === SyntaxNodeKind.Prose) {
+        for (const child of block.children) {
+          if (child.kind === SyntaxNodeKind.Prose) {
             continue;
           }
           this.lowerTreeItem(child, IrFile.Product);
@@ -272,14 +252,6 @@ class BoundTreeLowerer {
         break;
       case IrMerge.MergeFields:
         mergeTagBlock(this.documentRoot(entry.ir.file), entry, tag.children);
-        if (scopeFile === IrFile.Product && this.pendingStackGuide.length > 0) {
-          const { containerPath } = parseIrPath(entry.ir.path);
-          const stackRoot = getAtPath(this.productDoc, containerPath);
-          if (stackRoot && typeof stackRoot === "object" && !Array.isArray(stackRoot)) {
-            (stackRoot as WritableRecord)["guide"] = [...this.pendingStackGuide];
-          }
-          this.pendingStackGuide = [];
-        }
         break;
       case IrMerge.FieldAnnotation:
         break;

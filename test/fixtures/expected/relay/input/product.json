@@ -2,75 +2,122 @@
   "product": {
     "name": "Relay",
     "description": "B2B order relay between suppliers and retailers",
-    "stack": {
-      "language": "rust",
-      "edition": 2021,
-      "framework": "actix-web",
-      "runtime": "tokio",
-      "nodeRole": "sidecar",
-      "package": "@pactia/rust-anb",
-      "errorEnvelope": "platform",
-      "pagination": "cursor",
-      "orm": "sqlx",
-      "database": "postgresql",
-      "cache": "redis",
-      "messaging": "kafka",
-      "ci": "github-actions",
-      "container": "docker",
-      "deploy": "kubernetes",
-      "allowedCrates": [
-        "tokio",
-        "actix-web",
-        "actix-rt",
-        "actix-http",
-        "sqlx",
-        "serde",
-        "serde_json",
-        "tracing",
-        "tracing-subscriber",
-        "uuid",
-        "chrono",
-        "thiserror",
-        "anyhow",
-        "rdkafka",
-        "redis",
-        "jsonwebtoken",
-        "validator",
-        "config",
-        "dotenvy"
-      ],
-      "deniedCrates": [
-        "rocket",
-        "diesel",
-        "openssl",
-        "native-tls",
-        "hyper",
-        "axum",
-        "warp",
-        "reqwest",
-        "tonic",
-        "prost",
-        "async-std",
-        "smol"
-      ],
-      "guide": [
-        "Rust / Actix / Node backend stack ( ANB ) — primary APIs in Rust on actix-web and tokio.",
-        "Node is a sidecar only ( admin tooling , asset bundling ) ; never the request-serving hot path.",
-        "All handlers return errors via the platform envelope — no ad hoc JSON error bodies.",
-        "List endpoints use cursor pagination ; override page size only with paginated and list service macros.",
-        "Persistence via sqlx with PostgreSQL ; cache via redis ; async integration via kafka when declared.",
-        "CI defaults to GitHub Actions ; images are OCI multi-stage cargo release plus distroless runtime.",
-        "Deploy targets Kubernetes or Docker Compose ; health checks expose health and ready routes.",
-        "Allowed Rust crates are the default dependency set for generated services ; denied crates fail codegen audit."
-      ]
-    },
-    "topology": {
-      "mode": "microservices"
-    },
-    "tenancy": {
-      "mode": "single"
-    },
-    "guide": [
+    "extensions": [
+      {
+        "fields": [
+          {
+            "name": "language",
+            "type": "RUST",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "edition",
+            "type": "2021",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "framework",
+            "type": "ACTIX-WEB",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "runtime",
+            "type": "TOKIO",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "nodeRole",
+            "type": "SIDECAR",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "package",
+            "type": "@PACTIA/RUST-ANB",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "errorEnvelope",
+            "type": "PLATFORM",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "pagination",
+            "type": "CURSOR",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "orm",
+            "type": "SQLX",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "database",
+            "type": "POSTGRESQL",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "cache",
+            "type": "REDIS",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "messaging",
+            "type": "KAFKA",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "ci",
+            "type": "GITHUB-ACTIONS",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "container",
+            "type": "DOCKER",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "deploy",
+            "type": "KUBERNETES",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "allowedCrates",
+            "type": "TOKIO,ACTIX-WEB,ACTIX-RT,ACTIX-HTTP,SQLX,SERDE,SERDE_JSON,TRACING,TRACING-SUBSCRIBER,UUID,CHRONO,THISERROR,ANYHOW,RDKAFKA,REDIS,JSONWEBTOKEN,VALIDATOR,CONFIG,DOTENVY",
+            "array": false,
+            "optional": false
+          },
+          {
+            "name": "deniedCrates",
+            "type": "ROCKET,DIESEL,OPENSSL,NATIVE-TLS,HYPER,AXUM,WARP,REQWEST,TONIC,PROST,ASYNC-STD,SMOL",
+            "array": false,
+            "optional": false
+          }
+        ],
+        "provenance": "Pactia"
+      },
+      {
+        "mode": "microservices",
+        "provenance": "Pactia"
+      },
+      {
+        "mode": "single",
+        "provenance": "Pactia"
+      },
       "Handlers return errors via the platform envelope only",
       "List endpoints use cursor pagination — not offset"
     ]

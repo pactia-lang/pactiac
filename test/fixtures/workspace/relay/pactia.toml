@@ -1,4 +1,3 @@
 [dependencies]
 "@pactia/kernel" = "^1.0"
-"@pactia/protocol-rest" = "^1.0"
 "@pactia/rust-anb" = "^1.0"

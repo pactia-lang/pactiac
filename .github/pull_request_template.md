@@ -15,7 +15,7 @@
 
 - [ ] No [pactia-lang/spec](https://github.com/pactia-lang/spec) changes required
 - [ ] Spec PR linked or described below
-- [ ] Golden fixture synced from spec (`test/fixtures/kernel/`)
+- [ ] Golden / kernel fixtures updated under `test/fixtures/` when syntax examples change
 
 **Spec PR / notes (if any):**
 
@@ -24,7 +24,6 @@
 - [ ] `npm test` passes locally
 - [ ] `npm run hooks:install` — pre-commit / pre-push hooks considered
 - [ ] Golden IR updated intentionally (`npm run generate:golden`) and diff reviewed
-- [ ] IR JSON Schema export updated (`npm run export:ir-schemas`) if `@pactia/schema` changed
 - [ ] Manual compile checked: `pactiac compile -i <file.pactia> -o /tmp/out`
 
 **Commands / scenarios exercised:**

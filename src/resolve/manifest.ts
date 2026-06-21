@@ -3,7 +3,6 @@ import { parsePactiaLockToml } from "./toml-lock.js";
 import { PackageErrorCode, PackageResolutionError } from "./errors.js";
 
 export interface PactiaTomlManifest {
-  readonly stackPackage: string | undefined;
   readonly dependencies: ReadonlyMap<string, string>;
 }
 
@@ -17,17 +16,12 @@ export interface PactiaLockManifest {
 
 export function parsePactiaToml(source: string): PactiaTomlManifest {
   const dependencies = new Map<string, string>();
-  let stackPackage: string | undefined;
-  let section: "none" | "stack" | "dependencies" = "none";
+  let section: "none" | "dependencies" = "none";
 
   for (const rawLine of source.split("\n")) {
     const line = rawLine.trim();
     if (line.length === 0 || line.startsWith("#")) continue;
 
-    if (line === "[stack]") {
-      section = "stack";
-      continue;
-    }
     if (line === "[dependencies]") {
       section = "dependencies";
       continue;
@@ -42,14 +36,12 @@ export function parsePactiaToml(source: string): PactiaTomlManifest {
     const key = kv[1]!.trim();
     const value = kv[2]!.trim().replace(/^["']|["']$/g, "");
 
-    if (section === "stack" && key === "package") {
-      stackPackage = value;
-    } else if (section === "dependencies") {
+    if (section === "dependencies") {
       dependencies.set(key.replace(/^["']|["']$/g, ""), value);
     }
   }
 
-  return { stackPackage, dependencies };
+  return { dependencies };
 }
 
 export function parsePactiaLock(source: string): PactiaLockManifest {
@@ -64,20 +56,6 @@ export function lockfileDigest(source: string): string {
 export function normalizePackageCoordinate(coordinate: string): string {
   if (coordinate.startsWith("@")) return coordinate;
   return `@pactia/${coordinate}`;
-}
-
-export function resolveStackPackage(manifest: PactiaTomlManifest): string | undefined {
-  const coordinate = manifest.stackPackage;
-  if (!coordinate) {
-    return undefined;
-  }
-  if (!manifest.dependencies.has(coordinate)) {
-    throw new PackageResolutionError(
-      PackageErrorCode.DependencyNotDeclared,
-      `Stack package '${coordinate}' is not declared in pactia.toml [dependencies]`,
-    );
-  }
-  return coordinate;
 }
 
 export function assertImportsDeclared(

@@ -31,7 +31,6 @@ export interface CompilePipelinePorts {
   readonly lockReader: import("../ports/lock-reader.js").LockReaderSync;
   readonly parser: import("../ports/parser.js").Parser;
   readonly irEmitter: import("../ports/ir-emitter.js").IrEmitterSync;
-  readonly irValidator: import("../ports/ir-validator.js").IrValidator;
 }
 
 export interface CompilePipelineOptions {

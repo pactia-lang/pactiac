@@ -1,7 +1,15 @@
 {
   "model": {
     "name": "orders",
-    "entities": [
+    "extensions": [
+      {
+        "name": "OrderStatus",
+        "values": [
+          "PENDING",
+          "FULFILLED"
+        ],
+        "provenance": "Pactia"
+      },
       {
         "name": "OrderListItem",
         "fields": [
@@ -23,27 +31,26 @@
             "array": false,
             "optional": false
           }
-        ]
+        ],
+        "provenance": "Pactia"
       },
       {
         "name": "OrderListResponse",
         "fields": [
           {
             "name": "orders",
-            "type": "ORDERLISTITEM",
-            "array": true,
+            "type": "ORDERLISTITEM [ ]",
+            "array": false,
             "optional": false
           },
           {
             "name": "nextCursor",
             "type": "STRING",
             "array": false,
-            "optional": true,
-            "annotations": {
-              "nullable": true
-            }
+            "optional": false
           }
-        ]
+        ],
+        "provenance": "Pactia"
       },
       {
         "name": "CreateOrderRequest",
@@ -56,11 +63,12 @@
           },
           {
             "name": "quantity",
-            "type": "INTEGER",
+            "type": "INT",
             "array": false,
             "optional": false
           }
-        ]
+        ],
+        "provenance": "Pactia"
       },
       {
         "name": "CreateOrderResponse",
@@ -71,7 +79,8 @@
             "array": false,
             "optional": false
           }
-        ]
+        ],
+        "provenance": "Pactia"
       },
       {
         "name": "Order",
@@ -80,10 +89,7 @@
             "name": "id",
             "type": "UUID",
             "array": false,
-            "optional": false,
-            "annotations": {
-              "primary": true
-            }
+            "optional": false
           },
           {
             "name": "sku",
@@ -93,7 +99,7 @@
           },
           {
             "name": "quantity",
-            "type": "INTEGER",
+            "type": "INT",
             "array": false,
             "optional": false
           },
@@ -109,20 +115,9 @@
             "array": false,
             "optional": false
           }
-        ]
+        ],
+        "provenance": "Pactia"
       }
-    ],
-    "enums": [
-      {
-        "name": "OrderStatus",
-        "values": [
-          "PENDING",
-          "FULFILLED"
-        ]
-      }
-    ],
-    "relations": [],
-    "stateMachines": [],
-    "rules": []
+    ]
   }
 }

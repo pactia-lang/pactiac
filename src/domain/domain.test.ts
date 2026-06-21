@@ -9,10 +9,10 @@ import { PlacementTarget, placementAllows } from "./placement.js";
 import { moduleIrPaths, serviceIrPath } from "./workspace-ir.js";
 
 describe("domain compile phases", () => {
-  it("orders phases 0 through 13", () => {
-    assert.equal(compilePhaseOrder.length, 14);
+  it("orders phases 0 through 12", () => {
+    assert.equal(compilePhaseOrder.length, 13);
     assert.equal(compilePhaseOrder[0], CompilePhase.AssembleWorkspace);
-    assert.equal(compilePhaseOrder[13], CompilePhase.Emit);
+    assert.equal(compilePhaseOrder[12], CompilePhase.Emit);
   });
 });
 

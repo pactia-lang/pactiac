@@ -7,12 +7,12 @@ test("parsePactiaLockToml reads Cargo-style package tables", () => {
   const lock = parsePactiaLockToml(`lockVersion = 1
 
 [[package]]
-name = "@pactia/protocol-rest"
+name = "@pactia/rust-anb"
 version = "1.0.0"
 digest = "sha256:a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
 `);
   assert.equal(lock.packages.length, 1);
-  assert.equal(lock.packages[0]?.name, "@pactia/protocol-rest");
+  assert.equal(lock.packages[0]?.name, "@pactia/rust-anb");
 });
 
 test("parsePactiaLockToml rejects empty lockfiles", () => {

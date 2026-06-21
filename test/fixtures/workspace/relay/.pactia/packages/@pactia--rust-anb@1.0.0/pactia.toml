@@ -1,7 +1,6 @@
 [package]
 name = "@pactia/rust-anb"
 version = "1.0.0"
-kind = "stack"
 
 [dependencies]
 "@pactia/kernel" = "^1.0"

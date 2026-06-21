@@ -7,7 +7,7 @@ import { PlacementTarget } from "../../domain/placement.js";
 import { deriveIrSlotForTag } from "./derive-tag-ir.js";
 
 describe("deriveIrSlotForTag", () => {
-  it("derives placement-based defaults for host tags", () => {
+  it("derives generic append_host for service host tags", () => {
     const apiDef = {
       kind: SyntaxNodeKind.DefExport,
       exported: true,
@@ -22,7 +22,7 @@ describe("deriveIrSlotForTag", () => {
     };
     assert.deepEqual(deriveIrSlotForTag(apiDef), {
       file: IrFile.Service,
-      path: "endpoints[]",
+      path: "extensions[]",
       merge: IrMerge.AppendHost,
     });
   });
@@ -42,7 +42,7 @@ describe("deriveIrSlotForTag", () => {
     };
     assert.deepEqual(deriveIrSlotForTag(outputDef), {
       file: IrFile.Service,
-      path: "response",
+      path: "modifiers",
       merge: IrMerge.MergeIntoHost,
     });
   });
