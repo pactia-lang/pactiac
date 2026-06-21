@@ -7,18 +7,30 @@ import { loadRegistryFromWorkspace } from "./fs-registry-loader.js";
 import { parseSyntaxTree } from "../passes/parse/recursive-descent-parser.js";
 
 const relayWorkspace = join(repoRoot, "test/fixtures/workspace/relay");
-const relaySource = readFileSync(join(relayWorkspace, "product.pactia"), "utf8");
+const relaySource = readFileSync(
+  join(relayWorkspace, "product.pactia"),
+  "utf8",
+);
 
 describe("FsRegistryLoader", () => {
   it("loads stack macros from index.pactia when vendor root is set", () => {
     const previous = process.env["PACTIA_VENDOR_ROOT"];
-    process.env["PACTIA_VENDOR_ROOT"] = join(repoRoot, "test/fixtures/packages");
+    process.env["PACTIA_VENDOR_ROOT"] = join(
+      repoRoot,
+      "test/fixtures/packages",
+    );
     try {
-      const syntax = parseSyntaxTree({ source: relaySource, entryFile: "product.pactia" });
+      const syntax = parseSyntaxTree({
+        source: relaySource,
+        entryFile: "product.pactia",
+      });
       const registry = loadRegistryFromWorkspace(relayWorkspace, syntax);
       assert.ok(registry.macros.has("paginated"));
       assert.ok(registry.macros.has("list"));
-      assert.equal(registry.macros.get("paginated")?.source, "@pactia/rust-anb");
+      assert.equal(
+        registry.macros.get("paginated")?.source,
+        "@pactia/rust-stack",
+      );
     } finally {
       if (previous === undefined) delete process.env["PACTIA_VENDOR_ROOT"];
       else process.env["PACTIA_VENDOR_ROOT"] = previous;
@@ -27,17 +39,23 @@ describe("FsRegistryLoader", () => {
 
   it("filters registry entries for partial package imports", () => {
     const previous = process.env["PACTIA_VENDOR_ROOT"];
-    process.env["PACTIA_VENDOR_ROOT"] = join(repoRoot, "test/fixtures/packages");
+    process.env["PACTIA_VENDOR_ROOT"] = join(
+      repoRoot,
+      "test/fixtures/packages",
+    );
     try {
       const partialSource = [
         "pactia 1.0",
-        "import { #list } from @pactia/rust-anb;",
+        "import { #list } from @pactia/rust-stack;",
         "product Demo {",
-        "  #rust_anb",
+        "  #rust-stack",
         "}",
       ].join("\n");
       const workspaceDir = join(repoRoot, "test/fixtures/workspace/relay");
-      const syntax = parseSyntaxTree({ source: partialSource, entryFile: "product.pactia" });
+      const syntax = parseSyntaxTree({
+        source: partialSource,
+        entryFile: "product.pactia",
+      });
       const registry = loadRegistryFromWorkspace(workspaceDir, syntax);
       assert.ok(registry.macros.has("list"));
       assert.equal(registry.macros.has("paginated"), false);

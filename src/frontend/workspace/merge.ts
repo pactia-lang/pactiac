@@ -94,7 +94,10 @@ function buildModuleBlock(module: WorkspaceModuleFiles): string {
   return [`  module ${module.moduleName} {`, indentBlock(combined, 4), "  }"].join("\n");
 }
 
-function extractProductHeader(productSource: string): {
+function extractProductHeader(
+  productSource: string,
+  externalModuleCount: number,
+): {
   versionLine: string;
   imports: string;
   productName: string;
@@ -118,7 +121,7 @@ function extractProductHeader(productSource: string): {
 
   let productBody = productBlock.body;
   const inlineModule = /module\s+\w+\s*\{/.exec(productBody);
-  if (inlineModule && inlineModule.index !== undefined) {
+  if (inlineModule && inlineModule.index !== undefined && externalModuleCount > 0) {
     productBody = productBody.slice(0, inlineModule.index).trimEnd();
   }
 
@@ -144,7 +147,10 @@ export function mergeWorkspaceSources(files: WorkspaceFiles): MergedWorkspaceSou
     };
   }
 
-  const { versionLine, imports, productName, productBody } = extractProductHeader(files.productSource);
+  const { versionLine, imports, productName, productBody } = extractProductHeader(
+    files.productSource,
+    files.modules.length,
+  );
   const moduleBlocks = files.modules.map((mod) => buildModuleBlock(mod));
 
   const productInner = [productBody, ...moduleBlocks].filter((part) => part.length > 0).join("\n\n");

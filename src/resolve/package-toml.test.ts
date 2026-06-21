@@ -5,7 +5,7 @@ import { parsePackageToml } from "./package-toml.js";
 test("parsePackageToml reads package identity and deps", () => {
   const manifest = parsePackageToml(`
 [package]
-name = "@pactia/rust-anb"
+name = "@pactia/rust-stack"
 version = "1.0.0"
 description = "Rust / Actix platform macros"
 
@@ -13,7 +13,7 @@ description = "Rust / Actix platform macros"
 "@pactia/kernel" = "^1.0"
 `);
 
-  assert.equal(manifest.name, "@pactia/rust-anb");
+  assert.equal(manifest.name, "@pactia/rust-stack");
   assert.equal(manifest.version, "1.0.0");
   assert.equal(manifest.description, "Rust / Actix platform macros");
   assert.equal(manifest.dependencies.get("@pactia/kernel"), "^1.0");

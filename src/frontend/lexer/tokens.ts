@@ -113,7 +113,10 @@ export function tokenize(source: string): Token[] {
     if (ch === "/" && source[i + 1] === "*") {
       advance();
       advance();
-      while (i < source.length && !(source[i] === "*" && source[i + 1] === "/")) {
+      while (
+        i < source.length &&
+        !(source[i] === "*" && source[i + 1] === "/")
+      ) {
         advance();
       }
       if (i < source.length) {
@@ -135,23 +138,42 @@ export function tokenize(source: string): Token[] {
       let value = "";
       while (i < source.length && source[i] !== '"') {
         if (source[i] === "\n") {
-          throw new PactiaSyntaxError("Unterminated string literal", startLine, startCol);
+          throw new PactiaSyntaxError(
+            "Unterminated string literal",
+            startLine,
+            startCol,
+          );
         }
         value += advance();
       }
       if (i >= source.length) {
-        throw new PactiaSyntaxError("Unterminated string literal", startLine, startCol);
+        throw new PactiaSyntaxError(
+          "Unterminated string literal",
+          startLine,
+          startCol,
+        );
       }
       advance(); // closing quote
-      tokens.push({ type: TokenType.STRING, value, line: startLine, col: startCol });
+      tokens.push({
+        type: TokenType.STRING,
+        value,
+        line: startLine,
+        col: startCol,
+      });
       continue;
     }
 
     // Package coordinate: @scope/name (emitted as a single IDENT token)
     if (ch === "@") {
       let value = "";
-      while (i < source.length && /[A-Za-z0-9_/.@-]/.test(source[i] ?? "")) value += advance();
-      tokens.push({ type: TokenType.IDENT, value, line: startLine, col: startCol });
+      while (i < source.length && /[A-Za-z0-9_/.@-]/.test(source[i] ?? ""))
+        value += advance();
+      tokens.push({
+        type: TokenType.IDENT,
+        value,
+        line: startLine,
+        col: startCol,
+      });
       continue;
     }
 
@@ -159,15 +181,26 @@ export function tokenize(source: string): Token[] {
     if (ch === "-" && source[i + 1] === ">") {
       advance();
       advance();
-      tokens.push({ type: TokenType.ARROW, value: "->", line: startLine, col: startCol });
+      tokens.push({
+        type: TokenType.ARROW,
+        value: "->",
+        line: startLine,
+        col: startCol,
+      });
       continue;
     }
 
     // Relative path: ./foo or ../foo
     if (ch === "." && (source[i + 1] === "/" || source[i + 1] === ".")) {
       let value = "";
-      while (i < source.length && isPathPart(source[i] ?? "")) value += advance();
-      tokens.push({ type: TokenType.PATH, value, line: startLine, col: startCol });
+      while (i < source.length && isPathPart(source[i] ?? ""))
+        value += advance();
+      tokens.push({
+        type: TokenType.PATH,
+        value,
+        line: startLine,
+        col: startCol,
+      });
       continue;
     }
 
@@ -179,31 +212,52 @@ export function tokenize(source: string): Token[] {
         value += advance();
       }
       if (source[i] !== "}") {
-        throw new PactiaSyntaxError("Unterminated constant interpolation", startLine, startCol);
+        throw new PactiaSyntaxError(
+          "Unterminated constant interpolation",
+          startLine,
+          startCol,
+        );
       }
       value += advance();
-      tokens.push({ type: TokenType.IDENT, value, line: startLine, col: startCol });
+      tokens.push({
+        type: TokenType.IDENT,
+        value,
+        line: startLine,
+        col: startCol,
+      });
       continue;
     }
 
     // Path: starts with '/'
     if (ch === "/") {
       let value = "";
-      while (i < source.length && isPathPart(source[i] ?? "")) value += advance();
-      tokens.push({ type: TokenType.PATH, value, line: startLine, col: startCol });
+      while (i < source.length && isPathPart(source[i] ?? ""))
+        value += advance();
+      tokens.push({
+        type: TokenType.PATH,
+        value,
+        line: startLine,
+        col: startCol,
+      });
       continue;
     }
 
     // Number (used for version constraints like 1.0)
     if (isDigit(ch)) {
       let value = "";
-      while (i < source.length && /[0-9.%]/.test(source[i] ?? "")) value += advance();
-      tokens.push({ type: TokenType.NUMBER, value, line: startLine, col: startCol });
+      while (i < source.length && /[0-9.%]/.test(source[i] ?? ""))
+        value += advance();
+      tokens.push({
+        type: TokenType.NUMBER,
+        value,
+        line: startLine,
+        col: startCol,
+      });
       continue;
     }
 
     // Identifier / keyword. Hyphens are allowed inside identifiers (e.g. the
-    // stack id `rust-anb`, header `X-Device-Api-Key`) but never when they begin
+    // stack id `rust-stack`, header `X-Device-Api-Key`) but never when they begin
     // the `->` arrow, which is matched earlier.
     if (isIdentStart(ch)) {
       let value = "";
@@ -213,7 +267,12 @@ export function tokenize(source: string): Token[] {
         if (!isIdentPart(next)) break;
         value += advance();
       }
-      tokens.push({ type: TokenType.IDENT, value, line: startLine, col: startCol });
+      tokens.push({
+        type: TokenType.IDENT,
+        value,
+        line: startLine,
+        col: startCol,
+      });
       continue;
     }
 
@@ -226,11 +285,20 @@ export function tokenize(source: string): Token[] {
 
     // Unicode punctuation common in prose lines.
     if (ch === "→" || ch === "—" || ch === "…") {
-      tokens.push({ type: TokenType.IDENT, value: advance(), line: startLine, col: startCol });
+      tokens.push({
+        type: TokenType.IDENT,
+        value: advance(),
+        line: startLine,
+        col: startCol,
+      });
       continue;
     }
 
-    throw new PactiaSyntaxError(`Unexpected character '${ch}'`, startLine, startCol);
+    throw new PactiaSyntaxError(
+      `Unexpected character '${ch}'`,
+      startLine,
+      startCol,
+    );
   }
 
   tokens.push({ type: TokenType.EOF, value: "", line, col });

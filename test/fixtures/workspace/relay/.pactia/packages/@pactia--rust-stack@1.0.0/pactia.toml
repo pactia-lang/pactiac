@@ -1,5 +1,5 @@
 [package]
-name = "@pactia/rust-anb"
+name = "@pactia/rust-stack"
 version = "1.0.0"
 
 [dependencies]

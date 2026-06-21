@@ -7,7 +7,11 @@ import { compileSource } from "../../application/compile-source.js";
 import { discoverWorkspace } from "./discover.js";
 import { mergeWorkspaceSources } from "./merge.js";
 import { assembleWorkspace } from "./assemble.js";
-import { readTestFixture, repoRoot, TestFixtureId } from "../../../test/fixture-paths.js";
+import {
+  readTestFixture,
+  repoRoot,
+  TestFixtureId,
+} from "../../../test/fixture-paths.js";
 
 const relayWorkspaceRoot = join(repoRoot, "test/fixtures/workspace/relay");
 const vendorRoot = join(repoRoot, "test/fixtures/packages");
@@ -69,7 +73,7 @@ test("assembleWorkspace resolves vendored packages when PACTIA_VENDOR_ROOT is se
     assert.ok(assembled.effectiveRegistry.macros.has("idempotent"));
     assert.equal(
       assembled.effectiveRegistry.macros.get("paginated")?.source,
-      "@pactia/rust-anb",
+      "@pactia/rust-stack",
     );
   });
 });
@@ -80,12 +84,18 @@ test("compileWorkspace relay fixture matches monolith without PACTIA_VENDOR_ROOT
     readTestFixture(TestFixtureId.Relay),
   );
 
-  assert.deepEqual([...files.keys()].sort(), [...monolithResult.files.keys()].sort());
+  assert.deepEqual(
+    [...files.keys()].sort(),
+    [...monolithResult.files.keys()].sort(),
+  );
 });
 
 test("compileWorkspace website example matches spec monolith IR slices", () => {
-  const websiteRoot = join(repoRoot, "..", "examples", "pactia-lang-website");
-  if (!existsSync(join(websiteRoot, "pactia.toml")) || !existsSync(join(websiteRoot, "pactia.lock"))) {
+  const websiteRoot = join(repoRoot, "test/fixtures/workspace/website");
+  if (
+    !existsSync(join(websiteRoot, "pactia.toml")) ||
+    !existsSync(join(websiteRoot, "pactia.lock"))
+  ) {
     return;
   }
 

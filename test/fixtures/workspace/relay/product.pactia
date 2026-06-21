@@ -3,7 +3,7 @@
 pactia 1.0
 
 import @pactia/kernel;
-import @pactia/rust-anb;
+import @pactia/rust-stack;
 
 import { orders } from ./fragments/orders.module.pactia;
 import { orders_model } from ./fragments/orders.model.pactia;
@@ -12,7 +12,7 @@ import { OrderService } from ./fragments/order.service.pactia;
 product Relay {
   > B2B order relay between suppliers and retailers
 
-  #rust_anb
+  #rust-stack
 
   @topology {
     mode: microservices,

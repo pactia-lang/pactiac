@@ -1,7 +1,7 @@
 pactia 1.0
-// Package: @pactia/rust-anb — Rust / Actix / Node backend stack (ANB)
+// Package: @pactia/rust-stack — Rust / Actix / Node backend stack (ANB)
 
-export def #rust_anb in product {
+export def #rust-stack in product {
   > Rust / Actix / Node backend stack (ANB) — primary APIs in Rust on actix-web and tokio.
   > Node is a sidecar only (admin tooling, asset bundling); never the request-serving hot path.
   > All handlers return errors via the platform envelope — no ad hoc JSON error bodies.
@@ -17,7 +17,7 @@ export def #rust_anb in product {
     framework: actix-web,
     runtime: tokio,
     nodeRole: sidecar,
-    package: "@pactia/rust-anb",
+    package: "@pactia/rust-stack",
     errorEnvelope: platform,
     pagination: cursor,
     orm: sqlx,

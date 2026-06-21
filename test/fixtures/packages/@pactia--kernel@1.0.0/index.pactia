@@ -24,6 +24,9 @@ export def @actor in module {
 export def @rule in module {
 }
 
+export def @config in module {
+}
+
 export def @deploy in module {
 }
 
@@ -62,6 +65,12 @@ export def @pk in field {
 export def @nullable in field {
 }
 
+export def @unique in field {
+}
+
+export def @pii in field {
+}
+
 export def @auth in service {
   roles,
 }
@@ -69,6 +78,18 @@ export def @auth in service {
 export def @output in service {
   bodyRef,
   modifier,
+}
+
+export def @input in service {
+  bodyRef,
+  modifier,
+}
+
+export def @public in service {
+}
+
+export def @throws in service {
+  names,
 }
 
 export def @api in service {
