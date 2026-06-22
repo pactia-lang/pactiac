@@ -50,6 +50,29 @@ npm test
 
 Golden tests use [relay.pactia](test/fixtures/kernel/relay.pactia), [workspace/relay](test/fixtures/workspace/relay), [workspace/website](test/fixtures/workspace/website), and related fixtures under `test/fixtures/`.
 
+## Native binary (no Node required)
+
+Build standalone executables with [Bun](https://bun.sh) compile:
+
+```bash
+# Install Bun, then:
+bun run build:bin:linux-x64          # one platform
+bun run build:bin                    # all platforms (release)
+bun run test:bin                     # build + smoke relay workspace
+./dist/pactiac-linux-x64 compile -w ./my-product -o out/
+```
+
+Release assets (`pactiac-linux-x64`, `pactiac-darwin-arm64`, …) are published on version tags via `.github/workflows/release.yml`.
+
+Install from GitHub Releases:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/pactia-lang/pactiac/main/scripts/install-pactiac.sh | bash
+# or: ./scripts/install-pactiac.sh v0.1.0
+```
+
+The **npm package** (`npm run build` → `dist/`) remains the library API for [pactia](https://github.com/pactia-lang/pactia) and programmatic use. The native binary is the standalone CLI.
+
 ## Workspace layout
 
 ```
@@ -71,6 +94,8 @@ pactiac/
   scripts/
     generate-golden.ts
     install-hooks.sh
+    install-pactiac.sh
+    smoke-binary.sh
 ```
 
 IR shape is defined in [spec/docs/compilation.md](https://github.com/pactia-lang/spec/blob/main/docs/compilation.md) — there is no JSON Schema for compiler output in the spec repo.
