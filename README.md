@@ -10,7 +10,7 @@ Implements the normative specification in [pactia-lang/spec](https://github.com/
 # Compile a single product file to an IR workspace directory
 pactiac compile -i product.pactia -o input/ [--report] [--provenance report.json]
 
-# Compile a multi-file workspace (product.pactia + modules/**)
+# Compile a multi-file workspace (product.pactia + fragments via attach)
 pactiac compile -w ./my-product -o input/ [--report] [--provenance report.json]
 
 # Regenerate golden test fixtures after intentional compiler changes
@@ -19,18 +19,23 @@ npm run generate:golden
 
 ### Workspace layout (source)
 
+**Import + attach (1.2)** — preferred for multi-file products:
+
 ```
 my-product/
-  product.pactia
+  product.pactia              # package imports, attach tree, product-level tags
   pactia.toml
   pactia.lock
-  .pactia/packages/          # vendored packages for offline/CI resolve
-  modules/<module>/
-    module.pactia
-    services/<name>.service.pactia
-    features/*.pactia
-    entities/*.pactia
+  fragments/
+    orders.module.pactia      # export module orders { … }
+    orders.model.pactia       # export model orders_model { … }
+    order.service.pactia      # export service OrderService { … }
+  .pactia/packages/           # vendored packages (from pactia fetch / build)
 ```
+
+**Package imports vs fragment imports:** declare `import { @api, #database, … } from @pactia/…` only in `product.pactia`. Fragment files use `export module` / `export service` / `export model` and are wired with `import { Symbol } from ./fragments/…` plus `module(name) { service(Symbol) { … } }`. The compiler merges attach bodies into one program; tags in fragments resolve from the product-level package imports. See [spec — Package imports vs fragment imports](https://github.com/pactia-lang/spec/blob/main/docs/language-spec.md#package-imports-vs-fragment-imports).
+
+**Legacy folder merge (deprecated):** `modules/<module>/module.pactia` + `services/*.service.pactia` scanned by directory layout. New workspaces should use export + attach. Example: [workspace/relay](test/fixtures/workspace/relay).
 
 Vendored package directories use the form `@scope--name@<version>/` (slashes in coordinates become `--`). Override the vendor search path with `PACTIA_VENDOR_ROOT` when packages live outside the workspace.
 
@@ -43,7 +48,7 @@ npm run build
 npm test
 ```
 
-Golden tests use [relay.pactia](test/fixtures/kernel/relay.pactia) and related fixtures under `test/fixtures/`.
+Golden tests use [relay.pactia](test/fixtures/kernel/relay.pactia), [workspace/relay](test/fixtures/workspace/relay), [workspace/website](test/fixtures/workspace/website), and related fixtures under `test/fixtures/`.
 
 ## Workspace layout
 
@@ -74,7 +79,7 @@ IR shape is defined in [spec/docs/compilation.md](https://github.com/pactia-lang
 
 | pactiac release | Implements spec |
 | --- | --- |
-| 0.1.x | Pactia 1.0 — parse/bind/lower to module-scoped JSON IR; workspace compile; macro expansion from package `export def` |
+| 0.1.x | Pactia 1.0 — parse/bind/lower to module-scoped JSON IR; workspace compile (import + attach and legacy folder merge); macro expansion from package `export def` |
 
 ### Compile output layout
 
