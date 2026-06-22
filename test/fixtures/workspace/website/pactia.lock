@@ -1,11 +1,11 @@
 lockVersion = 1
 
 [[package]]
-name = "@pactia/kernel"
-version = "1.0.0"
-digest = "sha256:8c1e2f3a4b5c6d7e8f901234567890abcdef1234567890abcdef1234567890ab"
-
-[[package]]
 name = "@pactia/html-css-js"
 version = "1.0.0"
 digest = "sha256:c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567890ab"
+
+[[package]]
+name = "@pactia/kernel"
+version = "1.0.0"
+digest = "sha256:10c1c64d94fad5b5c5732206014ce2ffbb45a2e8ec47e8360639487ed7256763"
