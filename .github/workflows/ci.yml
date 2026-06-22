@@ -67,3 +67,22 @@ jobs:
         env:
           PACTIA_VENDOR_ROOT: test/fixtures/packages
         run: node dist/cli.js compile -i test/fixtures/kernel/relay.pactia -o /tmp/relay-mono-out
+
+  binary-smoke:
+    name: native binary smoke
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Build linux x64 binary
+        run: bun run build:bin:linux-x64
+
+      - name: Smoke test binary
+        env:
+          PACTIA_VENDOR_ROOT: test/fixtures/packages
+        run: bash scripts/smoke-binary.sh dist/pactiac-linux-x64

@@ -17,13 +17,17 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.json",
+    "build:bin:linux-x64": "bun build ./src/cli.ts --compile --minify --target=bun-linux-x64 --outfile dist/pactiac-linux-x64",
+    "build:bin:linux-arm64": "bun build ./src/cli.ts --compile --minify --target=bun-linux-arm64 --outfile dist/pactiac-linux-arm64",
+    "build:bin:darwin-arm64": "bun build ./src/cli.ts --compile --minify --target=bun-darwin-arm64 --outfile dist/pactiac-darwin-arm64",
+    "build:bin:darwin-x64": "bun build ./src/cli.ts --compile --minify --target=bun-darwin-x64 --outfile dist/pactiac-darwin-x64",
+    "build:bin:windows-x64": "bun build ./src/cli.ts --compile --minify --target=bun-windows-x64 --outfile dist/pactiac-windows-x64.exe",
+    "build:bin": "npm run build:bin:linux-x64 && npm run build:bin:linux-arm64 && npm run build:bin:darwin-arm64 && npm run build:bin:darwin-x64 && npm run build:bin:windows-x64",
+    "test:bin": "npm run build:bin:linux-x64 && bash scripts/smoke-binary.sh",
     "test": "npm run build && node --import tsx --test $(find src -name '*.test.ts')",
     "compile": "node dist/cli.js compile",
     "generate:golden": "npm run build && node --import tsx scripts/generate-golden.ts",
     "hooks:install": "bash scripts/install-hooks.sh"
-  },
-  "dependencies": {
-    "ajv": "^8.20.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
