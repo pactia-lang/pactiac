@@ -62,14 +62,24 @@ bun run test:bin                     # build + smoke relay workspace
 ./dist/pactiac-linux-x64 compile -w ./my-product -o out/
 ```
 
-Release assets (`pactiac-linux-x64`, `pactiac-darwin-arm64`, …) are published on version tags via `.github/workflows/release.yml`.
+Release assets are published on [GitHub Releases](https://github.com/pactia-lang/pactiac/releases) when you push a version tag (`v*`).
 
-Install from GitHub Releases:
+### Linux and macOS
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/pactia-lang/pactiac/main/scripts/install-pactiac.sh | bash
-# or: ./scripts/install-pactiac.sh v0.1.0
+./scripts/install-pactiac.sh v0.1.0
 ```
+
+Picks `pactiac-darwin-arm64` on Apple Silicon or `pactiac-darwin-x64` on Intel Mac. Installs to `~/.local/bin/pactiac`.
+
+### Windows
+
+```powershell
+irm https://raw.githubusercontent.com/pactia-lang/pactiac/main/scripts/install-pactiac.ps1 | iex
+```
+
+Or download `pactiac-windows-x64.exe` from [Releases](https://github.com/pactia-lang/pactiac/releases).
 
 The **npm package** (`npm run build` → `dist/`) remains the library API for [pactia](https://github.com/pactia-lang/pactia) and programmatic use. The native binary is the standalone CLI.
 
@@ -95,6 +105,7 @@ pactiac/
     generate-golden.ts
     install-hooks.sh
     install-pactiac.sh
+    install-pactiac.ps1
     smoke-binary.sh
 ```
 

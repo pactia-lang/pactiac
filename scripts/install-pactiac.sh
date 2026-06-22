@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Install pactiac native binary from GitHub Releases.
-# Usage: curl -fsSL https://raw.githubusercontent.com/pactia-lang/pactiac/main/scripts/install-pactiac.sh | bash
-#    or: ./scripts/install-pactiac.sh [version]
+# Install pactiac from GitHub Releases (Linux and macOS).
+# Picks linux-x64, darwin-arm64 (Apple Silicon), or darwin-x64 (Intel) automatically.
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/pactia-lang/pactiac/main/scripts/install-pactiac.sh | bash
+#   ./scripts/install-pactiac.sh [version]
 set -euo pipefail
 
 repo="pactia-lang/pactiac"
@@ -26,9 +29,6 @@ case "$(uname -m)" in
 esac
 
 asset="pactiac-${os}-${arch}"
-if [[ "$os" == "windows" ]]; then
-  asset="${asset}.exe"
-fi
 
 if [[ "$version" == "latest" ]]; then
   api="https://api.github.com/repos/${repo}/releases/latest"
