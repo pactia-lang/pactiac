@@ -7,15 +7,19 @@ import {
   RegistryEntryKind,
   createDiagnostic,
   type BoundBlockNode,
+  type BoundContextNode,
   type BoundDefNode,
   type BoundTree,
   type BoundTreeItem,
   type EffectiveRegistry,
 } from "../../domain/index.js";
 import type { Diagnostic } from "../../domain/diagnostics.js";
+import { parseContextPathField } from "../../domain/context-path.js";
 import {
   DefSigil,
   SyntaxNodeKind,
+  type ContextAttachNode,
+  type ContextBlockNode,
   type DefDeclNode,
   type ModelItem,
   type ModelNode,
@@ -150,6 +154,10 @@ class SyntaxTreeBinder {
         return [this.bindModule(item)];
       case SyntaxNodeKind.AttachModule:
         return [];
+      case SyntaxNodeKind.Context:
+        return this.bindContextBlock(item);
+      case SyntaxNodeKind.ContextAttach:
+        return this.bindContextAttach(item);
       default:
         return this.bindTagLikeItems([item], enclosing);
     }
@@ -166,17 +174,35 @@ class SyntaxTreeBinder {
         return [this.bindDefDecl(item)];
       case SyntaxNodeKind.ModuleConst:
         return [item];
+      case SyntaxNodeKind.Context:
+        return this.bindContextBlock(item);
+      case SyntaxNodeKind.ContextAttach:
+        return this.bindContextAttach(item);
       default:
         return this.bindTagLikeItems([item], enclosing);
     }
   }
 
   private bindModelItems(item: ModelItem, enclosing: PlacementTarget): BoundTreeItem[] {
-    return this.bindTagLikeItems([item], enclosing);
+    switch (item.kind) {
+      case SyntaxNodeKind.Context:
+        return this.bindContextBlock(item);
+      case SyntaxNodeKind.ContextAttach:
+        return this.bindContextAttach(item);
+      default:
+        return this.bindTagLikeItems([item], enclosing);
+    }
   }
 
   private bindServiceItems(item: ServiceItem, enclosing: PlacementTarget): BoundTreeItem[] {
-    return this.bindTagLikeItems([item], enclosing);
+    switch (item.kind) {
+      case SyntaxNodeKind.Context:
+        return this.bindContextBlock(item);
+      case SyntaxNodeKind.ContextAttach:
+        return this.bindContextAttach(item);
+      default:
+        return this.bindTagLikeItems([item], enclosing);
+    }
   }
 
   private bindTagLikeItems(
@@ -192,6 +218,61 @@ class SyntaxTreeBinder {
         item.kind === SyntaxNodeKind.Prose,
     );
     return this.bodyItemBinder.bindItems(tagBodyItems, enclosing);
+  }
+
+  private bindContextBlock(block: ContextBlockNode): BoundTreeItem[] {
+    const bound = this.toBoundContext(block.name, block.pathRaw, block.guidance, block.location);
+    return bound ? [bound] : [];
+  }
+
+  private bindContextAttach(attach: ContextAttachNode): BoundTreeItem[] {
+    const exported = this.registry.contexts.get(attach.symbol);
+    if (!exported) {
+      this.diagnostics.push(
+        createDiagnostic(
+          DiagnosticCode.ContextAttachUndefined,
+          `Context attach references undefined symbol '${attach.symbol}'`,
+          { location: attach.location, target: attach.symbol },
+        ),
+      );
+      return [];
+    }
+    const bound = this.toBoundContext(
+      attach.symbol,
+      exported.pathRaw,
+      exported.guidance,
+      attach.location,
+      exported.coordinate,
+    );
+    return bound ? [bound] : [];
+  }
+
+  private toBoundContext(
+    name: string,
+    pathRaw: string | undefined,
+    guidance: readonly string[],
+    location: ContextBlockNode["location"],
+    packageCoordinate?: string,
+  ): BoundContextNode | undefined {
+    const path = parseContextPathField(pathRaw);
+    if (!path) {
+      this.diagnostics.push(
+        createDiagnostic(
+          DiagnosticCode.ContextMissingPath,
+          `Context '${name}' is missing required path field`,
+          { location, target: name },
+        ),
+      );
+      return undefined;
+    }
+    return {
+      kind: BoundNodeKind.BoundContext,
+      name,
+      path,
+      guidance,
+      packageCoordinate,
+      location,
+    };
   }
 
   private bindDefDecl(def: DefDeclNode): BoundDefNode {

@@ -4,10 +4,11 @@ import {
   RegistryEntryKind,
   type DefBodyAst,
   type EffectiveRegistry,
+  type PackageContextExport,
   type RegistryMacroEntry,
   type RegistryTagEntry,
 } from "../../domain/registry.js";
-import type { DefDeclNode, ProgramNode } from "../../domain/syntax-tree.js";
+import type { DefDeclNode, ProgramNode, ContextBlockNode } from "../../domain/syntax-tree.js";
 import { DefSigil as DefSigilEnum } from "../../domain/syntax-tree.js";
 import { fieldSpecFromDefBody } from "../parse/recursive-descent-parser.js";
 import { deriveIrSlotForTag } from "./derive-tag-ir.js";
@@ -66,6 +67,33 @@ export function registryEntriesFromProgram(
   return { tags, macros };
 }
 
+export function contextExportsFromProgram(
+  program: ProgramNode,
+  coordinate: string,
+): readonly PackageContextExport[] {
+  return program.fragmentContextExports.map((ctx) => ({
+    name: ctx.name,
+    coordinate,
+    pathRaw: ctx.pathRaw,
+    guidance: ctx.guidance,
+  }));
+}
+
+export function filterContextExports(
+  exports: readonly PackageContextExport[],
+  partialSymbols: readonly string[] | undefined,
+): PackageContextExport[] {
+  if (!partialSymbols || partialSymbols.length === 0) {
+    return [...exports];
+  }
+  const allowed = new Set(
+    partialSymbols
+      .filter((symbol) => !symbol.startsWith("@") && !symbol.startsWith("#"))
+      .map((symbol) => symbol.trim()),
+  );
+  return exports.filter((entry) => allowed.has(entry.name));
+}
+
 export function registryEntriesFromLocalDefs(
   defs: readonly DefDeclNode[],
   source: string,
@@ -107,6 +135,7 @@ export interface MergeRegistryInput {
     readonly tier: import("../../domain/registry.js").RegistryPrecedenceTier;
     readonly tags: readonly RegistryTagEntry[];
     readonly macros: readonly RegistryMacroEntry[];
+    readonly contexts: readonly PackageContextExport[];
   }>;
   readonly localTags: readonly RegistryTagEntry[];
   readonly localMacros: readonly RegistryMacroEntry[];
@@ -115,6 +144,7 @@ export interface MergeRegistryInput {
 export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegistry {
   const tags = new Map<string, RegistryTagEntry>();
   const macros = new Map<string, RegistryMacroEntry>();
+  const contexts = new Map<string, PackageContextExport>();
 
   const registerTag = (entry: RegistryTagEntry, tierLabel: string): void => {
     const existing = tags.get(entry.name);
@@ -136,13 +166,24 @@ export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegi
     macros.set(entry.name, entry);
   };
 
+  const registerContext = (entry: PackageContextExport): void => {
+    const existing = contexts.get(entry.name);
+    if (existing && existing.coordinate !== entry.coordinate) {
+      throw new Error(
+        `REGISTRY_COLLISION: context '${entry.name}' exported by both '${existing.coordinate}' and '${entry.coordinate}'`,
+      );
+    }
+    contexts.set(entry.name, entry);
+  };
+
   for (const pkg of input.importEntries) {
     for (const tag of pkg.tags) registerTag(tag, pkg.coordinate);
     for (const macro of pkg.macros) registerMacro(macro, pkg.coordinate);
+    for (const contextExport of pkg.contexts) registerContext(contextExport);
   }
 
   for (const tag of input.localTags) registerTag(tag, "local");
   for (const macro of input.localMacros) registerMacro(macro, "local");
 
-  return { tags, macros };
+  return { tags, macros, contexts };
 }

@@ -40,6 +40,7 @@ export type {
   RegistryEntry,
   RegistryMacroEntry,
   RegistryTagEntry,
+  PackageContextExport,
 } from "./registry.js";
 export {
   BoundNodeKind,
@@ -47,6 +48,7 @@ export {
 } from "./bound-tree.js";
 export type {
   BoundBlockNode,
+  BoundContextNode,
   BoundDefNode,
   BoundMacroNode,
   BoundNode,

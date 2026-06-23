@@ -30,11 +30,29 @@ export enum SyntaxNodeKind {
   FieldLine = "field-line",
   Prose = "prose",
   Import = "import",
+  Context = "context",
+  ContextAttach = "context-attach",
 }
 
 export enum DefSigil {
   Tag = "tag",
   Macro = "macro",
+}
+
+export interface ContextBlockNode {
+  readonly kind: SyntaxNodeKind.Context;
+  readonly name: string;
+  readonly exported: boolean;
+  readonly path?: string;
+  readonly pathRaw?: string;
+  readonly guidance: readonly string[];
+  readonly location: SourceLocation;
+}
+
+export interface ContextAttachNode {
+  readonly kind: SyntaxNodeKind.ContextAttach;
+  readonly symbol: string;
+  readonly location: SourceLocation;
 }
 
 export interface ImportNode {
@@ -131,8 +149,17 @@ export type ServiceItem =
   | MacroInvocationNode
   | ProseNode
   | FieldLineNode
-  | ModuleConstNode;
-export type ModelItem = TagBlockNode | TagPrefixNode | MacroInvocationNode | ProseNode | FieldLineNode;
+  | ModuleConstNode
+  | ContextBlockNode
+  | ContextAttachNode;
+export type ModelItem =
+  | TagBlockNode
+  | TagPrefixNode
+  | MacroInvocationNode
+  | ProseNode
+  | FieldLineNode
+  | ContextBlockNode
+  | ContextAttachNode;
 export type ModuleItem =
   | TagBlockNode
   | TagPrefixNode
@@ -142,7 +169,9 @@ export type ModuleItem =
   | ServiceNode
   | ModelNode
   | DefDeclNode
-  | ModuleConstNode;
+  | ModuleConstNode
+  | ContextBlockNode
+  | ContextAttachNode;
 
 export type ProductItem =
   | TagBlockNode
@@ -151,12 +180,15 @@ export type ProductItem =
   | ProseNode
   | FieldLineNode
   | ModuleNode
-  | AttachModuleNode;
+  | AttachModuleNode
+  | ContextBlockNode
+  | ContextAttachNode;
 
 export interface AttachServiceNode {
   readonly kind: SyntaxNodeKind.AttachService;
   readonly name: string;
   readonly modelSymbol?: string;
+  readonly contextSymbols: readonly string[];
   readonly location: SourceLocation;
 }
 
@@ -192,6 +224,8 @@ export interface ProgramNode {
   readonly fragmentServiceExports: readonly ServiceNode[];
   /** Fragment files: export model … { } at program root. */
   readonly fragmentModelExports: readonly ModelNode[];
+  /** Fragment files: export context … { } at program root. */
+  readonly fragmentContextExports: readonly ContextBlockNode[];
   readonly product?: ProductNode;
   readonly location: SourceLocation;
 }

@@ -51,10 +51,18 @@ export interface RegistryMacroEntry {
 
 export type RegistryEntry = RegistryTagEntry | RegistryMacroEntry;
 
+export interface PackageContextExport {
+  readonly name: string;
+  readonly coordinate: string;
+  readonly pathRaw?: string;
+  readonly guidance: readonly string[];
+}
+
 /** Resolved symbol table for one compile — imported packages and local defs merged. */
 export interface EffectiveRegistry {
   readonly tags: ReadonlyMap<string, RegistryTagEntry>;
   readonly macros: ReadonlyMap<string, RegistryMacroEntry>;
+  readonly contexts: ReadonlyMap<string, PackageContextExport>;
 }
 
 export enum RegistryPrecedenceTier {

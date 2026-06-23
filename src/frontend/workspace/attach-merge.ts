@@ -14,6 +14,7 @@ export enum FragmentExportKind {
   Module = "module",
   Service = "service",
   Model = "model",
+  Context = "context",
 }
 
 export interface FragmentExport {
@@ -26,6 +27,7 @@ export interface FragmentExport {
 export interface AttachServiceRef {
   readonly serviceSymbol: string;
   readonly modelSymbol?: string;
+  readonly contextSymbols: readonly string[];
 }
 
 export interface AttachModuleRef {
@@ -109,6 +111,7 @@ function indexFragmentExports(filePath: string, source: string): FragmentExport[
     FragmentExportKind.Module,
     FragmentExportKind.Service,
     FragmentExportKind.Model,
+    FragmentExportKind.Context,
   ] as const) {
     const pattern = new RegExp(`export\\s+${kind}\\s+(\\w+)\\s*\\{`, "g");
     let match: RegExpExecArray | null = pattern.exec(source);
@@ -173,9 +176,17 @@ function parseAttachModules(productBody: string): AttachModuleRef[] {
       const serviceClose = findMatchingBrace(attachBody, serviceOpen);
       const serviceBody = attachBody.slice(serviceOpen + 1, serviceClose);
       const modelMatch = /model\s*\(\s*(\w+)\s*\)/.exec(serviceBody);
+      const contextSymbols: string[] = [];
+      const contextPattern = /context\s*\(\s*(\w+)\s*\)/g;
+      let contextMatch: RegExpExecArray | null = contextPattern.exec(serviceBody);
+      while (contextMatch) {
+        contextSymbols.push(contextMatch[1]!);
+        contextMatch = contextPattern.exec(serviceBody);
+      }
       services.push({
         serviceSymbol,
         modelSymbol: modelMatch?.[1],
+        contextSymbols,
       });
       serviceMatch = servicePattern.exec(attachBody);
     }
@@ -260,6 +271,26 @@ function buildAttachedModuleBlock(
     const serviceExport = serviceResult.exportDecl!;
     const serviceBody = expandServiceFragmentImports(serviceExport.filePath, serviceExport.body);
     parts.push(`service ${serviceExport.name} {\n${indentBlock(serviceBody, 2)}\n}`);
+    for (const contextSymbol of serviceRef.contextSymbols) {
+      const contextResult = tryResolveExport(
+        registry,
+        contextSymbol,
+        FragmentExportKind.Context,
+        productPath,
+      );
+      if (contextResult.diagnostic) {
+        diagnostics.push(contextResult.diagnostic);
+        continue;
+      }
+      const contextExport = contextResult.exportDecl!;
+      parts.push(
+        [
+          `context ${contextExport.name} {`,
+          indentBlock(contextExport.body, 2),
+          "}",
+        ].join("\n"),
+      );
+    }
   }
 
   const combined = parts.filter((part) => part.length > 0).join("\n\n");
