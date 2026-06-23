@@ -30,7 +30,7 @@ my-product/
     orders.module.pactia      # export module orders { … }
     orders.model.pactia       # export model orders_model { … }
     order.service.pactia      # export service OrderService { … }
-  .pactia/packages/           # vendored packages (from pactia fetch / build)
+  .pactia/packages/           # vendored packages (from pactia install / build)
 ```
 
 **Package imports vs fragment imports:** declare `import { @api, #database, … } from @pactia/…` only in `product.pactia`. Fragment files use `export module` / `export service` / `export model` and are wired with `import { Symbol } from ./fragments/…` plus `module(name) { service(Symbol) { … } }`. The compiler merges attach bodies into one program; tags in fragments resolve from the product-level package imports. See [spec — Package imports vs fragment imports](https://github.com/pactia-lang/spec/blob/main/docs/language-spec.md#package-imports-vs-fragment-imports).
