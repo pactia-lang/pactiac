@@ -24,6 +24,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Vendored `.pactia/packages/` are produced by **`pactia install`** / **`pactia build`** in the product workspace — not by pactiac alone.
 - Fleet golden `fleet.service.yaml` uses expanded `modifiers.*` instead of a raw `macros` name list.
 - `compileIrWorkspace` reports `macro.expansion` only for unknown macros, not recognized builtins.
 - `compileWorkspace` passes `effectiveRegistry` from resolved packages into IR lowering.
