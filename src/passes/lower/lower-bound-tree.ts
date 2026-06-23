@@ -8,6 +8,7 @@ import {
   PlacementTarget,
   createDiagnostic,
   type BoundBlockNode,
+  type BoundContextNode,
   type BoundTagNode,
   type BoundTree,
   type BoundTreeItem,
@@ -149,9 +150,38 @@ class BoundTreeLowerer {
       this.lowerRegistryTag(item, {}, scopeFile);
       return;
     }
+    if (item.kind === BoundNodeKind.BoundContext) {
+      this.lowerBoundContext(item, scopeFile);
+      return;
+    }
     if (item.kind === SyntaxNodeKind.FieldLine && scopeFile === IrFile.Service) {
       this.applyServiceFieldLine(item);
     }
+  }
+
+  private lowerBoundContext(context: BoundContextNode, scopeFile: IrFile): void {
+    const entry: WritableRecord = {
+      id: context.name,
+      path: context.path,
+      provenance: Provenance.Pactia,
+    };
+    if (context.guidance.length > 0) {
+      entry["guidance"] = [...context.guidance];
+    }
+    if (context.packageCoordinate) {
+      entry["package"] = context.packageCoordinate;
+    }
+    this.appendContextEntry(scopeFile, entry);
+  }
+
+  private appendContextEntry(scopeFile: IrFile, entry: WritableRecord): void {
+    const root = this.documentRoot(scopeFile);
+    const existing = root["context"];
+    if (!Array.isArray(existing)) {
+      root["context"] = [entry];
+      return;
+    }
+    existing.push(entry);
   }
 
   private lowerBlock(block: BoundBlockNode): void {

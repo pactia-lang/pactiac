@@ -1,6 +1,7 @@
 import type { PlacementTarget } from "./placement.js";
 import type { RegistryEntry, RegistryMacroEntry, RegistryTagEntry } from "./registry.js";
 import type {
+  ContextBlockNode,
   FieldLineNode,
   ModuleConstNode,
   ProseNode,
@@ -16,7 +17,8 @@ export type BoundTreeItem =
   | BoundNode
   | FieldLineNode
   | ProseNode
-  | ModuleConstNode;
+  | ModuleConstNode
+  | ContextBlockNode;
 
 /** L1 bound tree — L0 nodes annotated with resolved registry entries. */
 export enum BoundNodeKind {
@@ -24,6 +26,16 @@ export enum BoundNodeKind {
   BoundMacro = "bound-macro",
   BoundBlock = "bound-block",
   BoundDef = "bound-def",
+  BoundContext = "bound-context",
+}
+
+export interface BoundContextNode extends LocatedNode {
+  readonly kind: BoundNodeKind.BoundContext;
+  readonly name: string;
+  readonly path: string | readonly string[];
+  readonly guidance: readonly string[];
+  /** Set when path is relative to a vendored package root. */
+  readonly packageCoordinate?: string;
 }
 
 export interface BoundTagNode extends LocatedNode {
@@ -58,7 +70,7 @@ export interface BoundDefNode extends LocatedNode {
   readonly registryEntry: RegistryEntry;
 }
 
-export type BoundNode = BoundTagNode | BoundMacroNode | BoundBlockNode | BoundDefNode;
+export type BoundNode = BoundTagNode | BoundMacroNode | BoundBlockNode | BoundDefNode | BoundContextNode;
 
 export interface BoundTree {
   readonly entryFile: string;

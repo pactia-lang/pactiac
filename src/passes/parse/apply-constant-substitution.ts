@@ -92,7 +92,18 @@ function applyToModule(
     if (item.kind === SyntaxNodeKind.Model) {
       return {
         ...item,
-        items: walkTagBodyItems(item.items, moduleConstants, diagnostics, module.location.file),
+        items: item.items.map((modelItem) => {
+          if (modelItem.kind === SyntaxNodeKind.Prose) {
+            return substituteProseNode(modelItem, moduleConstants, diagnostics, module.location.file);
+          }
+          if (modelItem.kind === SyntaxNodeKind.TagBlock) {
+            return {
+              ...modelItem,
+              items: walkTagBodyItems(modelItem.items, moduleConstants, diagnostics, module.location.file),
+            };
+          }
+          return modelItem;
+        }),
       };
     }
     if (item.kind === SyntaxNodeKind.TagBlock) {

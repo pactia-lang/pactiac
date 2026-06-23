@@ -46,6 +46,7 @@ export class CompilePipeline {
     const emptyRegistry: CompilePipelineResult["registry"] = {
       tags: new Map(),
       macros: new Map(),
+      contexts: new Map(),
     };
 
     diagnostics.push(...assertSupportedVersion(context.source));

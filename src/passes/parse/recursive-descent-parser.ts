@@ -3,6 +3,8 @@ import {
   SyntaxNodeKind,
   type AttachModuleNode,
   type AttachServiceNode,
+  type ContextAttachNode,
+  type ContextBlockNode,
   type DefDeclNode,
   type FieldLineNode,
   type ImportNode,
@@ -24,6 +26,7 @@ import {
   type TagPrefixNode,
 } from "../../domain/syntax-tree.js";
 import { allPlacementTargets, parsePlacementTarget, type PlacementTarget } from "../../domain/placement.js";
+import { collectContextGuidance } from "../../domain/context-path.js";
 import type { FieldSpec } from "../../domain/registry.js";
 import { tokenize, TokenType, PactiaSyntaxError } from "../../frontend/lexer/tokens.js";
 import type { ParseInput } from "../../ports/parser.js";
@@ -72,6 +75,7 @@ export class RecursiveDescentParser {
     const fragmentExports: ModuleNode[] = [];
     const fragmentServiceExports: ServiceNode[] = [];
     const fragmentModelExports: ModelNode[] = [];
+    const fragmentContextExports: ContextBlockNode[] = [];
     let product: ProductNode | undefined;
 
     while (!stream.atEnd()) {
@@ -92,13 +96,17 @@ export class RecursiveDescentParser {
           fragmentModelExports.push(this.parseModel(stream, file));
           continue;
         }
+        if (stream.check(TokenType.IDENT, "context")) {
+          fragmentContextExports.push(this.parseContextBlock(stream, file, true));
+          continue;
+        }
         if (this.checkDefStart(stream)) {
           const def = this.parseDefDecl(stream, file, true, true);
           if (def.exported) exportDefs.push(def);
           continue;
         }
         throw new PactiaSyntaxError(
-          "Expected export module, export service, export model, or export def",
+          "Expected export module, export service, export model, export context, or export def",
           stream.peek().line,
           stream.peek().col,
         );
@@ -126,6 +134,7 @@ export class RecursiveDescentParser {
       fragmentExports,
       fragmentServiceExports,
       fragmentModelExports,
+      fragmentContextExports,
       product,
       location: { file, line: 1, col: 1 },
     };
@@ -192,6 +201,12 @@ export class RecursiveDescentParser {
       }
       return this.parseModule(stream, file);
     }
+    if (this.checkContextAttachStart(stream)) {
+      return this.parseContextAttach(stream, file);
+    }
+    if (stream.check(TokenType.IDENT, "context")) {
+      return this.parseContextBlock(stream, file, false);
+    }
     return this.parseTagLikeItem(stream, file) as ProductItem;
   }
 
@@ -223,6 +238,7 @@ export class RecursiveDescentParser {
     stream.expect(TokenType.RPAREN, "Expected ')' after service attach symbol");
     stream.expect(TokenType.LBRACE, "Expected '{' after service attach reference");
     let modelSymbol: string | undefined;
+    const contextSymbols: string[] = [];
     while (!stream.check(TokenType.RBRACE)) {
       stream.match(TokenType.COMMA);
       if (stream.check(TokenType.RBRACE)) break;
@@ -232,8 +248,12 @@ export class RecursiveDescentParser {
         stream.expect(TokenType.RPAREN, "Expected ')' after model attach symbol");
         continue;
       }
+      if (this.checkContextAttachStart(stream)) {
+        contextSymbols.push(this.parseContextAttach(stream, file).symbol);
+        continue;
+      }
       throw new PactiaSyntaxError(
-        "Attach service blocks may only contain model(...) references",
+        "Attach service blocks may only contain model(...) or context(...) references",
         stream.peek().line,
         stream.peek().col,
       );
@@ -243,6 +263,7 @@ export class RecursiveDescentParser {
       kind: SyntaxNodeKind.AttachService,
       name: nameToken.value,
       modelSymbol,
+      contextSymbols,
       location: { file, line: serviceToken.line, col: serviceToken.col },
     };
   }
@@ -270,14 +291,65 @@ export class RecursiveDescentParser {
     if (stream.check(TokenType.IDENT, "service")) return this.parseService(stream, file);
     if (stream.check(TokenType.IDENT, "model")) return this.parseModel(stream, file);
     if (stream.check(TokenType.IDENT, "def")) return this.parseModuleConstOrDef(stream, file);
+    if (this.checkContextAttachStart(stream)) return this.parseContextAttach(stream, file);
+    if (stream.check(TokenType.IDENT, "context")) return this.parseContextBlock(stream, file, false);
     return this.parseTagLikeItem(stream, file) as ModuleItem;
+  }
+
+  private parseModuleConstantDeclaration(stream: TokenStream, file: string): ModuleConstNode | ContextBlockNode {
+    stream.expect(TokenType.IDENT, "Expected def keyword", "def");
+    const nameToken = stream.expect(TokenType.IDENT, "Expected module constant name");
+    stream.expect(TokenType.EQUALS, "Expected '=' in module constant declaration");
+    if (stream.check(TokenType.IDENT, "context")) {
+      return this.parseContextAlias(stream, file, nameToken.value, {
+        file,
+        line: nameToken.line,
+        col: nameToken.col,
+      });
+    }
+    const valueToken = this.parseModuleConstValue(stream);
+    return {
+      kind: SyntaxNodeKind.ModuleConst,
+      name: nameToken.value,
+      value: valueToken,
+      location: { file, line: nameToken.line, col: nameToken.col },
+    };
   }
 
   private parseModuleConstOrDef(stream: TokenStream, file: string): ModuleItem {
     if (this.checkDefSigilStart(stream, 0)) {
       return this.parseDefDecl(stream, file, false);
     }
-    return this.parseModuleConst(stream, file);
+    return this.parseModuleConstantDeclaration(stream, file);
+  }
+
+  private parseContextAlias(
+    stream: TokenStream,
+    file: string,
+    aliasName: string,
+    location: { file: string; line: number; col: number },
+  ): ContextBlockNode {
+    stream.advance();
+    const referencedName = stream.expect(TokenType.IDENT, "Expected context name in alias").value;
+    stream.expect(TokenType.LBRACE, "Expected '{' after context alias");
+    const bodyItems: TagBodyItem[] = [];
+    while (!stream.check(TokenType.RBRACE)) {
+      bodyItems.push(this.parseContextBodyItem(stream, file));
+    }
+    stream.expect(TokenType.RBRACE, "Expected '}' to close context alias");
+    const pathField = bodyItems.find(
+      (item): item is FieldLineNode =>
+        item.kind === SyntaxNodeKind.FieldLine && item.name === "path",
+    );
+    return {
+      kind: SyntaxNodeKind.Context,
+      name: aliasName,
+      exported: false,
+      path: pathField?.value,
+      pathRaw: pathField?.value,
+      guidance: collectContextGuidance(bodyItems),
+      location,
+    };
   }
 
   private parseModuleConst(stream: TokenStream, file: string): ModuleConstNode {
@@ -313,7 +385,15 @@ export class RecursiveDescentParser {
       stream.match(TokenType.COMMA);
       if (stream.check(TokenType.RBRACE)) break;
       if (stream.check(TokenType.IDENT, "def")) {
-        items.push(this.parseModuleConst(stream, file));
+        items.push(this.parseModuleConstantDeclaration(stream, file));
+        continue;
+      }
+      if (this.checkContextAttachStart(stream)) {
+        items.push(this.parseContextAttach(stream, file));
+        continue;
+      }
+      if (stream.check(TokenType.IDENT, "context")) {
+        items.push(this.parseContextBlock(stream, file, false));
         continue;
       }
       items.push(this.parseTagLikeItem(stream, file) as ServiceItem);
@@ -338,6 +418,14 @@ export class RecursiveDescentParser {
     while (!stream.check(TokenType.RBRACE)) {
       stream.match(TokenType.COMMA);
       if (stream.check(TokenType.RBRACE)) break;
+      if (this.checkContextAttachStart(stream)) {
+        items.push(this.parseContextAttach(stream, file));
+        continue;
+      }
+      if (stream.check(TokenType.IDENT, "context")) {
+        items.push(this.parseContextBlock(stream, file, false));
+        continue;
+      }
       items.push(this.parseTagLikeItem(stream, file) as ModelItem);
     }
     stream.expect(TokenType.RBRACE, "Expected '}' to close model block");
@@ -658,7 +746,63 @@ export class RecursiveDescentParser {
   }
 
   private isBlockKeyword(value: string): boolean {
-    return value === "module" || value === "service" || value === "model" || value === "def";
+    return value === "module" || value === "service" || value === "model" || value === "def" || value === "context";
+  }
+
+  private checkContextAttachStart(stream: TokenStream): boolean {
+    return stream.check(TokenType.IDENT, "context") && stream.peek(1).type === TokenType.LPAREN;
+  }
+
+  private parseContextAttach(stream: TokenStream, file: string): ContextAttachNode {
+    const contextToken = stream.expect(TokenType.IDENT, "Expected context keyword", "context");
+    stream.expect(TokenType.LPAREN, "Expected '(' after context attach");
+    const symbol = stream.expect(TokenType.IDENT, "Expected context attach symbol").value;
+    stream.expect(TokenType.RPAREN, "Expected ')' after context attach symbol");
+    stream.match(TokenType.COMMA);
+    return {
+      kind: SyntaxNodeKind.ContextAttach,
+      symbol,
+      location: { file, line: contextToken.line, col: contextToken.col },
+    };
+  }
+
+  private parseContextBlock(stream: TokenStream, file: string, exported: boolean): ContextBlockNode {
+    const contextToken = stream.expect(TokenType.IDENT, "Expected context keyword", "context");
+    const nameToken = stream.expect(TokenType.IDENT, "Expected context name");
+    stream.expect(TokenType.LBRACE, "Expected '{' after context name");
+    const bodyItems: TagBodyItem[] = [];
+    while (!stream.check(TokenType.RBRACE)) {
+      bodyItems.push(this.parseContextBodyItem(stream, file));
+    }
+    stream.expect(TokenType.RBRACE, "Expected '}' to close context block");
+    const pathField = bodyItems.find(
+      (item): item is FieldLineNode =>
+        item.kind === SyntaxNodeKind.FieldLine && item.name === "path",
+    );
+    return {
+      kind: SyntaxNodeKind.Context,
+      name: nameToken.value,
+      exported,
+      path: pathField?.value,
+      pathRaw: pathField?.value,
+      guidance: collectContextGuidance(bodyItems),
+      location: { file, line: contextToken.line, col: contextToken.col },
+    };
+  }
+
+  private parseContextBodyItem(stream: TokenStream, file: string): TagBodyItem {
+    stream.match(TokenType.COMMA);
+    if (stream.check(TokenType.GT)) {
+      return this.parseProse(stream, file);
+    }
+    if (stream.check(TokenType.IDENT, "path")) {
+      return this.parseFieldLine(stream, file);
+    }
+    throw new PactiaSyntaxError(
+      "Context blocks may only contain path and prose",
+      stream.peek().line,
+      stream.peek().col,
+    );
   }
 }
 

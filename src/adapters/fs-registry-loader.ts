@@ -19,6 +19,8 @@ import {
   mergeEffectiveRegistry,
   registryEntriesFromLocalDefs,
   registryEntriesFromProgram,
+  contextExportsFromProgram,
+  filterContextExports,
 } from "../passes/registry/build-effective-registry.js";
 import { applyPartialImportFilter } from "../passes/registry/import-symbol.js";
 
@@ -69,6 +71,10 @@ export class FsRegistryLoader implements RegistryLoaderSync {
         ? undefined
         : input.partialImports?.get(pkg.coordinate);
       const filtered = applyPartialImportFilter(parsed.tags, parsed.macros, partialSymbols);
+      const contextExports = filterContextExports(
+        program ? contextExportsFromProgram(program, pkg.coordinate) : [],
+        partialSymbols,
+      );
 
       const tier = imports.includes(pkg.coordinate)
         ? RegistryPrecedenceTier.ExplicitImport
@@ -79,6 +85,7 @@ export class FsRegistryLoader implements RegistryLoaderSync {
         tier,
         tags: filtered.tags,
         macros: filtered.macros,
+        contexts: contextExports,
       };
     });
 

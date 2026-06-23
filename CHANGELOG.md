@@ -8,6 +8,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`context` keyword** — parse, bind, and lower `context { }`, `export context`, `context(symbol)` attach, and `def alias = context name { }` to `context[]` on IR slices
+- **Package `export context`** — resolve partial imports from vendored `index.pactia`; package-relative paths in lowered IR
 - **Builtin macro expansion:** `lower/macros.ts` lowers `#[list]`, `#[paginated]`, `#[detail]`, `#[create]`, and `#[idempotent]` into endpoint `modifiers.*` IR keys; ownership macros map to `authorization.ownership.scope`.
 - **Manifest references:** `lower/references.ts` populates `manifest.references[]` from cross-module `@fk` edges in model slices.
 - **Structural tag validation:** `frontend/validate/tags.ts` checks required `@api`, `@entity`, and `@stack` fields during compile (diagnostics until JSON Schema tag bodies are normative).

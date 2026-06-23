@@ -40,6 +40,10 @@ export enum DiagnosticCode {
   ImportUnused = "IMPORT_UNUSED",
   AttachUndefined = "ATTACH_UNDEFINED",
   AttachKindMismatch = "ATTACH_KIND_MISMATCH",
+  ContextImportUnused = "CONTEXT_IMPORT_UNUSED",
+  ContextAttachUndefined = "CONTEXT_ATTACH_UNDEFINED",
+  ContextAttachKindMismatch = "CONTEXT_ATTACH_KIND_MISMATCH",
+  ContextMissingPath = "CONTEXT_MISSING_PATH",
 }
 
 export enum DiagnosticSeverity {

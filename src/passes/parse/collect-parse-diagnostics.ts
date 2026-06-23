@@ -49,7 +49,15 @@ function walkService(service: ServiceNode, visitMacro: (node: MacroInvocationNod
 }
 
 function walkModel(model: ModelNode, visitMacro: (node: MacroInvocationNode) => void): void {
-  walkTagBodyItems(model.items, visitMacro);
+  for (const item of model.items) {
+    if (item.kind === SyntaxNodeKind.MacroInvocation) {
+      visitMacro(item);
+      continue;
+    }
+    if (item.kind === SyntaxNodeKind.TagBlock) {
+      walkTagBodyItems(item.items, visitMacro);
+    }
+  }
 }
 
 function walkProduct(product: ProductNode, visitMacro: (node: MacroInvocationNode) => void): void {
