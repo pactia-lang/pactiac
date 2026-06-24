@@ -6,31 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-24
+
 ### Added
 
 - **`context` keyword** — parse, bind, and lower `context { }`, `export context`, `context(symbol)` attach, and `def alias = context name { }` to `context[]` on IR slices
 - **Package `export context`** — resolve partial imports from vendored `index.pactia`; package-relative paths in lowered IR
-- **Builtin macro expansion:** `lower/macros.ts` lowers `#[list]`, `#[paginated]`, `#[detail]`, `#[create]`, and `#[idempotent]` into endpoint `modifiers.*` IR keys; ownership macros map to `authorization.ownership.scope`.
-- **Manifest references:** `lower/references.ts` populates `manifest.references[]` from cross-module `@fk` edges in model slices.
-- **Structural tag validation:** `frontend/validate/tags.ts` checks required `@api`, `@entity`, and `@stack` fields during compile (diagnostics until JSON Schema tag bodies are normative).
-- **Effective registry:** `resolve/registry.ts` builds workspace macro precedence (stack package > explicit imports > builtins) from vendored `pactia.package.yaml` manifests.
-- **Package macro overrides:** `lower/macros.ts` flattens package `expands_to` chains (nested `#[macro]` and `modifiers.*` IR assignments) before builtin lowering; detects `MACRO_EXPANSION_CYCLE`.
-- **Registry errors:** `REGISTRY_COLLISION` when two imports export the same macro name.
-- Generic tag lowering to `extensions[]` / `modifiers` / `fields[]` — no kernel tag-name IR routing table.
-- **Fleet module/service tag validation:** JSON Schema bodies for `@input`, `@output`, `@emit`, `@throws`, `@actor`, `@deploy`, `@rule`, `@config`, `@errors`, `@event`, `@integration`, `@observe`, `@policy`, and `@status` in bundled CI catalog.
-- **Fleet model/field tag validation:** JSON Schema bodies for `@enum`, `@relation`, `@states`, and field modifiers (`@pk`, `@fk`, `@unique`, `@index`, `@nullable`, `@pii`).
-- **Fleet product/service tag validation:** JSON Schema bodies for `@topology`, `@tenancy`, `@guide`, `@security`, `@surface`, and `@test`; `@must` schema bundled for future obligation extraction.
-- **Complete kernel tag validation:** all 41 kernel tags validated — `@bind`, `@compliance`, `@environment`, `@gate`, `@retain`, `@encrypt`, `@must` extraction and instances; catalog detects `oneOf`/`anyOf` normative schemas.
-- **State graph validation (phase 10):** `validateStateGraphs` checks `@states` enum bindings, duplicate edges, and `@transition` on `@api` against module state machines.
-- **Inference (phase 11):** `applyInference` derives integration wire bodies from `maps_to`, `#[owner]` FK fields, and `#[create]` / `#[detail]` / `#[list]` request/response when tags are omitted.
 
 ### Changed
 
-- Vendored `.pactia/packages/` are produced by **`pactia install`** / **`pactia build`** in the product workspace — not by pactiac alone.
-- Fleet golden `fleet.service.yaml` uses expanded `modifiers.*` instead of a raw `macros` name list.
-- `compileIrWorkspace` reports `macro.expansion` only for unknown macros, not recognized builtins.
-- `compileWorkspace` passes `effectiveRegistry` from resolved packages into IR lowering.
-- When `PACTIA_SPEC_ROOT` resolves, `validateKernelTags` uses JSON Schema instead of structural-only checks.
+- Vendored `.pactia/packages/` are produced by **`pactia install`** / **`pactia build`** in the product workspace — not by pactiac alone
+- Gitignore vendored `.pactia/` directories under test fixtures
 
 ## [0.1.0] - 2026-06-18
 
@@ -38,12 +24,14 @@ Initial `@pactia/pactiac` release track.
 
 ### Added
 
-- Single-file compile (`pactiac compile -i`) from kernel tag extract to module-scoped IR YAML.
-- Multi-file workspace compile (`pactiac compile -w`) with discover, merge, and assemble.
-- Local package resolver stub: `pactia.toml`, `pactia.lock`, vendored `.pactia/packages/`, real `lockfileDigest`.
-- Compile pipeline: parse, bind, expand macros, validate def fields, generic lower to JSON IR.
-- Pipeline-shaped `src/` layout: `frontend/`, `lower/`, `emit/`, `resolve/`, `diagnostics/`.
-- Golden tests: fleet monolith and workspace fixtures (`test/fixtures/expected/fleet/`).
+- Single-file compile (`pactiac compile -i`) from kernel tag extract to module-scoped IR JSON
+- Multi-file workspace compile (`pactiac compile -w`) with discover, merge, and assemble
+- Local package resolver: `pactia.toml`, `pactia.lock`, vendored `.pactia/packages/`, `lockfileDigest` in manifest
+- Compile pipeline: parse, bind, expand macros, validate def fields, generic lower to JSON IR
+- Pipeline-shaped `src/` layout: `frontend/`, `passes/`, `adapters/`, `application/`
+- Golden tests: relay kernel and workspace fixtures
+- Native binaries for Linux, macOS, and Windows (Bun compile)
 
-[Unreleased]: https://github.com/pactia-lang/pactiac/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/pactia-lang/pactiac/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/pactia-lang/pactiac/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/pactia-lang/pactiac/releases/tag/v0.1.0

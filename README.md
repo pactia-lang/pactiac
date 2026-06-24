@@ -68,7 +68,7 @@ Release assets are published on [GitHub Releases](https://github.com/pactia-lang
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/pactia-lang/pactiac/main/scripts/install-pactiac.sh | bash
-./scripts/install-pactiac.sh v0.1.0
+./scripts/install-pactiac.sh v0.2.0
 ```
 
 Picks `pactiac-darwin-arm64` on Apple Silicon or `pactiac-darwin-x64` on Intel Mac. Installs to `~/.local/bin/pactiac`.

@@ -3,7 +3,7 @@
 # Usage (PowerShell):
 #   irm https://raw.githubusercontent.com/pactia-lang/pactiac/main/scripts/install-pactiac.ps1 | iex
 #   .\scripts\install-pactiac.ps1
-#   .\scripts\install-pactiac.ps1 -Version v0.1.0
+#   .\scripts\install-pactiac.ps1 -Version v0.2.0
 param(
     [string]$Version = "latest"
 )
