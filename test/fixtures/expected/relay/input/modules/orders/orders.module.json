@@ -1,8 +1,9 @@
 {
   "module": {
     "name": "orders",
-    "extensions": [
+    "body": [
       {
+        "tag": "actor",
         "id": "operators",
         "role": "Operator",
         "capabilities": [
@@ -10,24 +11,31 @@
         ],
         "provenance": "Pactia"
       },
-      "Each order belongs to exactly one supplier.",
       {
+        "tag": "rule",
+        "text": "Each order belongs to exactly one supplier.",
+        "provenance": "GUIDANCE"
+      },
+      {
+        "tag": "deploy",
         "id": "orders",
-        "fields": [],
-        "extensions": [
+        "body": [
           {
+            "tag": "environment",
             "id": "staging",
             "replicas": 2,
             "region": "eu-west-1",
             "provenance": "Pactia"
           },
           {
+            "tag": "environment",
             "id": "production",
             "replicas": 3,
             "region": "eu-west-1",
             "provenance": "Pactia"
           },
           {
+            "tag": "gate",
             "id": "production",
             "scenarios": "pass",
             "coverage": ">= 80%",
@@ -36,7 +44,11 @@
         ],
         "provenance": "Pactia"
       },
-      "All order mutations must be audit-logged"
+      {
+        "tag": "security",
+        "text": "All order mutations must be audit-logged",
+        "provenance": "GUIDANCE"
+      }
     ]
   }
 }

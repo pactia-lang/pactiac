@@ -113,3 +113,32 @@ export function attachUndefinedDiagnostic(symbol: string, filePath: string): Dia
     { target: symbol, location: { file: filePath, line: 1, col: 1 } },
   );
 }
+
+const FRAGMENT_PACKAGE_IMPORT =
+  /^\s*import\s+(?:\{\s*[^}]*\s*\}\s+from\s+)?(@\S+)\s*;/;
+
+/** Warn on package imports in fragment files — they are ignored; product.pactia owns @ imports. */
+export function collectFragmentPackageImportDiagnostics(
+  filePath: string,
+  source: string,
+): readonly Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const lines = source.split("\n");
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index]!;
+    const match = FRAGMENT_PACKAGE_IMPORT.exec(line);
+    if (!match) continue;
+    const coordinate = match[1]!;
+    diagnostics.push(
+      createDiagnostic(
+        DiagnosticCode.FragmentPackageImport,
+        `Package import '${coordinate}' in a fragment is ignored — declare package imports in product.pactia only`,
+        {
+          target: coordinate,
+          location: { file: filePath, line: index + 1, col: 1 },
+        },
+      ),
+    );
+  }
+  return diagnostics;
+}

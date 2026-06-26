@@ -1,4 +1,5 @@
 import { Provenance } from "../../domain/provenance.js";
+import { IrBodyKind, IrBodySlot, IrContextSlot } from "../../domain/ir-body.js";
 import type { WorkspaceIr } from "../../domain/workspace-ir.js";
 import {
   BoundNodeKind,
@@ -26,9 +27,9 @@ import {
 import { mergeDeep, getAtPath, parseScalarValue, setAtPath } from "../../lower/ir-path.js";
 import {
   appendHostObject,
+  appendModifierTag,
+  applyRegistryTagLabel,
   boundLeafBodyToObject,
-  collectBlockProse,
-  collectServiceProse,
   mergePrefixShorthand,
   mergeTagBlock,
   parseIrPath,
@@ -146,6 +147,10 @@ class BoundTreeLowerer {
       this.lowerBlock(item);
       return;
     }
+    if (item.kind === SyntaxNodeKind.Prose) {
+      this.appendProseLine(item, scopeFile);
+      return;
+    }
     if (item.kind === BoundNodeKind.BoundTag) {
       this.lowerRegistryTag(item, {}, scopeFile);
       return;
@@ -161,7 +166,7 @@ class BoundTreeLowerer {
 
   private lowerBoundContext(context: BoundContextNode, scopeFile: IrFile): void {
     const entry: WritableRecord = {
-      id: context.name,
+      name: context.name,
       path: context.path,
       provenance: Provenance.Pactia,
     };
@@ -176,25 +181,28 @@ class BoundTreeLowerer {
 
   private appendContextEntry(scopeFile: IrFile, entry: WritableRecord): void {
     const root = this.documentRoot(scopeFile);
-    const existing = root["context"];
+    const key = IrContextSlot.ContextArray;
+    const existing = root[key];
     if (!Array.isArray(existing)) {
-      root["context"] = [entry];
+      root[key] = [entry];
       return;
     }
     existing.push(entry);
   }
 
+  private appendProseLine(prose: ProseNode, scopeFile: IrFile): void {
+    if (prose.text.length === 0) return;
+    appendHostObject(this.documentRoot(scopeFile), IrBodySlot.BodyArray, {
+      kind: IrBodyKind.Prose,
+      text: prose.text,
+      provenance: Provenance.Guidance,
+    });
+  }
+
   private lowerBlock(block: BoundBlockNode): void {
     switch (block.placement) {
       case PlacementTarget.Product: {
-        const description = collectBlockProse(block.children);
-        if (description) {
-          this.productDoc["description"] = description;
-        }
         for (const child of block.children) {
-          if (child.kind === SyntaxNodeKind.Prose) {
-            continue;
-          }
           this.lowerTreeItem(child, IrFile.Product);
         }
         break;
@@ -241,11 +249,6 @@ class BoundTreeLowerer {
     this.pendingHost = {};
     this.serviceRoot = { name: block.hostName };
 
-    const description = collectServiceProse(block.children);
-    if (description) {
-      this.serviceRoot["description"] = description;
-    }
-
     for (const child of block.children) {
       this.lowerTreeItem(child, IrFile.Service);
     }
@@ -281,7 +284,7 @@ class BoundTreeLowerer {
         this.lowerMergeIntoHost(tag, scopeFile);
         break;
       case IrMerge.MergeFields:
-        mergeTagBlock(this.documentRoot(entry.ir.file), entry, tag.children);
+        this.lowerMergeFieldsHost(tag);
         break;
       case IrMerge.FieldAnnotation:
         break;
@@ -290,12 +293,27 @@ class BoundTreeLowerer {
     }
   }
 
+  private lowerMergeFieldsHost(tag: BoundTagNode): void {
+    const entry = tag.registryEntry;
+    const host: WritableRecord = {
+      ...boundLeafBodyToObject(this.nonTagBodyItems(tag.children)),
+    };
+    applyRegistryTagLabel(host, entry.name);
+    host["provenance"] = Provenance.Pactia;
+    if (tag.shorthand !== undefined) {
+      mergePrefixShorthand(host, entry, tag.shorthand);
+    }
+    appendHostObject(this.documentRoot(entry.ir.file), IrBodySlot.BodyArray, host);
+  }
+
   private lowerMergeIntoHost(tag: BoundTagNode, scopeFile: IrFile): void {
     const entry = tag.registryEntry;
     const target =
       scopeFile === IrFile.Service && this.serviceRoot
         ? this.pendingHost
         : this.documentRoot(entry.ir.file);
+
+    appendModifierTag(target, entry.name);
 
     if (tag.shorthand !== undefined) {
       mergePrefixShorthand(target, entry, tag.shorthand);
@@ -315,7 +333,11 @@ class BoundTreeLowerer {
     if (this.isProseOnlyBody(tag) && parseIrPath(entry.ir.path).appendArray) {
       for (const child of tag.children) {
         if (child.kind === SyntaxNodeKind.Prose && child.text.length > 0) {
-          appendHostObject(root, entry.ir.path, child.text);
+          appendHostObject(root, entry.ir.path, {
+            tag: entry.name,
+            text: child.text,
+            provenance: Provenance.Guidance,
+          });
         }
       }
       return;
@@ -349,6 +371,8 @@ class BoundTreeLowerer {
     const host: WritableRecord = { ...this.pendingHost };
     this.pendingHost = {};
 
+    applyRegistryTagLabel(host, entry.name);
+
     this.applyHostIdentity(host, tag, entry);
 
     if (tag.shorthand !== undefined) {
@@ -377,9 +401,10 @@ class BoundTreeLowerer {
     host[key] = tag.hostId;
   }
 
-  /** Registry openExtension with no declared fields — body lines are nested field hosts. */
+  /** Model `@entity` bodies — field lines are typed columns, not tag body key-value pairs. */
   private isOpenFieldHost(entry: RegistryTagEntry): boolean {
     return (
+      entry.ir.file === IrFile.Model &&
       entry.fields.openExtension &&
       entry.fields.required.length === 0 &&
       entry.fields.optional.length === 0
@@ -388,12 +413,12 @@ class BoundTreeLowerer {
 
   private applyNestedTag(
     parentHost: WritableRecord,
-    parentEntry: RegistryTagEntry,
+    _parentEntry: RegistryTagEntry,
     tag: BoundTagNode,
     frame: LowerFrame,
   ): void {
     const entry = tag.registryEntry;
-    const slotPath = this.relativeSlotPath(parentEntry.ir.path, entry.ir.path);
+    const slotPath = IrBodySlot.BodyArray;
 
     switch (entry.ir.merge) {
       case IrMerge.AppendHost: {
@@ -414,20 +439,19 @@ class BoundTreeLowerer {
           mergeTagBlock(parentHost, { ...entry, ir: { ...entry.ir, path: slotPath } }, tag.children);
         }
         break;
-      case IrMerge.MergeFields:
-        mergeTagBlock(parentHost, { ...entry, ir: { ...entry.ir, path: slotPath } }, tag.children);
+      case IrMerge.MergeFields: {
+        const host = boundLeafBodyToObject(this.nonTagBodyItems(tag.children));
+        applyRegistryTagLabel(host, entry.name);
+        host["provenance"] = Provenance.Pactia;
+        if (tag.shorthand !== undefined) {
+          mergePrefixShorthand(host, entry, tag.shorthand);
+        }
+        appendHostObject(parentHost, IrBodySlot.BodyArray, host);
         break;
+      }
       default:
         break;
     }
-  }
-
-  private relativeSlotPath(parentPath: string, childPath: string): string {
-    const parentContainer = parseIrPath(parentPath).containerPath;
-    if (childPath.startsWith(`${parentContainer}.`)) {
-      return childPath.slice(parentContainer.length + 1);
-    }
-    return childPath;
   }
 
   private enrichAppendHost(
@@ -506,6 +530,7 @@ class BoundTreeLowerer {
 
   private applyFieldAnnotation(field: WritableRecord, tag: BoundTagNode): void {
     const entry = tag.registryEntry;
+    appendModifierTag(field, entry.name);
     const annotations = (field["annotations"] as WritableRecord | undefined) ?? {};
     if (tag.shorthand !== undefined) {
       mergePrefixShorthand(annotations, entry, tag.shorthand);

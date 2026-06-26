@@ -1,12 +1,17 @@
 {
   "service": {
     "name": "OrderService",
-    "description": "Core order relay API",
     "flags": {
       "database": true
     },
-    "extensions": [
+    "body": [
       {
+        "kind": "prose",
+        "text": "Core order relay API",
+        "provenance": "GUIDANCE"
+      },
+      {
+        "tag": "auth",
         "roles": [
           "Operator"
         ],
@@ -18,11 +23,16 @@
           "paginated": true,
           "bodyRef": "OrderListResponse"
         },
+        "modifierTags": [
+          "output"
+        ],
+        "tag": "api",
         "id": "list_orders",
         "method": "GET",
         "path": "/api/v1/orders",
-        "extensions": [
+        "body": [
           {
+            "tag": "surface",
             "id": "order_list",
             "platform": "web",
             "screen": "{ id : order_list }",
@@ -39,12 +49,17 @@
           "idempotency": "REQUIRED",
           "bodyRef": "CreateOrderResponse"
         },
+        "modifierTags": [
+          "output"
+        ],
+        "tag": "api",
         "id": "create_order",
         "method": "POST",
         "path": "/api/v1/orders",
         "provenance": "Pactia"
       },
       {
+        "tag": "test",
         "id": "operator_creates_order",
         "name": "Operator creates an order",
         "when": "Operator is logged in and POST /api/v1/orders with valid body",
@@ -52,6 +67,7 @@
         "provenance": "Pactia"
       },
       {
+        "tag": "test",
         "id": "operator_lists_orders",
         "name": "Operator lists orders",
         "when": "Operator is logged in and GET /api/v1/orders",
@@ -59,6 +75,7 @@
         "provenance": "Pactia"
       },
       {
+        "tag": "test",
         "id": "unauthorized_create",
         "name": "Unauthorized create rejected",
         "when": "Anonymous POST /api/v1/orders",

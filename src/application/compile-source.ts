@@ -32,6 +32,7 @@ export interface CompileSourceInput {
   readonly source: string;
   readonly workspaceRoot: string;
   readonly entryFile?: string;
+  readonly assemblyDiagnostics?: readonly Diagnostic[];
 }
 
 /** Compile monolith or workspace-merged source through the v2 pipeline. */
@@ -51,6 +52,9 @@ export function compileSource(input: CompileSourceInput): CompileResult {
 
   return {
     files: result.files,
-    diagnostics: mapDiagnostics(result.diagnostics),
+    diagnostics: mapDiagnostics([
+      ...(input.assemblyDiagnostics ?? []),
+      ...result.diagnostics,
+    ]),
   };
 }

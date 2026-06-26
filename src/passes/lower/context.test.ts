@@ -25,7 +25,7 @@ product ContextDemo {
 `;
 
 describe("context lowering", () => {
-  it("lowers inline context blocks to context[] on product and service slices", () => {
+  it("lowers context keyword to context[] and tags to body[]", () => {
     const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
     const registry = { tags: new Map(), macros: new Map(), contexts: new Map() };
     const bound = bindSyntaxTree(syntax, registry);
@@ -39,17 +39,25 @@ describe("context lowering", () => {
     const productJson = lowered.files.get("input/product.json");
     assert.ok(productJson);
     const product = JSON.parse(productJson) as {
-      product: { context?: Array<{ id: string; path: string }> };
+      product: {
+        body?: Array<{ kind: string }>;
+        context?: Array<{ name: string; path: string }>;
+      };
     };
-    assert.equal(product.product.context?.[0]?.id, "api_notes");
+    assert.equal(product.product.context?.[0]?.name, "api_notes");
     assert.equal(product.product.context?.[0]?.path, "./docs/api.md");
+    assert.equal(product.product.body, undefined);
 
     const serviceJson = lowered.files.get("input/modules/core/services/demo.service.json");
     assert.ok(serviceJson);
     const service = JSON.parse(serviceJson) as {
-      service: { context?: Array<{ id: string; path: string }> };
+      service: {
+        body?: unknown[];
+        context?: Array<{ name: string; path: string }>;
+      };
     };
-    assert.equal(service.service.context?.[0]?.id, "ops_pack");
+    assert.equal(service.service.context?.[0]?.name, "ops_pack");
     assert.equal(service.service.context?.[0]?.path, "./docs/ops/");
+    assert.equal(service.service.body, undefined);
   });
 });

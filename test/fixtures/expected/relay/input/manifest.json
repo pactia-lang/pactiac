@@ -3,7 +3,7 @@
     "pactiaVersion": "1.0",
     "compiledAt": "1970-01-01T00:00:00.000Z",
     "entry": "product.pactia",
-    "lockfileDigest": "sha256:f45b2da7e267e89a24f196734fd28620ad7a447fe416f5277361783330216104",
+    "lockfileDigest": "sha256:029f32c3baca6ba9140cc13473b077d3611df93568cb39107fec18935124af70",
     "modules": [
       {
         "name": "orders",

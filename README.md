@@ -10,32 +10,32 @@ Implements the normative specification in [pactia-lang/spec](https://github.com/
 # Compile a single product file to an IR workspace directory
 pactiac compile -i product.pactia -o input/ [--report] [--provenance report.json]
 
-# Compile a multi-file workspace (product.pactia + fragments via attach)
+# Compile a multi-file workspace (import + attach in product.pactia)
 pactiac compile -w ./my-product -o input/ [--report] [--provenance report.json]
 
 # Regenerate golden test fixtures after intentional compiler changes
 npm run generate:golden
 ```
 
-### Workspace layout (source)
+### Workspace assembly (source)
 
-**Import + attach (1.2)** — preferred for multi-file products:
+**Import + attach (normative)** — folder-agnostic. Fragment paths come from `import … from ./any/path` in `product.pactia`; the attach tree wires symbols:
 
 ```
 my-product/
-  product.pactia              # package imports, attach tree, product-level tags
+  product.pactia              # package imports + fragment imports + attach tree
   pactia.toml
   pactia.lock
-  fragments/
-    orders.module.pactia      # export module orders { … }
-    orders.model.pactia       # export model orders_model { … }
-    order.service.pactia      # export service OrderService { … }
+  fragments/…                 # convention — paths are arbitrary
+  modules/…                   # convention — PPM uses this layout
   .pactia/packages/           # vendored packages (from pactia install / build)
 ```
 
-**Package imports vs fragment imports:** declare `import { @api, #database, … } from @pactia/…` only in `product.pactia`. Fragment files use `export module` / `export service` / `export model` and are wired with `import { Symbol } from ./fragments/…` plus `module(name) { service(Symbol) { … } }`. The compiler merges attach bodies into one program; tags in fragments resolve from the product-level package imports. See [spec — Package imports vs fragment imports](https://github.com/pactia-lang/spec/blob/main/docs/language-spec.md#package-imports-vs-fragment-imports).
+**Package imports vs fragment imports:** declare `import { @api, #database, … } from @pactia/…` only in `product.pactia`. Fragment files use `export module` / `export service` / `export model` and are wired with `import { Symbol } from ./path` plus `module(name) { service(Symbol) { … } }`. Package imports in a fragment file trigger a **`FRAGMENT_PACKAGE_IMPORT`** warning (ignored at assembly). See [spec — Workspace layout](https://github.com/pactia-lang/spec/blob/main/docs/language-spec.md#workspace-layout).
 
-**Legacy folder merge (deprecated):** `modules/<module>/module.pactia` + `services/*.service.pactia` scanned by directory layout. New workspaces should use export + attach. Example: [workspace/relay](test/fixtures/workspace/relay).
+Examples: [relay](test/fixtures/workspace/relay) (`./fragments/…`), [PPM](https://github.com/pactia-lang/examples/tree/main/ppm) (`./modules/…`).
+
+**Legacy folder scan (deprecated):** when no attach tree is present, `modules/<dir>/module.pactia` may still be merged by directory convention. Do not rely on this for new products.
 
 Vendored package directories use the form `@scope--name@<version>/` (slashes in coordinates become `--`). Override the vendor search path with `PACTIA_VENDOR_ROOT` when packages live outside the workspace.
 
@@ -44,78 +44,9 @@ Vendored package directories use the form `@scope--name@<version>/` (slashes in 
 ```bash
 npm install
 npm run hooks:install   # optional — pre-commit runs tests, pre-push runs tests
-npm run build
 npm test
+npm run build
 ```
-
-Golden tests use [relay.pactia](test/fixtures/kernel/relay.pactia), [workspace/relay](test/fixtures/workspace/relay), [workspace/website](test/fixtures/workspace/website), and related fixtures under `test/fixtures/`.
-
-## Native binary (no Node required)
-
-Build standalone executables with [Bun](https://bun.sh) compile:
-
-```bash
-# Install Bun, then:
-bun run build:bin:linux-x64          # one platform
-bun run build:bin                    # all platforms (release)
-bun run test:bin                     # build + smoke relay workspace
-./dist/pactiac-linux-x64 compile -w ./my-product -o out/
-```
-
-Release assets are published on [GitHub Releases](https://github.com/pactia-lang/pactiac/releases) when you push a version tag (`v*`).
-
-### Linux and macOS
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/pactia-lang/pactiac/main/scripts/install-pactiac.sh | bash
-./scripts/install-pactiac.sh v0.2.0
-```
-
-Picks `pactiac-darwin-arm64` on Apple Silicon or `pactiac-darwin-x64` on Intel Mac. Installs to `~/.local/bin/pactiac`.
-
-### Windows
-
-```powershell
-irm https://raw.githubusercontent.com/pactia-lang/pactiac/main/scripts/install-pactiac.ps1 | iex
-```
-
-Or download `pactiac-windows-x64.exe` from [Releases](https://github.com/pactia-lang/pactiac/releases).
-
-The **npm package** (`npm run build` → `dist/`) remains the library API for [pactia](https://github.com/pactia-lang/pactia) and programmatic use. The native binary is the standalone CLI.
-
-## Workspace layout
-
-```
-pactiac/
-  src/
-    application/            compile pipeline orchestrator
-    passes/                 parse, bind, expand-macros, lower
-    adapters/               fs registry loader, TOML lock, JSON emit
-    frontend/workspace/     multi-file discover, merge, assemble
-    domain/                 SyntaxTree, BoundTree, IR types, compile phases
-  test/
-    fixtures/
-      kernel/               bundled .pactia input
-      workspace/relay/      multi-file workspace fixture
-      packages/             vendored package stubs for tests
-      expected/relay/       golden IR workspace output
-    fixture-paths.ts
-  .githooks/                pre-commit (test), pre-push (test)
-  scripts/
-    generate-golden.ts
-    install-hooks.sh
-    install-pactiac.sh
-    install-pactiac.ps1
-    smoke-binary.sh
-```
-
-IR shape is defined in [spec/docs/compilation.md](https://github.com/pactia-lang/spec/blob/main/docs/compilation.md) — there is no JSON Schema for compiler output in the spec repo.
-
-## Specification coupling
-
-| pactiac release | Implements spec |
-| --- | --- |
-| 0.1.x | Pactia 1.0 — parse/bind/lower to module-scoped JSON IR; workspace compile (import + attach and legacy folder merge); macro expansion from package `export def` |
 
 ### Compile output layout
 
@@ -127,6 +58,13 @@ input/modules/<module>/<module>.model.json
 input/modules/<module>/services/<service>.service.json
 input/workspace.json
 ```
+
+After `pactia build`: `input/context.index.json` and `input/context/` (bundled context files) — see [spec — Context index](https://github.com/pactia-lang/spec/blob/main/docs/compilation.md#context-index-pactia-build).
+
+| pactiac release | Implements spec |
+| --- | --- |
+| 0.2.x | Pactia 1.2 — source-order `body[]` IR; structural `context[]` with `name`; `FRAGMENT_PACKAGE_IMPORT` warning; package `export context` |
+| 0.1.x | Pactia 1.0 — parse/bind/lower to module-scoped JSON IR; workspace compile (import + attach; legacy folder scan); macro expansion from package `export def` |
 
 ## License
 

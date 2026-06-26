@@ -76,6 +76,19 @@ export function primaryModifierField(entry: RegistryTagEntry): string | undefine
   return entry.fields.required[0] ?? entry.fields.optional[0];
 }
 
+export function appendModifierTag(target: WritableRecord, tagName: string): void {
+  const existing = target["modifierTags"];
+  const tags = Array.isArray(existing) ? [...(existing as string[])] : [];
+  if (!tags.includes(tagName)) {
+    tags.push(tagName);
+  }
+  target["modifierTags"] = tags;
+}
+
+export function applyRegistryTagLabel(host: WritableRecord, tagName: string): void {
+  host["tag"] = tagName;
+}
+
 export function appendHostObject(
   root: WritableRecord,
   slotPath: string,
