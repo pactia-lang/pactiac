@@ -50,6 +50,7 @@ export function compileWorkspace(workspaceRoot: string): CompileResult {
     source: merged.source,
     workspaceRoot: root,
     entryFile: merged.entry,
+    assemblyDiagnostics: merged.diagnostics,
   });
 }
 

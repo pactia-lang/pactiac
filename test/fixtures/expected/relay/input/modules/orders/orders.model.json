@@ -1,8 +1,9 @@
 {
   "model": {
     "name": "orders",
-    "extensions": [
+    "body": [
       {
+        "tag": "enum",
         "name": "OrderStatus",
         "values": [
           "PENDING",
@@ -11,6 +12,7 @@
         "provenance": "Pactia"
       },
       {
+        "tag": "entity",
         "name": "OrderListItem",
         "fields": [
           {
@@ -35,13 +37,17 @@
         "provenance": "Pactia"
       },
       {
+        "tag": "entity",
         "name": "OrderListResponse",
         "fields": [
           {
             "name": "orders",
             "type": "ORDERLISTITEM [ ]",
             "array": false,
-            "optional": false
+            "optional": false,
+            "modifierTags": [
+              "nullable"
+            ]
           },
           {
             "name": "nextCursor",
@@ -53,6 +59,7 @@
         "provenance": "Pactia"
       },
       {
+        "tag": "entity",
         "name": "CreateOrderRequest",
         "fields": [
           {
@@ -71,6 +78,7 @@
         "provenance": "Pactia"
       },
       {
+        "tag": "entity",
         "name": "CreateOrderResponse",
         "fields": [
           {
@@ -83,6 +91,7 @@
         "provenance": "Pactia"
       },
       {
+        "tag": "entity",
         "name": "Order",
         "fields": [
           {

@@ -4,7 +4,7 @@
       "pactiaVersion": "1.0",
       "compiledAt": "1970-01-01T00:00:00.000Z",
       "entry": "product.pactia",
-      "lockfileDigest": "sha256:f45b2da7e267e89a24f196734fd28620ad7a447fe416f5277361783330216104",
+      "lockfileDigest": "sha256:029f32c3baca6ba9140cc13473b077d3611df93568cb39107fec18935124af70",
       "modules": [
         {
           "name": "orders",
@@ -25,125 +25,126 @@
   "product": {
     "product": {
       "name": "Relay",
-      "description": "B2B order relay between suppliers and retailers",
-      "extensions": [
+      "body": [
         {
-          "fields": [
-            {
-              "name": "language",
-              "type": "RUST",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "edition",
-              "type": "2021",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "framework",
-              "type": "ACTIX-WEB",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "runtime",
-              "type": "TOKIO",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "nodeRole",
-              "type": "SIDECAR",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "package",
-              "type": "@PACTIA/rust-stack",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "errorEnvelope",
-              "type": "PLATFORM",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "pagination",
-              "type": "CURSOR",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "orm",
-              "type": "SQLX",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "database",
-              "type": "POSTGRESQL",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "cache",
-              "type": "REDIS",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "messaging",
-              "type": "KAFKA",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "ci",
-              "type": "GITHUB-ACTIONS",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "container",
-              "type": "DOCKER",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "deploy",
-              "type": "KUBERNETES",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "allowedCrates",
-              "type": "TOKIO,ACTIX-WEB,ACTIX-RT,ACTIX-HTTP,SQLX,SERDE,SERDE_JSON,TRACING,TRACING-SUBSCRIBER,UUID,CHRONO,THISERROR,ANYHOW,RDKAFKA,REDIS,JSONWEBTOKEN,VALIDATOR,CONFIG,DOTENVY",
-              "array": false,
-              "optional": false
-            },
-            {
-              "name": "deniedCrates",
-              "type": "ROCKET,DIESEL,OPENSSL,NATIVE-TLS,HYPER,AXUM,WARP,REQWEST,TONIC,PROST,ASYNC-STD,SMOL",
-              "array": false,
-              "optional": false
-            }
+          "kind": "prose",
+          "text": "B2B order relay between suppliers and retailers",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "kind": "prose",
+          "text": "Rust / Actix / Node backend stack ( ANB ) — primary APIs in Rust on actix-web and tokio.",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "kind": "prose",
+          "text": "Node is a sidecar only ( admin tooling , asset bundling ) ; never the request-serving hot path.",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "kind": "prose",
+          "text": "All handlers return errors via the platform envelope — no ad hoc JSON error bodies.",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "kind": "prose",
+          "text": "List endpoints use cursor pagination ; override page size only with paginated and list service macros.",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "kind": "prose",
+          "text": "Persistence via sqlx with PostgreSQL ; cache via redis ; async integration via kafka when declared.",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "kind": "prose",
+          "text": "CI defaults to GitHub Actions ; images are OCI multi-stage cargo release plus distroless runtime.",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "kind": "prose",
+          "text": "Deploy targets Kubernetes or Docker Compose ; health checks expose health and ready routes.",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "kind": "prose",
+          "text": "Allowed Rust crates are the default dependency set for generated services ; denied crates fail codegen audit.",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "tag": "stack",
+          "language": "rust",
+          "edition": 2021,
+          "framework": "actix-web",
+          "runtime": "tokio",
+          "nodeRole": "sidecar",
+          "package": "@pactia/rust-stack",
+          "errorEnvelope": "platform",
+          "pagination": "cursor",
+          "orm": "sqlx",
+          "database": "postgresql",
+          "cache": "redis",
+          "messaging": "kafka",
+          "ci": "github-actions",
+          "container": "docker",
+          "deploy": "kubernetes",
+          "allowedCrates": [
+            "tokio",
+            "actix-web",
+            "actix-rt",
+            "actix-http",
+            "sqlx",
+            "serde",
+            "serde_json",
+            "tracing",
+            "tracing-subscriber",
+            "uuid",
+            "chrono",
+            "thiserror",
+            "anyhow",
+            "rdkafka",
+            "redis",
+            "jsonwebtoken",
+            "validator",
+            "config",
+            "dotenvy"
+          ],
+          "deniedCrates": [
+            "rocket",
+            "diesel",
+            "openssl",
+            "native-tls",
+            "hyper",
+            "axum",
+            "warp",
+            "reqwest",
+            "tonic",
+            "prost",
+            "async-std",
+            "smol"
           ],
           "provenance": "Pactia"
         },
         {
+          "tag": "topology",
           "mode": "microservices",
           "provenance": "Pactia"
         },
         {
+          "tag": "tenancy",
           "mode": "single",
           "provenance": "Pactia"
         },
-        "Handlers return errors via the platform envelope only",
-        "List endpoints use cursor pagination — not offset"
+        {
+          "tag": "guide",
+          "text": "Handlers return errors via the platform envelope only",
+          "provenance": "GUIDANCE"
+        },
+        {
+          "tag": "guide",
+          "text": "List endpoints use cursor pagination — not offset",
+          "provenance": "GUIDANCE"
+        }
       ]
     }
   },
@@ -152,31 +153,41 @@
       "module": {
         "module": {
           "name": "orders",
-          "extensions": [
+          "body": [
             {
+              "tag": "actor",
               "id": "operators",
               "role": "Operator",
-              "capabilities": ["manage_orders"],
+              "capabilities": [
+                "manage_orders"
+              ],
               "provenance": "Pactia"
             },
-            "Each order belongs to exactly one supplier.",
             {
+              "tag": "rule",
+              "text": "Each order belongs to exactly one supplier.",
+              "provenance": "GUIDANCE"
+            },
+            {
+              "tag": "deploy",
               "id": "orders",
-              "fields": [],
-              "extensions": [
+              "body": [
                 {
+                  "tag": "environment",
                   "id": "staging",
                   "replicas": 2,
                   "region": "eu-west-1",
                   "provenance": "Pactia"
                 },
                 {
+                  "tag": "environment",
                   "id": "production",
                   "replicas": 3,
                   "region": "eu-west-1",
                   "provenance": "Pactia"
                 },
                 {
+                  "tag": "gate",
                   "id": "production",
                   "scenarios": "pass",
                   "coverage": ">= 80%",
@@ -185,20 +196,29 @@
               ],
               "provenance": "Pactia"
             },
-            "All order mutations must be audit-logged"
+            {
+              "tag": "security",
+              "text": "All order mutations must be audit-logged",
+              "provenance": "GUIDANCE"
+            }
           ]
         }
       },
       "model": {
         "model": {
           "name": "orders",
-          "extensions": [
+          "body": [
             {
+              "tag": "enum",
               "name": "OrderStatus",
-              "values": ["PENDING", "FULFILLED"],
+              "values": [
+                "PENDING",
+                "FULFILLED"
+              ],
               "provenance": "Pactia"
             },
             {
+              "tag": "entity",
               "name": "OrderListItem",
               "fields": [
                 {
@@ -223,13 +243,17 @@
               "provenance": "Pactia"
             },
             {
+              "tag": "entity",
               "name": "OrderListResponse",
               "fields": [
                 {
                   "name": "orders",
                   "type": "ORDERLISTITEM [ ]",
                   "array": false,
-                  "optional": false
+                  "optional": false,
+                  "modifierTags": [
+                    "nullable"
+                  ]
                 },
                 {
                   "name": "nextCursor",
@@ -241,6 +265,7 @@
               "provenance": "Pactia"
             },
             {
+              "tag": "entity",
               "name": "CreateOrderRequest",
               "fields": [
                 {
@@ -259,6 +284,7 @@
               "provenance": "Pactia"
             },
             {
+              "tag": "entity",
               "name": "CreateOrderResponse",
               "fields": [
                 {
@@ -271,6 +297,7 @@
               "provenance": "Pactia"
             },
             {
+              "tag": "entity",
               "name": "Order",
               "fields": [
                 {
@@ -313,13 +340,20 @@
         {
           "service": {
             "name": "OrderService",
-            "description": "Core order relay API",
             "flags": {
               "database": true
             },
-            "extensions": [
+            "body": [
               {
-                "roles": ["Operator"],
+                "kind": "prose",
+                "text": "Core order relay API",
+                "provenance": "GUIDANCE"
+              },
+              {
+                "tag": "auth",
+                "roles": [
+                  "Operator"
+                ],
                 "provenance": "Pactia"
               },
               {
@@ -328,11 +362,16 @@
                   "paginated": true,
                   "bodyRef": "OrderListResponse"
                 },
+                "modifierTags": [
+                  "output"
+                ],
+                "tag": "api",
                 "id": "list_orders",
                 "method": "GET",
                 "path": "/api/v1/orders",
-                "extensions": [
+                "body": [
                   {
+                    "tag": "surface",
                     "id": "order_list",
                     "platform": "web",
                     "screen": "{ id : order_list }",
@@ -349,12 +388,17 @@
                   "idempotency": "REQUIRED",
                   "bodyRef": "CreateOrderResponse"
                 },
+                "modifierTags": [
+                  "output"
+                ],
+                "tag": "api",
                 "id": "create_order",
                 "method": "POST",
                 "path": "/api/v1/orders",
                 "provenance": "Pactia"
               },
               {
+                "tag": "test",
                 "id": "operator_creates_order",
                 "name": "Operator creates an order",
                 "when": "Operator is logged in and POST /api/v1/orders with valid body",
@@ -362,6 +406,7 @@
                 "provenance": "Pactia"
               },
               {
+                "tag": "test",
                 "id": "operator_lists_orders",
                 "name": "Operator lists orders",
                 "when": "Operator is logged in and GET /api/v1/orders",
@@ -369,6 +414,7 @@
                 "provenance": "Pactia"
               },
               {
+                "tag": "test",
                 "id": "unauthorized_create",
                 "name": "Unauthorized create rejected",
                 "when": "Anonymous POST /api/v1/orders",

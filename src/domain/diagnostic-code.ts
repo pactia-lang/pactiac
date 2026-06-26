@@ -44,6 +44,7 @@ export enum DiagnosticCode {
   ContextAttachUndefined = "CONTEXT_ATTACH_UNDEFINED",
   ContextAttachKindMismatch = "CONTEXT_ATTACH_KIND_MISMATCH",
   ContextMissingPath = "CONTEXT_MISSING_PATH",
+  FragmentPackageImport = "FRAGMENT_PACKAGE_IMPORT",
 }
 
 export enum DiagnosticSeverity {
@@ -56,6 +57,7 @@ export const diagnosticWarningCodes: ReadonlySet<DiagnosticCode> = new Set([
   DiagnosticCode.TagBodyUnknownField,
   DiagnosticCode.LegacyMacroSyntax,
   DiagnosticCode.ImportUnused,
+  DiagnosticCode.FragmentPackageImport,
 ]);
 
 export function defaultSeverityForCode(code: DiagnosticCode): DiagnosticSeverity {

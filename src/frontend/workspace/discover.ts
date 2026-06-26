@@ -32,6 +32,7 @@ function collectPactiaFiles(dir: string, suffix: string): string[] {
     .sort();
 }
 
+/** Legacy folder scan — deprecated; normative assembly uses import + attach in product.pactia. */
 function discoverModule(moduleDir: string): WorkspaceModuleFiles | undefined {
   const modulePath = join(moduleDir, MODULE_FILE);
   if (!existsSync(modulePath)) return undefined;
@@ -70,6 +71,7 @@ function discoverModule(moduleDir: string): WorkspaceModuleFiles | undefined {
   };
 }
 
+/** Loads workspace manifests; optional legacy modules/ scan when attach is absent. */
 export function discoverWorkspace(rootDir: string): WorkspaceFiles {
   const root = resolve(rootDir);
   const productPath = join(root, PRODUCT_FILE);

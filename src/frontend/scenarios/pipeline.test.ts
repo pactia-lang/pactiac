@@ -50,11 +50,13 @@ test("compile relay fixture emits module-scoped service JSON with scenarios", ()
   const orderService = files.get("input/modules/orders/services/order.service.json") ?? "";
   const parsed = JSON.parse(orderService) as {
     service: {
-      extensions: Array<{ id?: string; name?: string; when?: string; then?: string }>;
+      body: Array<{ name?: string; when?: string; then?: string; tag?: string }>;
     };
   };
 
-  const scenarios = parsed.service.extensions.filter((entry) => entry.when !== undefined);
+  const scenarios = parsed.service.body.filter(
+    (entry) => entry.tag === "test" && entry.when !== undefined,
+  );
   assert.equal(scenarios.length, 3);
   assert.equal(scenarios[0]?.name, "Operator creates an order");
   assert.match(orderService, /OrderService/);

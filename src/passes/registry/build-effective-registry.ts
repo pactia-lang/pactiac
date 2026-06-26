@@ -1,5 +1,3 @@
-import { IrFile } from "../../domain/ir-file.js";
-import { IrMerge } from "../../domain/ir-merge.js";
 import {
   RegistryEntryKind,
   type DefBodyAst,
@@ -122,7 +120,7 @@ export function registryEntriesFromLocalDefs(
       in: def.inTargets,
       fields: fieldSpecFromDefBody(def.bodyItems),
       modifier: def.modifier,
-      ir: { file: IrFile.Service, path: "extensions[]", merge: IrMerge.MergeFields },
+      ir: deriveIrSlotForTag(def),
     });
   }
 

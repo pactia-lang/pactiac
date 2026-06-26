@@ -15,6 +15,7 @@ export {
   mergeDiagnostics,
 } from "./diagnostics.js";
 export type { Diagnostic, DiagnosticBag, ProvenanceGap } from "./diagnostics.js";
+export { IrBodyKind, IrBodySlot, IrContextSlot } from "./ir-body.js";
 export { IrFile, irFileForPlacement, irFileValues, parseIrFile } from "./ir-file.js";
 export { IrMerge, irMergeValues, parseIrMerge } from "./ir-merge.js";
 export {

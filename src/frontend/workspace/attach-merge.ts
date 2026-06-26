@@ -4,6 +4,7 @@ import type { Diagnostic } from "../../domain/diagnostics.js";
 import {
   attachKindMismatchDiagnostic,
   attachUndefinedDiagnostic,
+  collectFragmentPackageImportDiagnostics,
 } from "../../passes/workspace/workspace-diagnostics.js";
 import { extractBlockAfter, findMatchingBrace } from "../kernel/brace.js";
 import type { MergedWorkspaceSource, WorkspaceFiles } from "./types.js";
@@ -142,10 +143,15 @@ function parsePartialImportPaths(productSource: string, productDir: string): str
   return paths;
 }
 
-function buildFragmentRegistry(productSource: string, productDir: string): Map<string, FragmentExport> {
+function buildFragmentRegistry(
+  productSource: string,
+  productDir: string,
+): { readonly registry: Map<string, FragmentExport>; readonly diagnostics: Diagnostic[] } {
   const registry = new Map<string, FragmentExport>();
+  const diagnostics: Diagnostic[] = [];
   for (const filePath of parsePartialImportPaths(productSource, productDir)) {
     const source = readFileSync(filePath, "utf8");
+    diagnostics.push(...collectFragmentPackageImportDiagnostics(filePath, source));
     for (const exportDecl of indexFragmentExports(filePath, source)) {
       if (registry.has(exportDecl.name)) {
         throw new Error(
@@ -155,7 +161,7 @@ function buildFragmentRegistry(productSource: string, productDir: string): Map<s
       registry.set(exportDecl.name, exportDecl);
     }
   }
-  return registry;
+  return { registry, diagnostics };
 }
 
 function parseAttachModules(productBody: string): AttachModuleRef[] {
@@ -357,7 +363,10 @@ function extractProductHeader(productSource: string, productDir: string): {
 
 export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedAttachWorkspaceSource {
   const productDir = dirname(files.productPath);
-  const registry = buildFragmentRegistry(files.productSource, productDir);
+  const { registry, diagnostics: fragmentDiagnostics } = buildFragmentRegistry(
+    files.productSource,
+    productDir,
+  );
   const productBlock = extractBlockAfter(files.productSource, /product\s+(\w+)\s*\{/);
   if (!productBlock) {
     throw new Error("product.pactia must declare a product block");
@@ -370,7 +379,7 @@ export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedAttachWorks
 
   const { versionLine, imports, productName, productBody } = extractProductHeader(files.productSource, productDir);
   const trailingModules = extractInlineModulesAfterAttach(productBlock.body);
-  const diagnostics: Diagnostic[] = [];
+  const diagnostics: Diagnostic[] = [...fragmentDiagnostics];
   const moduleBlocks: string[] = [];
   for (const attach of attachModules) {
     const built = buildAttachedModuleBlock(attach, registry, files.productPath);

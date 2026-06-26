@@ -6,11 +6,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- **`context` keyword** — lowers to structural **`context[]`** on each IR slice with `name` (not `id`); registry `@context` (if any) uses `body[]` with `tag: context`
+- **`FRAGMENT_PACKAGE_IMPORT`** — warning when a fragment file contains a package import (ignored at assembly)
+- Breaking: IR no longer uses per-type aggregation arrays (`entities[]`, `endpoints[]`, …); host tags use source-order **`body[]`**, context keyword uses structural **`context[]`**
+
 ## [0.2.0] - 2026-06-24
 
 ### Added
 
-- **`context` keyword** — parse, bind, and lower `context { }`, `export context`, `context(symbol)` attach, and `def alias = context name { }` to `context[]` on IR slices
+- **`context` keyword** — lowers to `context[]` on IR slices (structural); not mixed into `body[]`
 - **Package `export context`** — resolve partial imports from vendored `index.pactia`; package-relative paths in lowered IR
 
 ### Changed

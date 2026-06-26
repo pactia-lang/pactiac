@@ -1,6 +1,7 @@
 import {
   BoundNodeKind,
   DiagnosticCode,
+  IrBodySlot,
   IrFile,
   IrMerge,
   PlacementTarget,
@@ -326,7 +327,7 @@ class SyntaxTreeBinder {
       in: [],
       fields: { required: [], optional: [], modifier: false, openExtension: false },
       modifier: false,
-      ir: { file: IrFile.Product, path: "extensions[]", merge: IrMerge.MergeFields },
+      ir: { file: IrFile.Product, path: IrBodySlot.BodyArray, merge: IrMerge.AppendHost },
     };
   }
 }
