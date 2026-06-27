@@ -12,7 +12,6 @@ export enum DiagnosticCode {
   MacroArgsInvalid = "MACRO_ARGS_INVALID",
   MacroExpansionCycle = "MACRO_EXPANSION_CYCLE",
   MacroExpansionInvalid = "MACRO_EXPANSION_INVALID",
-  LegacyMacroSyntax = "LEGACY_MACRO_SYNTAX",
 
   // Tag bodies
   TagBodyMissingField = "TAG_BODY_MISSING_FIELD",
@@ -20,16 +19,10 @@ export enum DiagnosticCode {
   TagBodyInvalid = "TAG_BODY_INVALID",
   ClauseDuplicateKey = "CLAUSE_DUPLICATE_KEY",
 
-  // State graphs
-  StateBindingInvalid = "STATE_BINDING_INVALID",
-  StateDuplicateTransition = "STATE_DUPLICATE_TRANSITION",
-  StateTransitionUndefined = "STATE_TRANSITION_UNDEFINED",
-
   // Package resolution
   PackageNotFound = "PACKAGE_NOT_FOUND",
   PackageLockMismatch = "PACKAGE_LOCK_MISMATCH",
   LockEntryMissing = "LOCK_ENTRY_MISSING",
-  StackBindingMismatch = "STACK_BINDING_MISMATCH",
 
   // Version / parse
   UnsupportedVersion = "UNSUPPORTED_VERSION",
@@ -54,8 +47,9 @@ export enum DiagnosticSeverity {
 
 /** Codes that represent warnings rather than hard errors. */
 export const diagnosticWarningCodes: ReadonlySet<DiagnosticCode> = new Set([
+  DiagnosticCode.TagBodyMissingField,
   DiagnosticCode.TagBodyUnknownField,
-  DiagnosticCode.LegacyMacroSyntax,
+  DiagnosticCode.ClauseDuplicateKey,
   DiagnosticCode.ImportUnused,
   DiagnosticCode.FragmentPackageImport,
 ]);

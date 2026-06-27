@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { compile, compileWorkspace, workspaceRootForInput } from "./compile/compile.js";
 import type { CompileResult } from "./compile/compile.js";
-import { Provenance } from "./diagnostics/diagnostic.js";
+import { Provenance } from "./domain/provenance.js";
 
 interface CliArgs {
   readonly command: string;

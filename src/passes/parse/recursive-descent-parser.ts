@@ -606,7 +606,6 @@ export class RecursiveDescentParser {
 
   private parseMacroInvocation(stream: TokenStream, file: string): MacroInvocationNode {
     stream.expect(TokenType.HASH, "Expected '#'");
-    const bracketed = stream.match(TokenType.LBRACKET);
     const nameToken = stream.expect(TokenType.IDENT, "Expected macro name");
     const args: string[] = [];
     if (stream.match(TokenType.LPAREN)) {
@@ -616,14 +615,10 @@ export class RecursiveDescentParser {
       }
       stream.expect(TokenType.RPAREN, "Expected ')' after macro args");
     }
-    if (bracketed) {
-      stream.expect(TokenType.RBRACKET, "Expected ']' to close macro invocation");
-    }
     return {
       kind: SyntaxNodeKind.MacroInvocation,
       name: nameToken.value,
       args,
-      legacyBracketed: bracketed,
       location: { file, line: nameToken.line, col: nameToken.col },
     };
   }

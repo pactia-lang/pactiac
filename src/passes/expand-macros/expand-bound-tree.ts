@@ -123,7 +123,7 @@ class MacroExpander {
       this.diagnostics.push(
         createDiagnostic(
           DiagnosticCode.PlacementViolation,
-          `Macro '#[${macro.name}]' is not allowed in ${macro.enclosing}`,
+          `Macro '#${macro.name}' is not allowed in ${macro.enclosing}`,
           { location: macro.location, target: macro.name },
         ),
       );
@@ -134,7 +134,7 @@ class MacroExpander {
       this.diagnostics.push(
         createDiagnostic(
           DiagnosticCode.MacroArgsInvalid,
-          `Macro '#[${macro.name}]' expects ${entry.params.length} argument(s), got ${macro.args.length}`,
+          `Macro '#${macro.name}' expects ${entry.params.length} argument(s), got ${macro.args.length}`,
           { location: macro.location, target: macro.name },
         ),
       );
@@ -145,7 +145,7 @@ class MacroExpander {
       this.diagnostics.push(
         createDiagnostic(
           DiagnosticCode.MacroExpansionCycle,
-          `Macro expansion cycle detected at '#[${macro.name}]'`,
+          `Macro expansion cycle detected at '#${macro.name}'`,
           { location: macro.location, target: macro.name },
         ),
       );
