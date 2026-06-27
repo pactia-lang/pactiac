@@ -25,12 +25,14 @@
     "build:bin": "npm run build:bin:linux-x64 && npm run build:bin:linux-arm64 && npm run build:bin:darwin-arm64 && npm run build:bin:darwin-x64 && npm run build:bin:windows-x64",
     "test:bin": "npm run build:bin:linux-x64 && bash scripts/smoke-binary.sh",
     "test": "npm run build && node --import tsx --test $(find src -name '*.test.ts')",
+    "test:coverage": "npm run build && c8 --reporter=lcov --reporter=text node --import tsx --test $(find src -name '*.test.ts')",
     "compile": "node dist/cli.js compile",
     "generate:golden": "npm run build && node --import tsx scripts/generate-golden.ts",
     "hooks:install": "bash scripts/install-hooks.sh"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "c8": "^11.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },
