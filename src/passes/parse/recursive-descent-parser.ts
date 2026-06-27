@@ -76,6 +76,7 @@ export class RecursiveDescentParser {
     const fragmentServiceExports: ServiceNode[] = [];
     const fragmentModelExports: ModelNode[] = [];
     const fragmentContextExports: ContextBlockNode[] = [];
+    const constantExports: import("../../domain/syntax-tree.js").PackageConstNode[] = [];
     let product: ProductNode | undefined;
 
     while (!stream.atEnd()) {
@@ -103,6 +104,15 @@ export class RecursiveDescentParser {
         if (this.checkDefStart(stream)) {
           const def = this.parseDefDecl(stream, file, true, true);
           if (def.exported) exportDefs.push(def);
+          continue;
+        }
+        if (this.checkPackageConstStart(stream)) {
+          constantExports.push(this.parsePackageConst(stream, file));
+          continue;
+        }
+        // export without def or valid keyword → CONSTANT_DEF_REQUIRED
+        if (this.checkBareConstantExport(stream)) {
+          constantExports.push(this.parseBareConstantExport(stream, file));
           continue;
         }
         throw new PactiaSyntaxError(
@@ -135,6 +145,7 @@ export class RecursiveDescentParser {
       fragmentServiceExports,
       fragmentModelExports,
       fragmentContextExports,
+      constantExports,
       product,
       location: { file, line: 1, col: 1 },
     };
@@ -321,6 +332,58 @@ export class RecursiveDescentParser {
       return this.parseDefDecl(stream, file, false);
     }
     return this.parseModuleConstantDeclaration(stream, file);
+  }
+
+  /** After `export` was consumed: check for `def IDENT =` where IDENT is not a sigil/keyword. */
+  private checkPackageConstStart(stream: TokenStream): boolean {
+    if (!stream.check(TokenType.IDENT, "def")) return false;
+    if (this.checkDefSigilStart(stream, 0)) return false;
+    // peek 2 ahead: `def IDENT =`
+    const ident = stream.peek(1);
+    if (ident.type !== TokenType.IDENT) return false;
+    if (this.isBlockKeyword(ident.value)) return false;
+    const eq = stream.peek(2);
+    return eq.type === TokenType.EQUALS;
+  }
+
+  /** After `export` was consumed: check for bare `IDENT =` (missing `def`). */
+  private checkBareConstantExport(stream: TokenStream): boolean {
+    const ident = stream.peek();
+    if (ident.type !== TokenType.IDENT) return false;
+    if (this.isBlockKeyword(ident.value)) return false;
+    if (ident.value === "def") return false;
+    const eq = stream.peek(1);
+    return eq.type === TokenType.EQUALS;
+  }
+
+  /** Parse `def name = value` at file root after `export` was consumed. */
+  private parsePackageConst(stream: TokenStream, file: string): import("../../domain/syntax-tree.js").PackageConstNode {
+    stream.expect(TokenType.IDENT, "Expected def keyword", "def");
+    const nameToken = stream.expect(TokenType.IDENT, "Expected constant name");
+    stream.expect(TokenType.EQUALS, "Expected '=' after constant name");
+    const valueToken = this.parseModuleConstValue(stream);
+    return {
+      kind: SyntaxNodeKind.PackageConst,
+      name: nameToken.value,
+      value: valueToken,
+      hasDef: true,
+      location: { file, line: nameToken.line, col: nameToken.col },
+    };
+  }
+
+  /** Parse bare `name = value` after `export` was consumed (missing `def`).
+   *  Parsed as PackageConstNode; CONSTANT_DEF_REQUIRED is emitted in bind pass. */
+  private parseBareConstantExport(stream: TokenStream, file: string): import("../../domain/syntax-tree.js").PackageConstNode {
+    const nameToken = stream.expect(TokenType.IDENT, "Expected constant name");
+    stream.expect(TokenType.EQUALS, "Expected '=' after constant name");
+    const valueToken = this.parseModuleConstValue(stream);
+    return {
+      kind: SyntaxNodeKind.PackageConst,
+      name: nameToken.value,
+      value: valueToken,
+      hasDef: false,
+      location: { file, line: nameToken.line, col: nameToken.col },
+    };
   }
 
   private parseContextAlias(

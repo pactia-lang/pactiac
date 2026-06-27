@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { repoRoot } from "../../../test/fixture-paths.js";
 import { parseSyntaxTree } from "./recursive-descent-parser.js";
+import { PactiaSyntaxError } from "../../frontend/lexer/tokens.js";
 import { SyntaxNodeKind } from "../../domain/syntax-tree.js";
 
 const relaySource = readFileSync(
@@ -69,6 +70,56 @@ describe("package index defs", () => {
     assert.deepEqual(
       tree.root.exportDefs.map((def) => def.name),
       ["rust-stack", "paginated", "list", "detail"],
+    );
+  });
+});
+
+describe("package constant exports", () => {
+  it("parses export def name = value in index.pactia", () => {
+    const source = [
+      "pactia 1.0",
+      "export def max_page = 100",
+      "export def default_timeout = 30",
+      "export def hint = > Validate all inputs.",
+    ].join("\n");
+    const tree = parseSyntaxTree({ source, entryFile: "index.pactia" });
+    assert.equal(tree.root.constantExports.length, 3);
+    assert.equal(tree.root.constantExports[0]?.name, "max_page");
+    assert.equal(tree.root.constantExports[0]?.value, "100");
+    assert.equal(tree.root.constantExports[1]?.name, "default_timeout");
+    assert.equal(tree.root.constantExports[1]?.value, "30");
+    assert.equal(tree.root.constantExports[2]?.name, "hint");
+    assert.equal(tree.root.constantExports[2]?.value, "Validate all inputs.");
+  });
+
+  it("parses export name = value without def (bare)", () => {
+    const source = [
+      "pactia 1.0",
+      "export max_page = 100",
+    ].join("\n");
+    const tree = parseSyntaxTree({ source, entryFile: "index.pactia" });
+    // Parsed into constantExports; CONSTANT_DEF_REQUIRED diagnostic handled in bind pass
+    assert.equal(tree.root.constantExports.length, 1);
+    assert.equal(tree.root.constantExports[0]?.name, "max_page");
+    assert.equal(tree.root.constantExports[0]?.value, "100");
+  });
+
+  it("constantExports is empty for product.pactia with no export def =", () => {
+    const source = [
+      "pactia 1.0",
+      "product X { }",
+    ].join("\n");
+    const tree = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    assert.deepEqual(tree.root.constantExports, []);
+  });
+
+  it("rejects export def = with block keywords as constant names", () => {
+    assert.throws(
+      () => parseSyntaxTree({
+        source: "pactia 1.0\nexport def module = foo\n",
+        entryFile: "index.pactia",
+      }),
+      PactiaSyntaxError,
     );
   });
 });

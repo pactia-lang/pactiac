@@ -65,6 +65,15 @@ export function registryEntriesFromProgram(
   return { tags, macros };
 }
 
+export function constantsFromProgram(
+  program: ProgramNode,
+): readonly { readonly name: string; readonly value: string }[] {
+  return program.constantExports.map((c) => ({
+    name: c.name,
+    value: c.value,
+  }));
+}
+
 export function contextExportsFromProgram(
   program: ProgramNode,
   coordinate: string,
@@ -134,6 +143,7 @@ export interface MergeRegistryInput {
     readonly tags: readonly RegistryTagEntry[];
     readonly macros: readonly RegistryMacroEntry[];
     readonly contexts: readonly PackageContextExport[];
+    readonly constants: ReadonlyMap<string, string>;
   }>;
   readonly localTags: readonly RegistryTagEntry[];
   readonly localMacros: readonly RegistryMacroEntry[];
@@ -143,6 +153,7 @@ export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegi
   const tags = new Map<string, RegistryTagEntry>();
   const macros = new Map<string, RegistryMacroEntry>();
   const contexts = new Map<string, PackageContextExport>();
+  const constants = new Map<string, string>();
 
   const registerTag = (entry: RegistryTagEntry, tierLabel: string): void => {
     const existing = tags.get(entry.name);
@@ -178,10 +189,19 @@ export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegi
     for (const tag of pkg.tags) registerTag(tag, pkg.coordinate);
     for (const macro of pkg.macros) registerMacro(macro, pkg.coordinate);
     for (const contextExport of pkg.contexts) registerContext(contextExport);
+    for (const [name, value] of pkg.constants) {
+      const existing = constants.get(name);
+      if (existing !== undefined && existing !== value) {
+        throw new Error(
+          `REGISTRY_COLLISION: constant '${name}' exported with conflicting values '${existing}' and '${value}'`,
+        );
+      }
+      constants.set(name, value);
+    }
   }
 
   for (const tag of input.localTags) registerTag(tag, "local");
   for (const macro of input.localMacros) registerMacro(macro, "local");
 
-  return { tags, macros, contexts };
+  return { tags, macros, contexts, constants };
 }

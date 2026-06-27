@@ -65,8 +65,23 @@ class SyntaxTreeBinder {
 
   bind(): BoundTree {
     this.checkExportDefsInProduct();
+    this.checkConstantDefs();
     const root = this.bindProductOrEmpty(this.syntax.root);
     return { entryFile: this.syntax.entryFile, root };
+  }
+
+  private checkConstantDefs(): void {
+    for (const c of this.syntax.root.constantExports) {
+      if (!c.hasDef) {
+        this.diagnostics.push(
+          createDiagnostic(
+            DiagnosticCode.ConstantDefRequired,
+            `export '${c.name}' is missing 'def' keyword — use 'export def ${c.name} = ${c.value}'`,
+            { location: c.location, target: c.name },
+          ),
+        );
+      }
+    }
   }
 
   private checkExportDefsInProduct(): void {

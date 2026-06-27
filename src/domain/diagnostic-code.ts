@@ -38,6 +38,10 @@ export enum DiagnosticCode {
   ContextAttachKindMismatch = "CONTEXT_ATTACH_KIND_MISMATCH",
   ContextMissingPath = "CONTEXT_MISSING_PATH",
   FragmentPackageImport = "FRAGMENT_PACKAGE_IMPORT",
+
+  // Package constants
+  ConstantDefRequired = "CONSTANT_DEF_REQUIRED",
+  ExportKindAmbiguity = "EXPORT_KIND_AMBIGUITY",
 }
 
 export enum DiagnosticSeverity {

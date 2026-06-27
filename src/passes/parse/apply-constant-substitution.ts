@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 import type { Diagnostic } from "../../domain/diagnostics.js";
 import { DiagnosticCode, createDiagnostic } from "../../domain/index.js";
 import {
@@ -174,14 +174,36 @@ export function importedConstantsFromProgram(program: ProgramNode, workspaceRoot
   const constants = new Map<string, string>();
 
   for (const imp of program.imports) {
-    if (imp.path.startsWith("@") || !imp.symbols) continue;
-    const filePath = resolve(workspaceRoot, imp.path);
-    if (!existsSync(filePath)) continue;
-    const fileConstants = collectExportedConstants(readFileSync(filePath, "utf8"));
-    for (const symbol of imp.symbols) {
-      const name = symbol.replace(/^[@#]+/, "");
-      const value = fileConstants.get(name);
-      if (value !== undefined) constants.set(name, value);
+    if (!imp.symbols) continue;
+
+    if (imp.path.startsWith("@")) {
+      // Package import: read from vendored index.pactia
+      const vendoredDir = imp.path.replace(/\//g, "--");
+      // Try all vendored version dirs under .pactia/packages/
+      const packagesRoot = join(workspaceRoot, ".pactia", "packages");
+      if (!existsSync(packagesRoot)) continue;
+      const dirs = readdirSync(packagesRoot, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && d.name.startsWith(vendoredDir + "@"))
+        .map((d) => join(packagesRoot, d.name));
+      for (const dir of dirs) {
+        const indexPath = join(dir, "index.pactia");
+        if (!existsSync(indexPath)) continue;
+        const pkgConstants = collectExportedConstants(readFileSync(indexPath, "utf8"));
+        for (const symbol of imp.symbols) {
+          const name = symbol.replace(/^[@#]+/, "");
+          const value = pkgConstants.get(name);
+          if (value !== undefined) constants.set(name, value);
+        }
+      }
+    } else {
+      const filePath = resolve(workspaceRoot, imp.path);
+      if (!existsSync(filePath)) continue;
+      const fileConstants = collectExportedConstants(readFileSync(filePath, "utf8"));
+      for (const symbol of imp.symbols) {
+        const name = symbol.replace(/^[@#]+/, "");
+        const value = fileConstants.get(name);
+        if (value !== undefined) constants.set(name, value);
+      }
     }
   }
 

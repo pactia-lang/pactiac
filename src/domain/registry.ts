@@ -63,6 +63,8 @@ export interface EffectiveRegistry {
   readonly tags: ReadonlyMap<string, RegistryTagEntry>;
   readonly macros: ReadonlyMap<string, RegistryMacroEntry>;
   readonly contexts: ReadonlyMap<string, PackageContextExport>;
+  /** Package-exported constants resolved from `export def name = value`. */
+  readonly constants: ReadonlyMap<string, string>;
 }
 
 export enum RegistryPrecedenceTier {
