@@ -74,6 +74,36 @@ export function constantsFromProgram(
   }));
 }
 
+/** Topology symbol extracted from a vendored topology package. */
+export interface TopologyExport {
+  readonly kind: "module" | "service" | "model" | "context";
+  readonly name: string;
+  readonly source: string;
+}
+
+/** Extract topology exports from a parsed index.pactia (topology or mixed profile). */
+export function topologyExportsFromProgram(
+  program: ProgramNode,
+  source: string,
+): readonly TopologyExport[] {
+  const exports: TopologyExport[] = [];
+
+  for (const mod of program.fragmentExports) {
+    exports.push({ kind: "module", name: mod.name, source });
+  }
+  for (const svc of program.fragmentServiceExports) {
+    exports.push({ kind: "service", name: svc.name, source });
+  }
+  for (const model of program.fragmentModelExports) {
+    exports.push({ kind: "model", name: model.name ?? "unnamed", source });
+  }
+  for (const ctx of program.fragmentContextExports) {
+    exports.push({ kind: "context", name: ctx.name, source });
+  }
+
+  return exports;
+}
+
 export function contextExportsFromProgram(
   program: ProgramNode,
   coordinate: string,
@@ -203,5 +233,5 @@ export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegi
   for (const tag of input.localTags) registerTag(tag, "local");
   for (const macro of input.localMacros) registerMacro(macro, "local");
 
-  return { tags, macros, contexts, constants };
+  return { tags, macros, contexts, constants, structuralExports: new Map() };
 }
