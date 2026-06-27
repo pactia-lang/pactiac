@@ -100,7 +100,7 @@ export class FsRegistryLoader implements RegistryLoaderSync {
             try {
               const fileProgram = parseSyntaxTree({ source: fileSource, entryFile: manifestPath }).root;
               topologyExports = topologyExports.concat(
-                topologyExportsFromProgram(fileProgram, pkg.coordinate),
+                topologyExportsFromProgram(fileProgram, pkg.coordinate, fileSource),
               );
             } catch {
               // Skip unparseable manifest files
@@ -108,7 +108,7 @@ export class FsRegistryLoader implements RegistryLoaderSync {
           }
           // Also include inline topology exports from index.pactia itself
           topologyExports = topologyExports.concat(
-            topologyExportsFromProgram(program, pkg.coordinate),
+            topologyExportsFromProgram(program, pkg.coordinate, indexSource),
           );
         }
       }

@@ -10,6 +10,7 @@ import type { DefDeclNode, ProgramNode, ContextBlockNode } from "../../domain/sy
 import { DefSigil as DefSigilEnum } from "../../domain/syntax-tree.js";
 import { fieldSpecFromDefBody } from "../parse/recursive-descent-parser.js";
 import { deriveIrSlotForTag } from "./derive-tag-ir.js";
+import { extractExportBody } from "./extract-body.js";
 
 function defBodyFromDecl(def: DefDeclNode): DefBodyAst {
   return {
@@ -87,20 +88,22 @@ export interface TopologyExport {
 export function topologyExportsFromProgram(
   program: ProgramNode,
   source: string,
+  sourceText?: string,
 ): readonly TopologyExport[] {
   const exports: TopologyExport[] = [];
 
   for (const mod of program.fragmentExports) {
-    exports.push({ kind: "module", name: mod.name, source, body: "" });
+    exports.push({ kind: "module", name: mod.name, source, body: extractExportBody(sourceText ?? "", "module", mod.name) });
   }
   for (const svc of program.fragmentServiceExports) {
-    exports.push({ kind: "service", name: svc.name, source, body: "" });
+    exports.push({ kind: "service", name: svc.name, source, body: extractExportBody(sourceText ?? "", "service", svc.name) });
   }
   for (const model of program.fragmentModelExports) {
-    exports.push({ kind: "model", name: model.name ?? "unnamed", source, body: "" });
+    const name = model.name ?? "";
+    exports.push({ kind: "model", name: name || "unnamed", source, body: extractExportBody(sourceText ?? "", "model", name) });
   }
   for (const ctx of program.fragmentContextExports) {
-    exports.push({ kind: "context", name: ctx.name, source, body: "" });
+    exports.push({ kind: "context", name: ctx.name, source, body: extractExportBody(sourceText ?? "", "context", ctx.name) });
   }
 
   return exports;
