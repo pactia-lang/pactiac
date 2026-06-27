@@ -63,10 +63,16 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
       const symbols = symbolList.split(",").map((s) => s.trim()).filter(Boolean);
       const inlined: string[] = [];
       for (const sym of symbols) {
-        const bare = sym.replace(/^[@#]+/, "");
+        // Skip sigiled symbols (@, @@, #) — those go to registry, not topology
+        if (sym.startsWith("@") || sym.startsWith("#")) continue;
+        const bare = sym.trim();
         const te = effectiveRegistry.structuralExports.get(bare);
         if (te && te.body) {
           inlined.push(`export ${te.kind} ${bare} { ${te.body} }`);
+        } else if (!te) {
+          throw new Error(
+            `EXPORT_NOT_DECLARED: '${bare}' is not exported by topology package`,
+          );
         }
       }
       if (inlined.length > 0) {
