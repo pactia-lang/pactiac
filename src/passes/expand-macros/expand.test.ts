@@ -137,7 +137,7 @@ product X {
       modifiers.pageSize: max_page,
       > Policy row limit
     }
-    service S { #[cursor_paginated(100)] }
+    service S { #cursor_paginated(100) }
   }
 }`;
     const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
@@ -162,7 +162,7 @@ product X {
 product X {
   module m {
     def #needs_one(arg1) in service { modifiers.pageSize: arg1, }
-    service S { #[needs_one] }
+    service S { #needs_one }
   }
 }`;
     const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
@@ -179,7 +179,7 @@ product X {
 product X {
   module m {
     def #service_only in service { modifiers.pageSize: 10, }
-    model { #[service_only] }
+    model { #service_only }
   }
 }`;
     const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
@@ -195,9 +195,9 @@ product X {
     const source = `pactia 1.0
 product X {
   module m {
-    def #a in service { #[b] }
-    def #b in service { #[a] }
-    service S { #[a] }
+    def #a in service { #b }
+    def #b in service { #a }
+    service S { #a }
   }
 }`;
     const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });

@@ -35,8 +35,6 @@ my-product/
 
 Examples: [relay](test/fixtures/workspace/relay) (`./fragments/…`), [PPM](https://github.com/pactia-lang/examples/tree/main/ppm) (`./modules/…`).
 
-**Legacy folder scan (deprecated):** when no attach tree is present, `modules/<dir>/module.pactia` may still be merged by directory convention. Do not rely on this for new products.
-
 Vendored package directories use the form `@scope--name@<version>/` (slashes in coordinates become `--`). Override the vendor search path with `PACTIA_VENDOR_ROOT` when packages live outside the workspace.
 
 ## Development

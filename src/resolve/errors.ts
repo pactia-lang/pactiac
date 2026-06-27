@@ -2,7 +2,6 @@ export enum PackageErrorCode {
   PackageNotFound = "PACKAGE_NOT_FOUND",
   DependencyNotDeclared = "DEPENDENCY_NOT_DECLARED",
   LockEntryMissing = "LOCK_ENTRY_MISSING",
-  StackBindingMismatch = "STACK_BINDING_MISMATCH",
   PackageLockMismatch = "PACKAGE_LOCK_MISMATCH",
 }
 

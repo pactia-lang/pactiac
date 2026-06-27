@@ -97,8 +97,6 @@ export interface MacroInvocationNode {
   readonly kind: SyntaxNodeKind.MacroInvocation;
   readonly name: string;
   readonly args: readonly string[];
-  /** True when parsed from legacy `#[name]` bracket form. */
-  readonly legacyBracketed?: boolean;
   readonly location: SourceLocation;
 }
 

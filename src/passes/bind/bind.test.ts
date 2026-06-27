@@ -118,7 +118,7 @@ product X { module m { service S { } } }`;
 
   it("emits MACRO_UNKNOWN for unresolved macro invocations", () => {
     const source = `pactia 1.0
-product X { module m { service S { #[missing_macro] } } }`;
+product X { module m { service S { #missing_macro } } }`;
     const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
     const { diagnostics } = bindSyntaxTree(syntax, {
       tags: new Map(),
@@ -132,7 +132,7 @@ product X { module m { service S { #[missing_macro] } } }`;
 product X {
   module m {
     def #local_macro in service { }
-    service S { #[local_macro] }
+    service S { #local_macro }
   }
 }`;
     const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });

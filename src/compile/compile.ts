@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { type Diagnostic, Provenance } from "../diagnostics/diagnostic.js";
+import { Provenance } from "../domain/provenance.js";
+import type { ProvenanceGap as Diagnostic } from "../domain/diagnostics.js";
 import { detectPactiaVersion } from "./version.js";
 import { compileSource } from "../application/compile-source.js";
 import { discoverWorkspace } from "../frontend/workspace/discover.js";

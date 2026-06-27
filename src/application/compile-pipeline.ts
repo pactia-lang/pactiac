@@ -6,8 +6,9 @@ import { join } from "node:path";
 import { lockfileDigest } from "../resolve/manifest.js";
 import { bindSyntaxTree } from "../passes/bind/bind-syntax-tree.js";
 import { expandBoundTree } from "../passes/expand-macros/expand-bound-tree.js";
+import { validateBoundTree } from "../passes/validate/index.js";
 import { lowerBoundTree } from "../passes/lower/lower-bound-tree.js";
-import { collectLegacyMacroDiagnostics } from "../passes/parse/collect-parse-diagnostics.js";
+
 import {
   applyConstantSubstitution,
   importedConstantsFromProgram,
@@ -74,7 +75,6 @@ export class CompilePipeline {
       return { files: new Map(), diagnostics, provenanceGaps: [], registry: emptyRegistry };
     }
 
-    diagnostics.push(...collectLegacyMacroDiagnostics(syntax));
     diagnostics.push(...collectImportUnusedDiagnostics(context.source, context.entryFile));
 
     const importConstants = importedConstantsFromProgram(syntax.root, context.workspaceRoot);
@@ -155,16 +155,8 @@ export class CompilePipeline {
       };
     }
 
-    if (hasErrors(diagnostics)) {
-      return {
-        files: new Map(),
-        diagnostics,
-        provenanceGaps: [],
-        registry,
-        syntax,
-        bound,
-      };
-    }
+    const validateResult = validateBoundTree(bound);
+    diagnostics.push(...validateResult.diagnostics);
 
     const lockPath = join(context.workspaceRoot, "pactia.lock");
     const lockSource = existsSync(lockPath) ? readFileSync(lockPath, "utf8") : undefined;

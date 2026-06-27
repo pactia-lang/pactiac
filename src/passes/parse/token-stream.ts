@@ -64,5 +64,5 @@ export function tagNameFromToken(value: string): string {
 export function isMacroInvocationStart(stream: TokenStream): boolean {
   if (!stream.check(TokenType.HASH, "#")) return false;
   const next = stream.peek(1);
-  return next.type === TokenType.LBRACKET || next.type === TokenType.IDENT;
+  return next.type === TokenType.IDENT;
 }
