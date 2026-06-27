@@ -33,3 +33,22 @@ ignored = "value"
   assert.equal(manifest.name, "@pactia/html-css-js");
   assert.equal(manifest.description, undefined);
 });
+
+test("parsePackageToml reads mixed-exports opt-in", () => {
+  const manifest = parsePackageToml(`
+[package]
+name = "@acme/kit"
+version = "1.0.0"
+mixed-exports = true
+`);
+  assert.equal(manifest.mixedExports, true);
+});
+
+test("parsePackageToml defaults mixed-exports to false", () => {
+  const manifest = parsePackageToml(`
+[package]
+name = "@acme/kit"
+version = "1.0.0"
+`);
+  assert.equal(manifest.mixedExports, false);
+});

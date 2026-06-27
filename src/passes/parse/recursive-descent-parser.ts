@@ -127,7 +127,7 @@ export class RecursiveDescentParser {
           );
         }
         // export "./file.pactia" — manifest line for topology packages
-        if (stream.check(TokenType.PATH)) {
+        if (stream.check(TokenType.PATH) || (stream.check(TokenType.STRING) && stream.peek().value.startsWith("./"))) {
           manifestExports.push(this.parseManifestExport(stream, file));
           continue;
         }
@@ -404,9 +404,14 @@ export class RecursiveDescentParser {
   }
 
   /** Parse `export "./path.pactia"` manifest line — topology package file reference. */
-  private parseManifestExport(stream: TokenStream, file: string): string {
-    const pathToken = stream.expect(TokenType.PATH, "Expected file path after export");
-    return pathToken.value;
+  private parseManifestExport(stream: TokenStream, _file: string): string {
+    if (stream.check(TokenType.PATH)) {
+      return stream.advance().value;
+    }
+    if (stream.check(TokenType.STRING)) {
+      return stream.advance().value.replace(/^"|"$/g, "");
+    }
+    throw new PactiaSyntaxError("Expected file path after export", stream.peek().line, stream.peek().col);
   }
 
   private parseContextAlias(
