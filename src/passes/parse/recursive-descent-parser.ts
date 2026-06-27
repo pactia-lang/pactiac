@@ -116,6 +116,16 @@ export class RecursiveDescentParser {
           constantExports.push(this.parseBareConstantExport(stream, file));
           continue;
         }
+        // export def module/service/model/context → TOPOLOGY_DEF_FORBIDDEN
+        if (stream.check(TokenType.IDENT, "def") && this.checkTopologyDefForbidden(stream)) {
+          const defToken = stream.advance(); // consume 'def'
+          const blockToken = stream.advance(); // consume the block keyword
+          throw new PactiaSyntaxError(
+            `TOPOLOGY_DEF_FORBIDDEN: 'export def ${blockToken.value}' is invalid — use 'export ${blockToken.value}' without 'def'`,
+            defToken.line,
+            defToken.col,
+          );
+        }
         // export "./file.pactia" — manifest line for topology packages
         if (stream.check(TokenType.PATH)) {
           manifestExports.push(this.parseManifestExport(stream, file));
@@ -808,6 +818,13 @@ export class RecursiveDescentParser {
       return true;
     }
     return stream.check(TokenType.IDENT, "def") && this.checkDefSigilStart(stream, 0);
+  }
+
+  /** After `def` is at current position: check if next token is a block keyword (TOPOLOGY_DEF_FORBIDDEN). */
+  private checkTopologyDefForbidden(stream: TokenStream): boolean {
+    const next = stream.peek(1);
+    if (next.type !== TokenType.IDENT) return false;
+    return this.isBlockKeyword(next.value);
   }
 
   private checkDefSigilStart(stream: TokenStream, defOffset: number): boolean {

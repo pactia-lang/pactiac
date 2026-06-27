@@ -122,6 +122,26 @@ describe("package constant exports", () => {
       PactiaSyntaxError,
     );
   });
+
+  it("rejects export def module as TOPOLOGY_DEF_FORBIDDEN", () => {
+    assert.throws(
+      () => parseSyntaxTree({
+        source: "pactia 1.0\nexport def module\n",
+        entryFile: "index.pactia",
+      }),
+      /TOPOLOGY_DEF_FORBIDDEN/,
+    );
+  });
+
+  it("rejects export def service as TOPOLOGY_DEF_FORBIDDEN", () => {
+    assert.throws(
+      () => parseSyntaxTree({
+        source: "pactia 1.0\nexport def service\n",
+        entryFile: "index.pactia",
+      }),
+      /TOPOLOGY_DEF_FORBIDDEN/,
+    );
+  });
 });
 
 describe("fragment exports", () => {

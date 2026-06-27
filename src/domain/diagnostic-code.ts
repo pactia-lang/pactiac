@@ -42,6 +42,12 @@ export enum DiagnosticCode {
   // Package constants
   ConstantDefRequired = "CONSTANT_DEF_REQUIRED",
   ExportKindAmbiguity = "EXPORT_KIND_AMBIGUITY",
+
+  // Topology packages (1.3)
+  TopologyDefForbidden = "TOPOLOGY_DEF_FORBIDDEN",
+  TopologyWildcardForbidden = "TOPOLOGY_WILDCARD_FORBIDDEN",
+  PackageExportMixed = "PACKAGE_EXPORT_MIXED",
+  ExportNotDeclared = "EXPORT_NOT_DECLARED",
 }
 
 export enum DiagnosticSeverity {
