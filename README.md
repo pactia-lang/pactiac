@@ -66,6 +66,7 @@ After `pactia build`: `input/context.index.json` and `input/context/` (bundled c
 
 | pactiac release | Implements spec |
 | --- | --- |
+| 0.3.x | Pactia 1.2 — package constants (`export def name = value`); `CONSTANT_DEF_REQUIRED` diagnostic; `EffectiveRegistry.constants`; `${name}` interpolation from imported packages |
 | 0.2.x | Pactia 1.2 — source-order `body[]` IR; structural `context[]` with `name`; `FRAGMENT_PACKAGE_IMPORT` warning; package `export context` |
 | 0.1.x | Pactia 1.0 — parse/bind/lower to module-scoped JSON IR; workspace compile (import + attach; legacy folder scan); macro expansion from package `export def` |
 

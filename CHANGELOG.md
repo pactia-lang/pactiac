@@ -8,7 +8,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Package constants** — `export def name = value` in package `index.pactia`; parsed at file root and stored in `EffectiveRegistry.constants`. Consumers import with `import { name } from @pkg` and interpolate via `${name}` in prose/macro bodies.
+- **`CONSTANT_DEF_REQUIRED`** diagnostic — emitted in bind pass for bare `export name = value` (missing `def` keyword).
+- **`EXPORT_KIND_AMBIGUITY`** diagnostic code reserved for 1.3 mixed-package detection.
 - **Validate pass** — validates tag body fields against registry `def` field specs after macro expansion. Checks missing required fields, unknown fields (openExtension-aware), and duplicate keys. All diagnostics are warnings (non-blocking).
+- **90% statement coverage** — 159 tests; new test files: `ir-path`, `ir-slot-writer`, `token-stream`, `registry`, `loader`, `manifest`.
 
 ### Changed
 
