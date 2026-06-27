@@ -29,26 +29,28 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
     syntax,
   });
 
-  // Post-merge: inline topology exports from structuralExports into merged source
+  // Post-merge: inline topology export bodies into the merged source
   let mergedSource = merged.source;
-  const topologyPattern = /import\s*\{([^}]+)\}\s+from\s+(@\S+);/g;
-  let topoMatch: RegExpExecArray | null = topologyPattern.exec(mergedSource);
-  while (topoMatch) {
-    const symbolList = topoMatch[1]!;
-    const coordinate = topoMatch[2]!;
-    const symbols = symbolList.split(",").map((s) => s.trim()).filter(Boolean);
-    let hasTopologySymbol = false;
-    for (const sym of symbols) {
-      const bare = sym.replace(/^[@#]+/, "");
-      if (effectiveRegistry.structuralExports.has(bare)) {
-        hasTopologySymbol = true;
+  if (effectiveRegistry) {
+    const topologyPattern = /import\s*\{([^}]+)\}\s+from\s+(@\S+);/g;
+    let topoMatch: RegExpExecArray | null = topologyPattern.exec(mergedSource);
+    while (topoMatch) {
+      const symbolList = topoMatch[1]!;
+      const symbols = symbolList.split(",").map((s) => s.trim()).filter(Boolean);
+      const inlined: string[] = [];
+      for (const sym of symbols) {
+        const bare = sym.replace(/^[@#]+/, "");
+        const te = effectiveRegistry.structuralExports.get(bare);
+        if (te && te.body) {
+          inlined.push(`export ${te.kind} ${bare} { ${te.body} }`);
+        }
       }
+      if (inlined.length > 0) {
+        // Replace import line with inlined topology export blocks
+        mergedSource = mergedSource.replace(topoMatch[0], inlined.join("\n"));
+      }
+      topoMatch = topologyPattern.exec(mergedSource);
     }
-    if (hasTopologySymbol) {
-      // Remove this import line — topology symbols are resolved via structuralExports at attach time
-      mergedSource = mergedSource.replace(topoMatch[0], "");
-    }
-    topoMatch = topologyPattern.exec(mergedSource);
   }
 
   return {
