@@ -29,6 +29,30 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
     syntax,
   });
 
+  // Post-merge: check for bare imports from topology packages → TOPOLOGY_WILDCARD_FORBIDDEN
+  if (effectiveRegistry) {
+    const bareImportPattern = /^\s*import\s+(@\S+)\s*;/gm;
+    let bareMatch: RegExpExecArray | null = bareImportPattern.exec(merged.source);
+    while (bareMatch) {
+      const coordinate = bareMatch[1]!;
+      // If this package has topology exports but no registry defs, it's topology-only
+      const hasTopology = [...effectiveRegistry.structuralExports.values()].some(
+        (te) => te.source === coordinate,
+      );
+      const hasRegistry = [...effectiveRegistry.tags.values()].some(
+        (t) => t.source === coordinate,
+      ) || [...effectiveRegistry.macros.values()].some(
+        (m) => m.source === coordinate,
+      );
+      if (hasTopology && !hasRegistry) {
+        throw new Error(
+          `TOPOLOGY_WILDCARD_FORBIDDEN: bare import '${bareMatch[0].trim()}' is not allowed for topology packages. Use 'import { symbol } from ${coordinate}' instead.`,
+        );
+      }
+      bareMatch = bareImportPattern.exec(merged.source);
+    }
+  }
+
   // Post-merge: inline topology export bodies into the merged source
   let mergedSource = merged.source;
   if (effectiveRegistry) {
