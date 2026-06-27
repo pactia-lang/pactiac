@@ -79,6 +79,8 @@ export interface TopologyExport {
   readonly kind: "module" | "service" | "model" | "context";
   readonly name: string;
   readonly source: string;
+  /** The body text of the export block (empty for now — populated in future pass). */
+  readonly body: string;
 }
 
 /** Extract topology exports from a parsed index.pactia (topology or mixed profile). */
@@ -89,16 +91,16 @@ export function topologyExportsFromProgram(
   const exports: TopologyExport[] = [];
 
   for (const mod of program.fragmentExports) {
-    exports.push({ kind: "module", name: mod.name, source });
+    exports.push({ kind: "module", name: mod.name, source, body: "" });
   }
   for (const svc of program.fragmentServiceExports) {
-    exports.push({ kind: "service", name: svc.name, source });
+    exports.push({ kind: "service", name: svc.name, source, body: "" });
   }
   for (const model of program.fragmentModelExports) {
-    exports.push({ kind: "model", name: model.name ?? "unnamed", source });
+    exports.push({ kind: "model", name: model.name ?? "unnamed", source, body: "" });
   }
   for (const ctx of program.fragmentContextExports) {
-    exports.push({ kind: "context", name: ctx.name, source });
+    exports.push({ kind: "context", name: ctx.name, source, body: "" });
   }
 
   return exports;
@@ -234,7 +236,7 @@ export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegi
   for (const tag of input.localTags) registerTag(tag, "local");
   for (const macro of input.localMacros) registerMacro(macro, "local");
 
-  const structuralExports = new Map<string, { readonly kind: string; readonly source: string }>();
+  const structuralExports = new Map<string, { readonly kind: string; readonly source: string; readonly body: string }>();
 
   for (const pkg of input.importEntries) {
     for (const te of pkg.topologyExports) {
@@ -244,7 +246,7 @@ export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegi
           `REGISTRY_COLLISION: topology export '${te.name}' from both '${existing.source}' and '${te.source}'`,
         );
       }
-      structuralExports.set(te.name, { kind: te.kind, source: te.source });
+      structuralExports.set(te.name, { kind: te.kind, source: te.source, body: te.body });
     }
   }
 

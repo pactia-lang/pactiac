@@ -29,9 +29,32 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
     syntax,
   });
 
+  // Post-merge: inline topology exports from structuralExports into merged source
+  let mergedSource = merged.source;
+  const topologyPattern = /import\s*\{([^}]+)\}\s+from\s+(@\S+);/g;
+  let topoMatch: RegExpExecArray | null = topologyPattern.exec(mergedSource);
+  while (topoMatch) {
+    const symbolList = topoMatch[1]!;
+    const coordinate = topoMatch[2]!;
+    const symbols = symbolList.split(",").map((s) => s.trim()).filter(Boolean);
+    let hasTopologySymbol = false;
+    for (const sym of symbols) {
+      const bare = sym.replace(/^[@#]+/, "");
+      if (effectiveRegistry.structuralExports.has(bare)) {
+        hasTopologySymbol = true;
+      }
+    }
+    if (hasTopologySymbol) {
+      // Remove this import line — topology symbols are resolved via structuralExports at attach time
+      mergedSource = mergedSource.replace(topoMatch[0], "");
+    }
+    topoMatch = topologyPattern.exec(mergedSource);
+  }
+
   return {
     merged: {
       ...merged,
+      source: mergedSource,
       lockfileDigest: resolved.lockfileDigest,
     },
     lockfileDigest: resolved.lockfileDigest,
