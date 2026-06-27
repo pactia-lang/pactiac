@@ -78,6 +78,7 @@ export type {
   ModelNode,
   ModuleConstNode,
   ModuleNode,
+  PackageConstNode,
   ProductNode,
   ProgramNode,
   ProseNode,

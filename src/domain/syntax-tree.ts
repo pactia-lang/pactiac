@@ -27,6 +27,7 @@ export enum SyntaxNodeKind {
   DefExport = "def-export",
   DefLocal = "def-local",
   ModuleConst = "module-const",
+  PackageConst = "package-const",
   FieldLine = "field-line",
   Prose = "prose",
   Import = "import",
@@ -127,6 +128,16 @@ export interface ModuleConstNode {
   readonly location: SourceLocation;
 }
 
+/** Exported package constant at file root: `export def name = value`. */
+export interface PackageConstNode {
+  readonly kind: SyntaxNodeKind.PackageConst;
+  readonly name: string;
+  readonly value: string;
+  /** Whether `def` keyword was present. `false` for bare `export name = value`. */
+  readonly hasDef: boolean;
+  readonly location: SourceLocation;
+}
+
 export interface ServiceNode {
   readonly kind: SyntaxNodeKind.Service;
   readonly name: string;
@@ -224,6 +235,8 @@ export interface ProgramNode {
   readonly fragmentModelExports: readonly ModelNode[];
   /** Fragment files: export context … { } at program root. */
   readonly fragmentContextExports: readonly ContextBlockNode[];
+  /** Package index: export def name = value at file root. */
+  readonly constantExports: readonly PackageConstNode[];
   readonly product?: ProductNode;
   readonly location: SourceLocation;
 }

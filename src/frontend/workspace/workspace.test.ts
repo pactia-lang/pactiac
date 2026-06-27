@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { test } from "node:test";
 import { compile, compileWorkspace } from "../../compile/compile.js";
 import { compileSource } from "../../application/compile-source.js";
 import { discoverWorkspace } from "./discover.js";
 import { mergeWorkspaceSources } from "./merge.js";
 import { assembleWorkspace } from "./assemble.js";
+import type { WorkspaceFiles } from "./types.js";
 import {
   readTestFixture,
   repoRoot,
@@ -110,4 +112,48 @@ test("compileWorkspace relay fixture emits golden file set", () => {
     const { files } = compileWorkspace(relayWorkspaceRoot);
     assert.deepEqual([...files.keys()].sort(), [...expectedFiles].sort());
   });
+});
+
+test("discoverWorkspace throws when product.pactia missing", () => {
+  const tmp = join(tmpdir(), `pactia-test-discover-${Date.now()}`);
+  mkdirSync(tmp, { recursive: true });
+  try {
+    assert.throws(
+      () => discoverWorkspace(tmp),
+      /has no product/,
+    );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("mergeWorkspaceSources — non-attach inline module path", () => {
+  const productSource = [
+    "pactia 1.0",
+    "import @pactia/kernel;",
+    "",
+    "product InlineDemo {",
+    "  module shop {",
+    "    service OrderApi {",
+    "      @api list { method: GET, path: \"/orders\" }",
+    "    }",
+    "  }",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock",
+    productPath: "/tmp/mock/product.pactia",
+    productSource,
+    pactiaTomlPath: undefined,
+    pactiaTomlSource: undefined,
+    pactiaLockPath: undefined,
+    pactiaLockSource: undefined,
+    modules: [],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  assert.match(merged.source, /product InlineDemo/);
+  assert.match(merged.source, /@api list/);
+  assert.equal(merged.entry, "product.pactia");
 });

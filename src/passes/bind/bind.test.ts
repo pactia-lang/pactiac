@@ -163,4 +163,122 @@ product X {
     assert.equal(localDef.name, "local_macro");
     assert.equal(localDef.registryEntry.source, "local");
   });
+
+  it("emits UNKNOWN_SYMBOL for unresolved @tag def in product", () => {
+    const source = [
+      "pactia 1.0",
+      "product X {",
+      "  module m {",
+      "    def @unknown_tag in service { }",
+      "    service S { @unknown_tag { } }",
+      "  }",
+      "}",
+    ].join("\n");
+    const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const { diagnostics } = bindSyntaxTree(syntax, {
+      tags: new Map(),
+      macros: new Map(),
+      contexts: new Map(),
+      constants: new Map(),
+    });
+    assert.ok(diagnostics.some((d) => d.code === DiagnosticCode.UnknownSymbol));
+  });
+
+  it("emits CONTEXT_MISSING_PATH for context without path", () => {
+    const source = [
+      "pactia 1.0",
+      "product X {",
+      "  module m {",
+      "    service S {",
+      `      context no_path { }`,
+      "    }",
+      "  }",
+      "}",
+    ].join("\n");
+    const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const { diagnostics } = bindSyntaxTree(syntax, {
+      tags: new Map(),
+      macros: new Map(),
+      contexts: new Map(),
+      constants: new Map(),
+    });
+    assert.ok(diagnostics.some((d) => d.code === DiagnosticCode.ContextMissingPath));
+  });
+
+  it("emits MACRO_UNKNOWN for def #macro not in registry", () => {
+    const source = [
+      "pactia 1.0",
+      "product X {",
+      "  module m {",
+      "    def #unresolved_macro in service { }",
+      "  }",
+      "}",
+    ].join("\n");
+    const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const { diagnostics } = bindSyntaxTree(syntax, {
+      tags: new Map(),
+      macros: new Map(),
+      contexts: new Map(),
+      constants: new Map(),
+    });
+    assert.ok(diagnostics.some((d) => d.code === DiagnosticCode.MacroUnknown));
+  });
+
+  it("emits CONSTANT_DEF_REQUIRED for bare export name = value", () => {
+    const source = [
+      "pactia 1.0",
+      "export max_page = 100",
+      "product X { module m { service S { } } }",
+    ].join("\n");
+    const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const { diagnostics } = bindSyntaxTree(syntax, {
+      tags: new Map(),
+      macros: new Map(),
+      contexts: new Map(),
+      constants: new Map(),
+    });
+    assert.ok(diagnostics.some((d) => d.code === DiagnosticCode.ConstantDefRequired));
+  });
+
+  it("does not emit CONSTANT_DEF_REQUIRED for export def name = value", () => {
+    const source = [
+      "pactia 1.0",
+      "export def max_page = 100",
+      "product X { module m { service S { } } }",
+    ].join("\n");
+    const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const { diagnostics } = bindSyntaxTree(syntax, {
+      tags: new Map(),
+      macros: new Map(),
+      contexts: new Map(),
+      constants: new Map(),
+    });
+    assert.equal(
+      diagnostics.filter((d) => d.code === DiagnosticCode.ConstantDefRequired).length,
+      0,
+    );
+  });
+
+  it("binds local def @tag with UNKNOWN_SYMBOL when not in registry", () => {
+    const source = [
+      "pactia 1.0",
+      "product X {",
+      "  module m {",
+      "    def @custom_tag in service {",
+      "      method,",
+      "      path,",
+      "    }",
+      "    service S { @custom_tag { method: GET, path: \"/x\" } }",
+      "  }",
+      "}",
+    ].join("\n");
+    const syntax = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const { diagnostics } = bindSyntaxTree(syntax, {
+      tags: new Map(),
+      macros: new Map(),
+      contexts: new Map(),
+      constants: new Map(),
+    });
+    assert.ok(diagnostics.some((d) => d.code === DiagnosticCode.UnknownSymbol));
+  });
 });

@@ -1,4 +1,5 @@
 export {
+  constantsFromProgram,
   mergeEffectiveRegistry,
   registryEntriesFromLocalDefs,
   registryEntriesFromProgram,

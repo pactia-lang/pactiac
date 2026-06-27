@@ -16,6 +16,7 @@ import {
 } from "../resolve/manifest.js";
 import { parseSyntaxTree } from "../passes/parse/recursive-descent-parser.js";
 import {
+  constantsFromProgram,
   mergeEffectiveRegistry,
   registryEntriesFromLocalDefs,
   registryEntriesFromProgram,
@@ -80,12 +81,22 @@ export class FsRegistryLoader implements RegistryLoaderSync {
         ? RegistryPrecedenceTier.ExplicitImport
         : RegistryPrecedenceTier.Dependency;
 
+      const allConstants = program
+        ? constantsFromProgram(program)
+        : [];
+
       return {
         coordinate: pkg.coordinate,
         tier,
         tags: filtered.tags,
         macros: filtered.macros,
         contexts: contextExports,
+        constants: new Map(
+          (partialSymbols
+            ? allConstants.filter((c) => partialSymbols.includes(c.name))
+            : allConstants
+          ).map((c) => [c.name, c.value] as const),
+        ),
       };
     });
 
