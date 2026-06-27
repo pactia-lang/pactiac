@@ -22,8 +22,10 @@ import {
   registryEntriesFromProgram,
   contextExportsFromProgram,
   filterContextExports,
+  topologyExportsFromProgram,
 } from "../passes/registry/build-effective-registry.js";
 import { applyPartialImportFilter } from "../passes/registry/import-symbol.js";
+import { detectPackageProfile, PackageProfile } from "../domain/syntax-tree.js";
 
 const INDEX_FILE = "index.pactia";
 const TOML_FILE = "pactia.toml";
@@ -85,6 +87,32 @@ export class FsRegistryLoader implements RegistryLoaderSync {
         ? constantsFromProgram(program)
         : [];
 
+      // Load topology exports from manifest files for topology/mixed packages
+      let topologyExports: ReturnType<typeof topologyExportsFromProgram> = [];
+      if (program) {
+        const profile = detectPackageProfile(program);
+        if (profile === PackageProfile.Topology || profile === PackageProfile.Mixed) {
+          // Load and parse each manifest-referenced file
+          for (const manifestPath of program.manifestExports) {
+            const fullPath = join(pkg.rootDir, manifestPath);
+            if (!existsSync(fullPath)) continue;
+            const fileSource = readFileSync(fullPath, "utf8");
+            try {
+              const fileProgram = parseSyntaxTree({ source: fileSource, entryFile: manifestPath }).root;
+              topologyExports = topologyExports.concat(
+                topologyExportsFromProgram(fileProgram, pkg.coordinate),
+              );
+            } catch {
+              // Skip unparseable manifest files
+            }
+          }
+          // Also include inline topology exports from index.pactia itself
+          topologyExports = topologyExports.concat(
+            topologyExportsFromProgram(program, pkg.coordinate),
+          );
+        }
+      }
+
       return {
         coordinate: pkg.coordinate,
         tier,
@@ -97,6 +125,7 @@ export class FsRegistryLoader implements RegistryLoaderSync {
             : allConstants
           ).map((c) => [c.name, c.value] as const),
         ),
+        topologyExports,
       };
     });
 

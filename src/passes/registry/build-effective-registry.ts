@@ -174,6 +174,7 @@ export interface MergeRegistryInput {
     readonly macros: readonly RegistryMacroEntry[];
     readonly contexts: readonly PackageContextExport[];
     readonly constants: ReadonlyMap<string, string>;
+    readonly topologyExports: readonly TopologyExport[];
   }>;
   readonly localTags: readonly RegistryTagEntry[];
   readonly localMacros: readonly RegistryMacroEntry[];
@@ -233,5 +234,19 @@ export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegi
   for (const tag of input.localTags) registerTag(tag, "local");
   for (const macro of input.localMacros) registerMacro(macro, "local");
 
-  return { tags, macros, contexts, constants, structuralExports: new Map() };
+  const structuralExports = new Map<string, { readonly kind: string; readonly source: string }>();
+
+  for (const pkg of input.importEntries) {
+    for (const te of pkg.topologyExports) {
+      const existing = structuralExports.get(te.name);
+      if (existing && existing.source !== te.source) {
+        throw new Error(
+          `REGISTRY_COLLISION: topology export '${te.name}' from both '${existing.source}' and '${te.source}'`,
+        );
+      }
+      structuralExports.set(te.name, { kind: te.kind, source: te.source });
+    }
+  }
+
+  return { tags, macros, contexts, constants, structuralExports };
 }
