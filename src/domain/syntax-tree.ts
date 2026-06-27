@@ -237,6 +237,8 @@ export interface ProgramNode {
   readonly fragmentContextExports: readonly ContextBlockNode[];
   /** Package index: export def name = value at file root. */
   readonly constantExports: readonly PackageConstNode[];
+  /** Package index: export "./file.pactia" manifest lines (topology). */
+  readonly manifestExports: readonly string[];
   readonly product?: ProductNode;
   readonly location: SourceLocation;
 }
@@ -262,4 +264,30 @@ export function collectLocalDefs(modules: readonly ModuleNode[]): DefDeclNode[] 
 
 export function programModules(tree: SyntaxTree): readonly ModuleNode[] {
   return tree.root.product?.items.filter((item): item is ModuleNode => item.kind === SyntaxNodeKind.Module) ?? [];
+}
+
+/** Package profile determined from index.pactia export surface content. */
+export enum PackageProfile {
+  /** Only export def @/#/@@ and/or export def name = value — tags, macros, constants. */
+  Registry = "registry",
+  /** Only export module/service/model/context and/or export "./…" — topology for attach. */
+  Topology = "topology",
+  /** Both registry defs and topology exports present — needs mixed-exports opt-in. */
+  Mixed = "mixed",
+}
+
+/** Detect package profile from the exports declared in index.pactia. */
+export function detectPackageProfile(program: ProgramNode): PackageProfile {
+  const hasRegistryExports =
+    program.exportDefs.length > 0 || program.constantExports.length > 0;
+  const hasTopologyExports =
+    program.fragmentExports.length > 0 ||
+    program.fragmentServiceExports.length > 0 ||
+    program.fragmentModelExports.length > 0 ||
+    program.fragmentContextExports.length > 0 ||
+    program.manifestExports.length > 0;
+
+  if (hasRegistryExports && hasTopologyExports) return PackageProfile.Mixed;
+  if (hasTopologyExports) return PackageProfile.Topology;
+  return PackageProfile.Registry;
 }

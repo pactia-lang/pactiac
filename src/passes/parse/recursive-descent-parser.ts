@@ -77,6 +77,7 @@ export class RecursiveDescentParser {
     const fragmentModelExports: ModelNode[] = [];
     const fragmentContextExports: ContextBlockNode[] = [];
     const constantExports: import("../../domain/syntax-tree.js").PackageConstNode[] = [];
+    const manifestExports: string[] = [];
     let product: ProductNode | undefined;
 
     while (!stream.atEnd()) {
@@ -115,6 +116,11 @@ export class RecursiveDescentParser {
           constantExports.push(this.parseBareConstantExport(stream, file));
           continue;
         }
+        // export "./file.pactia" — manifest line for topology packages
+        if (stream.check(TokenType.PATH)) {
+          manifestExports.push(this.parseManifestExport(stream, file));
+          continue;
+        }
         throw new PactiaSyntaxError(
           "Expected export module, export service, export model, export context, or export def",
           stream.peek().line,
@@ -146,6 +152,7 @@ export class RecursiveDescentParser {
       fragmentModelExports,
       fragmentContextExports,
       constantExports,
+      manifestExports,
       product,
       location: { file, line: 1, col: 1 },
     };
@@ -384,6 +391,12 @@ export class RecursiveDescentParser {
       hasDef: false,
       location: { file, line: nameToken.line, col: nameToken.col },
     };
+  }
+
+  /** Parse `export "./path.pactia"` manifest line — topology package file reference. */
+  private parseManifestExport(stream: TokenStream, file: string): string {
+    const pathToken = stream.expect(TokenType.PATH, "Expected file path after export");
+    return pathToken.value;
   }
 
   private parseContextAlias(

@@ -67,7 +67,9 @@ export type { WorkspaceIr, WorkspaceIrFiles } from "./workspace-ir.js";
 export {
   DefSigil,
   SyntaxNodeKind,
+  PackageProfile,
   collectLocalDefs,
+  detectPackageProfile,
   programModules,
 } from "./syntax-tree.js";
 export type {
