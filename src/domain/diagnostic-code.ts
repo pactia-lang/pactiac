@@ -24,6 +24,17 @@ export enum DiagnosticCode {
   PackageLockMismatch = "PACKAGE_LOCK_MISMATCH",
   LockEntryMissing = "LOCK_ENTRY_MISSING",
 
+  // Package import resolution (1.3)
+  PackageImportUnresolved = "PACKAGE_IMPORT_UNRESOLVED",
+  PackageSymbolUnresolved = "PACKAGE_SYMBOL_UNRESOLVED",
+  PackageCircularDependency = "PACKAGE_CIRCULAR_DEPENDENCY",
+  ConsumerRedundantImport = "CONSUMER_REDUNDANT_IMPORT",
+
+  // Import aliasing (1.3)
+  ImportAliasSigilMismatch = "IMPORT_ALIAS_SIGIL_MISMATCH",
+  ImportAliasCollision = "IMPORT_ALIAS_COLLISION",
+  ImportCollisionResolvable = "IMPORT_COLLISION_RESOLVABLE",
+
   // Version / parse
   UnsupportedVersion = "UNSUPPORTED_VERSION",
   ParseError = "PARSE_ERROR",
@@ -71,6 +82,8 @@ export const diagnosticWarningCodes: ReadonlySet<DiagnosticCode> = new Set([
   DiagnosticCode.ImportUnused,
   DiagnosticCode.FragmentPackageImport,
   DiagnosticCode.HybridPackageDiscouraged,
+  DiagnosticCode.ImportCollisionResolvable,
+  DiagnosticCode.ConsumerRedundantImport,
 ]);
 
 export function defaultSeverityForCode(code: DiagnosticCode): DiagnosticSeverity {
