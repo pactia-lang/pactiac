@@ -59,7 +59,10 @@ export interface ContextAttachNode {
 export interface ImportNode {
   readonly kind: SyntaxNodeKind.Import;
   readonly path: string;
+  /** Symbols to import (e.g. ["@api", "#list", "max_page"]). For partial imports only. */
   readonly symbols?: readonly string[];
+  /** Alias mappings: alias → original symbol (e.g. "@endpoint" → "@api"). */
+  readonly aliases?: ReadonlyMap<string, string>;
   readonly location: SourceLocation;
 }
 

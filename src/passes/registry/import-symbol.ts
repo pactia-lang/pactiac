@@ -52,7 +52,8 @@ export function applyPartialImportFilter<
   macros: readonly TMacro[],
   symbols: readonly string[] | undefined,
 ): { readonly tags: TTag[]; readonly macros: TMacro[] } {
-  if (!symbols || symbols.length === 0) {
+  // No filter or wildcard: return all entries
+  if (!symbols || symbols.length === 0 || symbols.includes("*")) {
     return { tags: [...tags], macros: [...macros] };
   }
 

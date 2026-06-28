@@ -242,4 +242,108 @@ describe("fragment exports", () => {
     const tree = parseSyntaxTree({ source, entryFile: "product.pactia" });
     assert.deepEqual(tree.root.imports[0]?.symbols, ["@api", "#list"]);
   });
+
+  it("parses import with `as` alias for tag", () => {
+    const source = [
+      "pactia 1.0",
+      "import { @api as @endpoint } from @pactia/kernel;",
+      "product Demo {",
+      "}",
+    ].join("\n");
+    const tree = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const imp = tree.root.imports[0]!;
+    assert.deepEqual(imp.symbols, ["@api"]);
+    assert.ok(imp.aliases);
+    assert.equal(imp.aliases?.get("@endpoint"), "@api");
+  });
+
+  it("parses import with `as` alias for macro", () => {
+    const source = [
+      "pactia 1.0",
+      "import { #list as #collection } from @pactia/kernel;",
+      "product Demo {",
+      "}",
+    ].join("\n");
+    const tree = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const imp = tree.root.imports[0]!;
+    assert.deepEqual(imp.symbols, ["#list"]);
+    assert.equal(imp.aliases?.get("#collection"), "#list");
+  });
+
+  it("parses import with `as` alias for constant", () => {
+    const source = [
+      "pactia 1.0",
+      "import { max_page as page_limit } from @pactia/kernel;",
+      "product Demo {",
+      "}",
+    ].join("\n");
+    const tree = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const imp = tree.root.imports[0]!;
+    assert.deepEqual(imp.symbols, ["max_page"]);
+    assert.equal(imp.aliases?.get("page_limit"), "max_page");
+  });
+
+  it("parses import with mixed aliased and non-aliased symbols", () => {
+    const source = [
+      "pactia 1.0",
+      "import { @api, #list as #collection, max_page } from @pactia/kernel;",
+      "product Demo {",
+      "}",
+    ].join("\n");
+    const tree = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const imp = tree.root.imports[0]!;
+    assert.deepEqual(imp.symbols, ["@api", "#list", "max_page"]);
+    assert.equal(imp.aliases?.get("#collection"), "#list");
+    assert.equal(imp.aliases?.size, 1); // only #list has alias
+  });
+
+  it("rejects import alias with sigil mismatch", () => {
+    const source = [
+      "pactia 1.0",
+      "import { @api as #endpoint } from @pactia/kernel;",
+      "product Demo {",
+      "}",
+    ].join("\n");
+    assert.throws(
+      () => parseSyntaxTree({ source, entryFile: "product.pactia" }),
+      /sigil mismatch/,
+    );
+  });
+
+  it("rejects import alias: macro aliased as tag", () => {
+    const source = [
+      "pactia 1.0",
+      "import { #list as @collection } from @pactia/kernel;",
+      "product Demo {",
+      "}",
+    ].join("\n");
+    assert.throws(
+      () => parseSyntaxTree({ source, entryFile: "product.pactia" }),
+      /sigil mismatch/,
+    );
+  });
+
+  it("parses import without `as` still works unchanged", () => {
+    const source = [
+      "pactia 1.0",
+      "import { @api, @@output, #list, max_page } from @pactia/kernel;",
+      "product Demo {",
+      "}",
+    ].join("\n");
+    const tree = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    const imp = tree.root.imports[0]!;
+    assert.deepEqual(imp.symbols, ["@api", "@@output", "#list", "max_page"]);
+    assert.equal(imp.aliases, undefined);
+  });
+
+  it("parses import with wildcard *", () => {
+    const source = [
+      "pactia 1.0",
+      "import { *, @api } from @pactia/kernel;",
+      "product Demo {",
+      "}",
+    ].join("\n");
+    const tree = parseSyntaxTree({ source, entryFile: "product.pactia" });
+    assert.deepEqual(tree.root.imports[0]?.symbols, ["*", "@api"]);
+  });
 });

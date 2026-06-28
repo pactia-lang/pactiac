@@ -157,6 +157,103 @@ describe("FsRegistryLoader", () => {
     }
   });
 
+  it("resolves kernel symbols transitively when consumer only imports rust-stack", async () => {
+    const previous = process.env["PACTIA_VENDOR_ROOT"];
+    process.env["PACTIA_VENDOR_ROOT"] = join(repoRoot, "test/fixtures/packages");
+    try {
+      const source = [
+        "pactia 1.0",
+        "import @pactia/rust-stack;",
+        "product Test {",
+        "  @topology { mode: microservices }",
+        "}",
+      ].join("\n");
+      const tree = parseSyntaxTree({ source, entryFile: "test.pactia" });
+
+      // Use loadRegistryFromWorkspace (same pattern as other tests)
+      const registry = loadRegistryFromWorkspace(relayWorkspace, tree);
+
+      // Kernel symbols should be available through transitive resolution
+      assert.ok(registry.tags.has("topology"), "expected @topology from kernel transitively");
+      assert.ok(registry.tags.has("stack"), "expected @stack from kernel transitively");
+      assert.ok(registry.tags.has("api"), "expected @api from kernel transitively");
+      assert.ok(registry.macros.has("rust-stack"), "expected #rust-stack from rust-stack directly");
+    } finally {
+      if (previous === undefined) delete process.env["PACTIA_VENDOR_ROOT"];
+      else process.env["PACTIA_VENDOR_ROOT"] = previous;
+    }
+  });
+
+  it("throws REGISTRY_COLLISION when two packages export the same tag name", () => {
+    const tmp = join(tmpdir(), `pactia-test-collision-${Date.now()}`);
+    const wsDir = join(tmp, "workspace");
+    const vendorDir = join(wsDir, ".pactia", "packages");
+    mkdirSync(vendorDir, { recursive: true });
+
+    // Package A: exports @shared_tag
+    const aDir = join(vendorDir, "@test--collision-a@1.0.0");
+    mkdirSync(aDir, { recursive: true });
+    writeFileSync(join(aDir, "pactia.toml"), '[package]\nname = "@test/collision-a"\nversion = "1.0.0"\n');
+    writeFileSync(join(aDir, "index.pactia"), "pactia 1.0\nexport def @shared_tag in product { }\n");
+    writeFileSync(join(aDir, ".digest"), "sha256:aaa");
+
+    // Package B: also exports @shared_tag
+    const bDir = join(vendorDir, "@test--collision-b@1.0.0");
+    mkdirSync(bDir, { recursive: true });
+    writeFileSync(join(bDir, "pactia.toml"), '[package]\nname = "@test/collision-b"\nversion = "1.0.0"\n');
+    writeFileSync(join(bDir, "index.pactia"), "pactia 1.0\nexport def @shared_tag in product { }\n");
+    writeFileSync(join(bDir, ".digest"), "sha256:bbb");
+
+    // Consumer imports both → collision
+    writeFileSync(join(wsDir, "pactia.toml"), '[dependencies]\n"@test/collision-a" = "^1.0"\n"@test/collision-b" = "^1.0"\n');
+    writeFileSync(join(wsDir, "pactia.lock"), 'lockVersion = 1\n\n[[package]]\nname = "@test/collision-a"\nversion = "1.0.0"\ndigest = "sha256:aaa"\n\n[[package]]\nname = "@test/collision-b"\nversion = "1.0.0"\ndigest = "sha256:bbb"\n');
+
+    const source = "pactia 1.0\nimport @test/collision-a;\nimport @test/collision-b;\nproduct Test { }\n";
+    const tree = parseSyntaxTree({ source, entryFile: "test.pactia" });
+
+    assert.throws(
+      () => loadRegistryFromWorkspace(wsDir, tree),
+      /REGISTRY_COLLISION.*shared_tag/,
+    );
+
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it("does not throw collision for same tag from same source", () => {
+    // A package exporting a tag and another package transitively importing
+    // the same package should not collide because source is the same.
+    const tmp = join(tmpdir(), `pactia-test-same-source-${Date.now()}`);
+    const wsDir = join(tmp, "workspace");
+    const vendorDir = join(wsDir, ".pactia", "packages");
+    mkdirSync(vendorDir, { recursive: true });
+
+    // Base package: exports @shared
+    const baseDir = join(vendorDir, "@test--base@1.0.0");
+    mkdirSync(baseDir, { recursive: true });
+    writeFileSync(join(baseDir, "pactia.toml"), '[package]\nname = "@test/base"\nversion = "1.0.0"\n');
+    writeFileSync(join(baseDir, "index.pactia"), "pactia 1.0\nexport def @shared in product { }\n");
+    writeFileSync(join(baseDir, ".digest"), "sha256:xxx");
+
+    // Wrapper: imports base (no conflicting exports)
+    const wrapDir = join(vendorDir, "@test--wrapper@1.0.0");
+    mkdirSync(wrapDir, { recursive: true });
+    writeFileSync(join(wrapDir, "pactia.toml"), '[package]\nname = "@test/wrapper"\nversion = "1.0.0"\n\n[dependencies]\n"@test/base" = "^1.0"\n');
+    writeFileSync(join(wrapDir, "index.pactia"), "pactia 1.0\nimport @test/base;\n");
+    writeFileSync(join(wrapDir, ".digest"), "sha256:yyy");
+
+    // Consumer imports wrapper → base comes transitively. Same source, no collision.
+    writeFileSync(join(wsDir, "pactia.toml"), '[dependencies]\n"@test/wrapper" = "^1.0"\n"@test/base" = "^1.0"\n');
+    writeFileSync(join(wsDir, "pactia.lock"), 'lockVersion = 1\n\n[[package]]\nname = "@test/base"\nversion = "1.0.0"\ndigest = "sha256:xxx"\n\n[[package]]\nname = "@test/wrapper"\nversion = "1.0.0"\ndigest = "sha256:yyy"\n');
+
+    const source = "pactia 1.0\nimport @test/wrapper;\nimport @test/base;\nproduct Test { }\n";
+    const tree = parseSyntaxTree({ source, entryFile: "test.pactia" });
+
+    // Should NOT throw — @shared from @test/base has the same source
+    assert.doesNotThrow(() => loadRegistryFromWorkspace(wsDir, tree));
+
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
   it("filters registry entries for partial package imports", () => {
     const previous = process.env["PACTIA_VENDOR_ROOT"];
     process.env["PACTIA_VENDOR_ROOT"] = join(

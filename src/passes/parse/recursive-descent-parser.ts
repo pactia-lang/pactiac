@@ -190,11 +190,18 @@ export class RecursiveDescentParser {
 
   private parseImport(stream: TokenStream, file: string): ImportNode {
     const symbols: string[] = [];
+    const aliasMap = new Map<string, string>();
     if (stream.match(TokenType.LBRACE)) {
       while (!stream.check(TokenType.RBRACE) && !stream.atEnd()) {
         stream.match(TokenType.COMMA);
         if (stream.check(TokenType.RBRACE)) break;
-        symbols.push(this.parseImportSymbol(stream));
+        const parsed = this.parseImportSymbol(stream);
+        symbols.push(parsed.name);
+        if (parsed.alias) {
+          if (parsed.alias !== parsed.name) {
+            aliasMap.set(parsed.alias, parsed.name);
+          }
+        }
         stream.match(TokenType.COMMA);
       }
       stream.expect(TokenType.RBRACE, "Expected '}' after import symbol list");
@@ -211,21 +218,70 @@ export class RecursiveDescentParser {
       kind: SyntaxNodeKind.Import,
       path,
       symbols: symbols.length > 0 ? symbols : undefined,
+      aliases: aliasMap.size > 0 ? aliasMap : undefined,
       location: { file, line: pathToken.line, col: pathToken.col },
     };
   }
 
-  private parseImportSymbol(stream: TokenStream): string {
-    if (stream.match(TokenType.HASH, "#")) {
-      const name = stream.expect(TokenType.IDENT, "Expected macro name after '#' in import").value;
-      return `#${name}`;
-    }
+  private parseImportSymbol(stream: TokenStream): { name: string; alias?: string } {
     // Wildcard import: import { *, ... } or import { * }
     if (stream.match(TokenType.STAR, "*")) {
-      return "*";
+      return { name: "*" };
     }
-    const token = stream.expect(TokenType.IDENT, "Expected import symbol");
-    return token.value;
+
+    // Hash-prefixed macro symbol: #name
+    // Note: stream.match() already advances on match.
+    let sigil = "";
+    if (stream.match(TokenType.HASH, "#")) {
+      sigil = "#";
+    }
+
+    const token = stream.expect(TokenType.IDENT, "Expected import symbol name");
+    const rawValue = token.value;
+    
+    // IDENT token may already contain sigil for @scope/name coordinates or @tag symbols
+    // e.g. "@api" or "@@output" come through as single IDENT values
+    let name: string;
+    if (!sigil && (rawValue.startsWith("@") || rawValue.startsWith("#"))) {
+      // Sigil is embedded in the IDENT value itself
+      name = rawValue;
+    } else {
+      name = sigil ? `${sigil}${rawValue}` : rawValue;
+    }
+
+    // Extract sigil from name for alias validation
+    const nameSigil = name.startsWith("@@") ? "@@" : name.startsWith("@") ? "@" : name.startsWith("#") ? "#" : "";
+
+    // Check for `as` alias
+    let alias: string | undefined;
+    if (stream.check(TokenType.IDENT, "as")) {
+      stream.advance(); // consume 'as'
+
+      // Alias may have a sigil prefix (@, @@, #) that lexes as separate tokens
+      let aliasSigil = "";
+      if (stream.match(TokenType.HASH, "#")) {
+        aliasSigil = "#";
+      }
+      // @ and @@ are embedded in IDENT values (not separate tokens)
+      const aliasNameToken = stream.expect(TokenType.IDENT, "Expected alias name after 'as'");
+      const aliasName = aliasNameToken.value;
+      
+      alias = aliasSigil ? `${aliasSigil}${aliasName}` : aliasName;
+
+      // Determine sigil from the full alias value
+      const effectiveAliasSigil = alias.startsWith("@@") ? "@@" : alias.startsWith("@") ? "@" : aliasSigil;
+
+      // Validate sigil match: @api as #endpoint is invalid
+      if (nameSigil !== effectiveAliasSigil) {
+        throw new PactiaSyntaxError(
+          `Import alias sigil mismatch: '${name}' has sigil '${nameSigil || "(none)"}' but alias '${alias}' has sigil '${effectiveAliasSigil || "(none)"}'`,
+          stream.peek().line,
+          stream.peek().col,
+        );
+      }
+    }
+
+    return { name, alias };
   }
 
   private parseProduct(stream: TokenStream, file: string): ProductNode {
