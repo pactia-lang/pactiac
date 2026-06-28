@@ -29,9 +29,64 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
     syntax,
   });
 
+  // Post-merge: check for bare imports from topology packages → TOPOLOGY_WILDCARD_FORBIDDEN
+  if (effectiveRegistry) {
+    const bareImportPattern = /^\s*import\s+(@\S+)\s*;/gm;
+    let bareMatch: RegExpExecArray | null = bareImportPattern.exec(merged.source);
+    while (bareMatch) {
+      const coordinate = bareMatch[1]!;
+      // If this package has topology exports but no registry defs, it's topology-only
+      const hasTopology = [...effectiveRegistry.structuralExports.values()].some(
+        (te) => te.source === coordinate,
+      );
+      const hasRegistry = [...effectiveRegistry.tags.values()].some(
+        (t) => t.source === coordinate,
+      ) || [...effectiveRegistry.macros.values()].some(
+        (m) => m.source === coordinate,
+      );
+      if (hasTopology && !hasRegistry) {
+        throw new Error(
+          `TOPOLOGY_WILDCARD_FORBIDDEN: bare import '${bareMatch[0].trim()}' is not allowed for topology packages. Use 'import { symbol } from ${coordinate}' instead.`,
+        );
+      }
+      bareMatch = bareImportPattern.exec(merged.source);
+    }
+  }
+
+  // Post-merge: inline topology export bodies into the merged source
+  let mergedSource = merged.source;
+  if (effectiveRegistry) {
+    const topologyPattern = /import\s*\{([^}]+)\}\s+from\s+(@\S+);/g;
+    let topoMatch: RegExpExecArray | null = topologyPattern.exec(mergedSource);
+    while (topoMatch) {
+      const symbolList = topoMatch[1]!;
+      const symbols = symbolList.split(",").map((s) => s.trim()).filter(Boolean);
+      const inlined: string[] = [];
+      for (const sym of symbols) {
+        // Skip sigiled symbols (@, @@, #) — those go to registry, not topology
+        if (sym.startsWith("@") || sym.startsWith("#")) continue;
+        const bare = sym.trim();
+        const te = effectiveRegistry.structuralExports.get(bare);
+        if (te && te.body) {
+          inlined.push(`export ${te.kind} ${bare} { ${te.body} }`);
+        } else if (!te) {
+          throw new Error(
+            `EXPORT_NOT_DECLARED: '${bare}' is not exported by topology package`,
+          );
+        }
+      }
+      if (inlined.length > 0) {
+        // Replace import line with inlined topology export blocks
+        mergedSource = mergedSource.replace(topoMatch[0], inlined.join("\n"));
+      }
+      topoMatch = topologyPattern.exec(mergedSource);
+    }
+  }
+
   return {
     merged: {
       ...merged,
+      source: mergedSource,
       lockfileDigest: resolved.lockfileDigest,
     },
     lockfileDigest: resolved.lockfileDigest,

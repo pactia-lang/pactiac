@@ -11,6 +11,8 @@ import type { RegistryTagEntry, RegistryMacroEntry } from "./registry.js";
 import { moduleIrPaths, serviceIrPath } from "./workspace-ir.js";
 import { BoundNodeKind, boundNodeLocation } from "./bound-tree.js";
 import type { BoundNode } from "./bound-tree.js";
+import { detectPackageProfile, PackageProfile, SyntaxNodeKind, DefSigil } from "./syntax-tree.js";
+import type { ProgramNode } from "./syntax-tree.js";
 
 describe("domain compile phases", () => {
   it("orders phases 0 through 12", () => {
@@ -138,5 +140,59 @@ describe("domain workspace ir paths", () => {
       serviceIrPath("fleet", "order"),
       "input/modules/fleet/services/order.service.json",
     );
+  });
+});
+
+describe("detectPackageProfile", () => {
+  function makeProgram(overrides: Partial<ProgramNode> = {}): ProgramNode {
+    return {
+      kind: SyntaxNodeKind.Workspace,
+      version: "1.0",
+      imports: [],
+      exportDefs: [],
+      fragmentExports: [],
+      fragmentServiceExports: [],
+      fragmentModelExports: [],
+      fragmentContextExports: [],
+      constantExports: [],
+      manifestExports: [],
+      product: undefined,
+      location: { file: "test", line: 1, col: 1 },
+      ...overrides,
+    };
+  }
+
+  it("returns Registry for def-only packages", () => {
+    const prog = makeProgram({
+      exportDefs: [{ kind: SyntaxNodeKind.DefExport, exported: true, sigil: DefSigil.Tag, name: "api", params: [], inTargets: [PlacementTarget.Service], modifier: false, bodyItems: [], bodySource: "", location: { file: "x", line: 1, col: 1 } }],
+    });
+    assert.equal(detectPackageProfile(prog), PackageProfile.Registry);
+  });
+
+  it("returns Registry for constant-only packages", () => {
+    const prog = makeProgram({
+      constantExports: [{ kind: SyntaxNodeKind.PackageConst, name: "max_page", value: "100", hasDef: true, location: { file: "x", line: 1, col: 1 } }],
+    });
+    assert.equal(detectPackageProfile(prog), PackageProfile.Registry);
+  });
+
+  it("returns Topology for module exports", () => {
+    const prog = makeProgram({
+      fragmentExports: [{ kind: SyntaxNodeKind.Module, name: "commerce", items: [], location: { file: "x", line: 1, col: 1 } }],
+    });
+    assert.equal(detectPackageProfile(prog), PackageProfile.Topology);
+  });
+
+  it("returns Topology for manifest exports", () => {
+    const prog = makeProgram({ manifestExports: ["./x.pactia"] });
+    assert.equal(detectPackageProfile(prog), PackageProfile.Topology);
+  });
+
+  it("returns Mixed for both defs and topology", () => {
+    const prog = makeProgram({
+      exportDefs: [{ kind: SyntaxNodeKind.DefExport, exported: true, sigil: DefSigil.Tag, name: "api", params: [], inTargets: [PlacementTarget.Service], modifier: false, bodyItems: [], bodySource: "", location: { file: "x", line: 1, col: 1 } }],
+      fragmentExports: [{ kind: SyntaxNodeKind.Module, name: "commerce", items: [], location: { file: "x", line: 1, col: 1 } }],
+    });
+    assert.equal(detectPackageProfile(prog), PackageProfile.Mixed);
   });
 });

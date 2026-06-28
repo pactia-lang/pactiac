@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { describe, it } from "node:test";
 import { repoRoot } from "../../test/fixture-paths.js";
 import { loadRegistryFromWorkspace } from "./fs-registry-loader.js";
+import { FsRegistryLoader } from "./fs-registry-loader.js";
 import { parseSyntaxTree } from "../passes/parse/recursive-descent-parser.js";
 
 const relayWorkspace = join(repoRoot, "test/fixtures/workspace/relay");
@@ -34,6 +36,35 @@ describe("FsRegistryLoader", () => {
     } finally {
       if (previous === undefined) delete process.env["PACTIA_VENDOR_ROOT"];
       else process.env["PACTIA_VENDOR_ROOT"] = previous;
+    }
+  });
+
+  it("loads topology exports from vendored topology package", () => {
+    const tmp = join(tmpdir(), `pactia-test-topo-${Date.now()}`);
+    const wsDir = join(tmp, "ws");
+    const pkgDir = join(wsDir, ".pactia", "packages", "@topo--demo@1.0.0");
+    mkdirSync(pkgDir, { recursive: true });
+
+    // Create pactia.toml + index.pactia with manifest + bare topology file
+    writeFileSync(join(pkgDir, ".digest"), "sha256:abc", "utf8");
+    writeFileSync(join(pkgDir, "pactia.toml"), '[package]\nname = "@topo/demo"\nversion = "1.0.0"\n', "utf8");
+    writeFileSync(join(pkgDir, "index.pactia"), 'pactia 1.0\nexport "./commerce.module.pactia"\n', "utf8");
+    writeFileSync(join(pkgDir, "commerce.module.pactia"), "export module commerce {\n  service Api { }\n}\n", "utf8");
+
+    // Create consumer workspace with lock + toml
+    writeFileSync(join(wsDir, "pactia.toml"), '[package]\nname = "test"\nversion = "1.0.0"\n\n[dependencies]\n"@topo/demo" = "^1.0"\n', "utf8");
+    writeFileSync(join(wsDir, "pactia.lock"), 'lockVersion = 1\n\n[[package]]\nname = "@topo/demo"\nversion = "1.0.0"\ndigest = "sha256:abc"\n', "utf8");
+
+    try {
+      const syntax = parseSyntaxTree({
+        source: 'pactia 1.0\nimport { commerce } from @topo/demo;\nproduct X { module(commerce) { } }\n',
+        entryFile: "product.pactia",
+      });
+      const registry = loadRegistryFromWorkspace(wsDir, syntax);
+      assert.ok(registry.structuralExports.has("commerce"));
+      assert.equal(registry.structuralExports.get("commerce")?.kind, "module");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
     }
   });
 

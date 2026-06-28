@@ -65,6 +65,8 @@ export interface EffectiveRegistry {
   readonly contexts: ReadonlyMap<string, PackageContextExport>;
   /** Package-exported constants resolved from `export def name = value`. */
   readonly constants: ReadonlyMap<string, string>;
+  /** Topology exports from vendored topology/mixed packages (module/service/model/context names with bodies). */
+  readonly structuralExports: ReadonlyMap<string, { readonly kind: string; readonly source: string; readonly body: string }>;
 }
 
 export enum RegistryPrecedenceTier {

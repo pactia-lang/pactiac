@@ -10,6 +10,7 @@ import type { DefDeclNode, ProgramNode, ContextBlockNode } from "../../domain/sy
 import { DefSigil as DefSigilEnum } from "../../domain/syntax-tree.js";
 import { fieldSpecFromDefBody } from "../parse/recursive-descent-parser.js";
 import { deriveIrSlotForTag } from "./derive-tag-ir.js";
+import { extractExportBody } from "./extract-body.js";
 
 function defBodyFromDecl(def: DefDeclNode): DefBodyAst {
   return {
@@ -72,6 +73,40 @@ export function constantsFromProgram(
     name: c.name,
     value: c.value,
   }));
+}
+
+/** Topology symbol extracted from a vendored topology package. */
+export interface TopologyExport {
+  readonly kind: "module" | "service" | "model" | "context";
+  readonly name: string;
+  readonly source: string;
+  /** The body text of the export block (empty for now — populated in future pass). */
+  readonly body: string;
+}
+
+/** Extract topology exports from a parsed index.pactia (topology or mixed profile). */
+export function topologyExportsFromProgram(
+  program: ProgramNode,
+  source: string,
+  sourceText?: string,
+): readonly TopologyExport[] {
+  const exports: TopologyExport[] = [];
+
+  for (const mod of program.fragmentExports) {
+    exports.push({ kind: "module", name: mod.name, source, body: extractExportBody(sourceText ?? "", "module", mod.name) });
+  }
+  for (const svc of program.fragmentServiceExports) {
+    exports.push({ kind: "service", name: svc.name, source, body: extractExportBody(sourceText ?? "", "service", svc.name) });
+  }
+  for (const model of program.fragmentModelExports) {
+    const name = model.name ?? "";
+    exports.push({ kind: "model", name: name || "unnamed", source, body: extractExportBody(sourceText ?? "", "model", name) });
+  }
+  for (const ctx of program.fragmentContextExports) {
+    exports.push({ kind: "context", name: ctx.name, source, body: extractExportBody(sourceText ?? "", "context", ctx.name) });
+  }
+
+  return exports;
 }
 
 export function contextExportsFromProgram(
@@ -144,6 +179,7 @@ export interface MergeRegistryInput {
     readonly macros: readonly RegistryMacroEntry[];
     readonly contexts: readonly PackageContextExport[];
     readonly constants: ReadonlyMap<string, string>;
+    readonly topologyExports: readonly TopologyExport[];
   }>;
   readonly localTags: readonly RegistryTagEntry[];
   readonly localMacros: readonly RegistryMacroEntry[];
@@ -203,5 +239,19 @@ export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegi
   for (const tag of input.localTags) registerTag(tag, "local");
   for (const macro of input.localMacros) registerMacro(macro, "local");
 
-  return { tags, macros, contexts, constants };
+  const structuralExports = new Map<string, { readonly kind: string; readonly source: string; readonly body: string }>();
+
+  for (const pkg of input.importEntries) {
+    for (const te of pkg.topologyExports) {
+      const existing = structuralExports.get(te.name);
+      if (existing && existing.source !== te.source) {
+        throw new Error(
+          `REGISTRY_COLLISION: topology export '${te.name}' from both '${existing.source}' and '${te.source}'`,
+        );
+      }
+      structuralExports.set(te.name, { kind: te.kind, source: te.source, body: te.body });
+    }
+  }
+
+  return { tags, macros, contexts, constants, structuralExports };
 }

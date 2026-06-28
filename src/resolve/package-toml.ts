@@ -3,6 +3,8 @@ export interface PactiaPackageToml {
   readonly version: string;
   readonly description: string | undefined;
   readonly dependencies: ReadonlyMap<string, string>;
+  /** Opt-in for packages that export both registry defs and topology exports. */
+  readonly mixedExports: boolean;
 }
 
 type TomlSection = "none" | "package" | "dependencies";
@@ -16,6 +18,7 @@ export function parsePackageToml(source: string): PactiaPackageToml {
   let name = "@unknown/package";
   let version = "0.0.0";
   let description: string | undefined;
+  let mixedExports = false;
   const dependencies = new Map<string, string>();
   let section: TomlSection = "none";
 
@@ -45,10 +48,11 @@ export function parsePackageToml(source: string): PactiaPackageToml {
       if (key === "name") name = value;
       else if (key === "version") version = value;
       else if (key === "description") description = value;
+      else if (key === "mixed-exports" && value === "true") mixedExports = true;
     } else if (section === "dependencies") {
       dependencies.set(key, value);
     }
   }
 
-  return { name, version, description, dependencies };
+  return { name, version, description, dependencies, mixedExports };
 }
