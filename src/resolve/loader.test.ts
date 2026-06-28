@@ -66,6 +66,40 @@ test("loadVendoredPackage throws on digest mismatch", () => {
   }
 });
 
+test("hashDirectoryMarker includes manifest-referenced topology files", () => {
+  const dir = join(tmpdir(), `pactia-test-loader-${Date.now()}`);
+  mkdirSync(dir, { recursive: true });
+  try {
+    writeFileSync(join(dir, "pactia.toml"), 'name = "@test/pkg"\nversion = "1.0.0"', "utf8");
+    writeFileSync(join(dir, "index.pactia"), 'pactia 1.0\nexport "./commerce.module.pactia"\nexport "./orders.service.pactia"', "utf8");
+    writeFileSync(join(dir, "commerce.module.pactia"), "export module commerce { }", "utf8");
+    writeFileSync(join(dir, "orders.service.pactia"), "export service OrderService { }", "utf8");
+    const result = hashDirectoryMarker(dir);
+    assert.ok(result.startsWith("sha256:"));
+    assert.equal(result.length, 71);
+    // Hash should be different from one without manifest files
+    writeFileSync(join(dir, "index.pactia"), "pactia 1.0\nexport def @api in service { }", "utf8");
+    const result2 = hashDirectoryMarker(dir);
+    assert.notEqual(result, result2);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("hashDirectoryMarker handles missing manifest files gracefully", () => {
+  const dir = join(tmpdir(), `pactia-test-loader-${Date.now()}`);
+  mkdirSync(dir, { recursive: true });
+  try {
+    writeFileSync(join(dir, "pactia.toml"), 'name = "@test/pkg"\nversion = "1.0.0"', "utf8");
+    // Reference a manifest file that doesn't exist — should use empty string
+    writeFileSync(join(dir, "index.pactia"), 'pactia 1.0\nexport "./missing.pactia"', "utf8");
+    const result = hashDirectoryMarker(dir);
+    assert.ok(result.startsWith("sha256:"));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("loadVendoredPackage throws when package not found", () => {
   const tmp = join(tmpdir(), `pactia-test-loader-${Date.now()}`);
   mkdirSync(tmp, { recursive: true });

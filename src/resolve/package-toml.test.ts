@@ -52,3 +52,22 @@ version = "1.0.0"
 `);
   assert.equal(manifest.mixedExports, false);
 });
+
+test("parsePackageToml reads exports field", () => {
+  const manifest = parsePackageToml(`
+[package]
+name = "@acme/topology"
+version = "1.0.0"
+exports = "topology"
+`);
+  assert.equal(manifest.exports, "topology");
+});
+
+test("parsePackageToml defaults exports to undefined", () => {
+  const manifest = parsePackageToml(`
+[package]
+name = "@acme/registry"
+version = "1.0.0"
+`);
+  assert.equal(manifest.exports, undefined);
+});

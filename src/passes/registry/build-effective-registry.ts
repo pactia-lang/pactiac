@@ -183,6 +183,8 @@ export interface MergeRegistryInput {
   }>;
   readonly localTags: readonly RegistryTagEntry[];
   readonly localMacros: readonly RegistryMacroEntry[];
+  /** Non-fatal diagnostics collected during registry loading. */
+  readonly diagnostics?: readonly import("../../domain/diagnostics.js").Diagnostic[];
 }
 
 export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegistry {
@@ -246,12 +248,12 @@ export function mergeEffectiveRegistry(input: MergeRegistryInput): EffectiveRegi
       const existing = structuralExports.get(te.name);
       if (existing && existing.source !== te.source) {
         throw new Error(
-          `REGISTRY_COLLISION: topology export '${te.name}' from both '${existing.source}' and '${te.source}'`,
+          `TOPOLOGY_DUPLICATE_SERVICE: topology export '${te.name}' from both '${existing.source}' and '${te.source}'`,
         );
       }
       structuralExports.set(te.name, { kind: te.kind, source: te.source, body: te.body });
     }
   }
 
-  return { tags, macros, contexts, constants, structuralExports };
+  return { tags, macros, contexts, constants, structuralExports, diagnostics: input.diagnostics ?? [] };
 }

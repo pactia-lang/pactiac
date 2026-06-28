@@ -87,18 +87,22 @@ export class RecursiveDescentParser {
       }
       if (stream.match(TokenType.IDENT, "export")) {
         if (stream.check(TokenType.IDENT, "module")) {
+          this.checkMultipleRootTopology(fragmentExports, fragmentServiceExports, fragmentModelExports, fragmentContextExports, stream, file);
           fragmentExports.push(this.parseModule(stream, file));
           continue;
         }
         if (stream.check(TokenType.IDENT, "service")) {
+          this.checkMultipleRootTopology(fragmentExports, fragmentServiceExports, fragmentModelExports, fragmentContextExports, stream, file);
           fragmentServiceExports.push(this.parseService(stream, file));
           continue;
         }
         if (stream.check(TokenType.IDENT, "model")) {
+          this.checkMultipleRootTopology(fragmentExports, fragmentServiceExports, fragmentModelExports, fragmentContextExports, stream, file);
           fragmentModelExports.push(this.parseModel(stream, file));
           continue;
         }
         if (stream.check(TokenType.IDENT, "context")) {
+          this.checkMultipleRootTopology(fragmentExports, fragmentServiceExports, fragmentModelExports, fragmentContextExports, stream, file);
           fragmentContextExports.push(this.parseContextBlock(stream, file, true));
           continue;
         }
@@ -152,6 +156,22 @@ export class RecursiveDescentParser {
       throw new PactiaSyntaxError(`Unexpected token '${stream.peek().value}'`, stream.peek().line, stream.peek().col);
     }
 
+    // TOPOLOGY_MANIFEST_INLINE_EXPORT: index.pactia with manifest exports must not also have inline topology exports
+    if (manifestExports.length > 0) {
+      const hasInlineTopology =
+        fragmentExports.length > 0 ||
+        fragmentServiceExports.length > 0 ||
+        fragmentModelExports.length > 0 ||
+        fragmentContextExports.length > 0;
+      if (hasInlineTopology) {
+        throw new PactiaSyntaxError(
+          "TOPOLOGY_MANIFEST_INLINE_EXPORT: index.pactia must not contain inline export module/service/model/context when using export \"./file\" manifest — move topology declarations to listed files",
+          1,
+          1,
+        );
+      }
+    }
+
     return {
       kind: SyntaxNodeKind.Workspace,
       version,
@@ -199,6 +219,10 @@ export class RecursiveDescentParser {
     if (stream.match(TokenType.HASH, "#")) {
       const name = stream.expect(TokenType.IDENT, "Expected macro name after '#' in import").value;
       return `#${name}`;
+    }
+    // Wildcard import: import { *, ... } or import { * }
+    if (stream.match(TokenType.STAR, "*")) {
+      return "*";
     }
     const token = stream.expect(TokenType.IDENT, "Expected import symbol");
     return token.value;
@@ -316,6 +340,13 @@ export class RecursiveDescentParser {
   }
 
   private parseModuleItem(stream: TokenStream, file: string): ModuleItem {
+    if (stream.check(TokenType.IDENT, "export")) {
+      throw new PactiaSyntaxError(
+        "TOPOLOGY_NESTED_EXPORT: export service/model/context may not appear inside export module { } — declare at root level instead",
+        stream.peek().line,
+        stream.peek().col,
+      );
+    }
     if (stream.check(TokenType.IDENT, "service")) return this.parseService(stream, file);
     if (stream.check(TokenType.IDENT, "model")) return this.parseModel(stream, file);
     if (stream.check(TokenType.IDENT, "def")) return this.parseModuleConstOrDef(stream, file);
@@ -475,6 +506,13 @@ export class RecursiveDescentParser {
     while (!stream.check(TokenType.RBRACE)) {
       stream.match(TokenType.COMMA);
       if (stream.check(TokenType.RBRACE)) break;
+      if (stream.check(TokenType.IDENT, "export")) {
+        throw new PactiaSyntaxError(
+          "TOPOLOGY_NESTED_EXPORT: export may not appear inside export service { } body — declare at root level instead",
+          stream.peek().line,
+          stream.peek().col,
+        );
+      }
       if (stream.check(TokenType.IDENT, "def")) {
         items.push(this.parseModuleConstantDeclaration(stream, file));
         continue;
@@ -840,6 +878,29 @@ export class RecursiveDescentParser {
 
   private isBlockKeyword(value: string): boolean {
     return value === "module" || value === "service" || value === "model" || value === "def" || value === "context";
+  }
+
+  /** TOPOLOGY_MULTIPLE_ROOT_EXPORTS: bare topology files must have only one root topology export. */
+  private checkMultipleRootTopology(
+    fragmentExports: readonly ModuleNode[],
+    fragmentServiceExports: readonly ServiceNode[],
+    fragmentModelExports: readonly ModelNode[],
+    fragmentContextExports: readonly ContextBlockNode[],
+    stream: TokenStream,
+    file: string,
+  ): void {
+    const total =
+      fragmentExports.length +
+      fragmentServiceExports.length +
+      fragmentModelExports.length +
+      fragmentContextExports.length;
+    if (total > 0) {
+      throw new PactiaSyntaxError(
+        "TOPOLOGY_MULTIPLE_ROOT_EXPORTS: bare topology files must contain only one root topology export",
+        stream.peek().line,
+        stream.peek().col,
+      );
+    }
   }
 
   private checkContextAttachStart(stream: TokenStream): boolean {

@@ -12,8 +12,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **`CONSTANT_DEF_REQUIRED`** diagnostic — emitted in bind pass for bare `export name = value` (missing `def` keyword).
 - **`EXPORT_KIND_AMBIGUITY`** diagnostic code reserved for 1.3 mixed-package detection.
 - **Topology packages (1.3)** — `export "./file.pactia"` manifest parsing; `PackageProfile` detection (Registry/Topology/Mixed); `extractExportBody()` for topology body extraction; `EffectiveRegistry.structuralExports` map; manifest file loading in `FsRegistryLoader`; topology body inlining during workspace assembly.
-- **Topology diagnostics** — `TOPOLOGY_DEF_FORBIDDEN`, `TOPOLOGY_WILDCARD_FORBIDDEN`, `PACKAGE_EXPORT_MIXED` (requires `mixed-exports = true` in `pactia.toml`), `EXPORT_NOT_DECLARED`.
+- **Topology diagnostics** — `TOPOLOGY_DEF_FORBIDDEN`, `TOPOLOGY_WILDCARD_FORBIDDEN`, `TOPOLOGY_NESTED_EXPORT`, `TOPOLOGY_MULTIPLE_ROOT_EXPORTS`, `TOPOLOGY_MANIFEST_INLINE_EXPORT`, `TOPOLOGY_EXPORT_FILE_MISSING`, `PACKAGE_EXPORT_MIXED`, `PACKAGE_PROFILE_MISMATCH`, `HYBRID_PACKAGE_DISCOURAGED`, `PACKAGE_IMPORT_MIXED`, `EXPORT_NOT_DECLARED`, `TOPOLOGY_DUPLICATE_SERVICE`.
 - **`mixed-exports` in `PactiaPackageToml`** — parsed from `[package]` section for mixed package opt-in.
+- **`exports` field in `pactia.toml`** — parsed from `[package]` section for declared export profile (`"registry"` / `"topology"`); validated via `PACKAGE_PROFILE_MISMATCH`.
+- **`*` wildcard import** — parser supports `import { *, commerce } from @pkg` for importing all registry exports alongside topology symbols.
 - **Validate pass** — validates tag body fields against registry `def` field specs after macro expansion. Checks missing required fields, unknown fields (openExtension-aware), and duplicate keys. All diagnostics are warnings (non-blocking).
 - **90% statement coverage** — 166 tests; new test files: `ir-path`, `ir-slot-writer`, `token-stream`, `registry`, `loader`, `manifest`, `extract-body`.
 

@@ -28,6 +28,7 @@ import {
 import { applyPartialImportFilter } from "../passes/registry/import-symbol.js";
 import { detectPackageProfile, PackageProfile } from "../domain/syntax-tree.js";
 import { parsePackageToml } from "../resolve/package-toml.js";
+import { createDiagnostic, DiagnosticCode, type Diagnostic } from "../domain/index.js";
 
 const INDEX_FILE = "index.pactia";
 const TOML_FILE = "pactia.toml";
@@ -63,6 +64,8 @@ export class FsRegistryLoader implements RegistryLoaderSync {
       }
     }
 
+    const loaderDiagnostics: Diagnostic[] = [];
+
     const importEntries = importPackages.map((pkg) => {
       const indexSource = readOptional(join(pkg.rootDir, INDEX_FILE));
       const program = indexSource
@@ -93,6 +96,24 @@ export class FsRegistryLoader implements RegistryLoaderSync {
       let topologyExports: ReturnType<typeof topologyExportsFromProgram> = [];
       if (program) {
         const profile = detectPackageProfile(program);
+
+        // PACKAGE_PROFILE_MISMATCH: declared exports field in pactia.toml doesn't match index.pactia
+        if (pkg.manifestSource) {
+          const pkgToml = parsePackageToml(pkg.manifestSource);
+          if (pkgToml.exports === "topology" && profile === PackageProfile.Registry) {
+            throw new PackageResolutionError(
+              PackageErrorCode.PackageLockMismatch,
+              `PACKAGE_PROFILE_MISMATCH: '${pkg.coordinate}' declares exports = "topology" but index.pactia contains only registry exports`,
+            );
+          }
+          if (pkgToml.exports === "registry" && profile === PackageProfile.Topology) {
+            throw new PackageResolutionError(
+              PackageErrorCode.PackageLockMismatch,
+              `PACKAGE_PROFILE_MISMATCH: '${pkg.coordinate}' declares exports = "registry" but index.pactia contains only topology exports`,
+            );
+          }
+        }
+
         if (profile === PackageProfile.Mixed) {
           // Mixed profile requires mixed-exports = true opt-in
           if (pkg.manifestSource) {
@@ -103,13 +124,29 @@ export class FsRegistryLoader implements RegistryLoaderSync {
                 `PACKAGE_EXPORT_MIXED: '${pkg.coordinate}' has both registry and topology exports but missing 'mixed-exports = true' in pactia.toml [package]`,
               );
             }
+            // HYBRID_PACKAGE_DISCOURAGED: mixed-exports = true is an escape hatch, not preferred
+            loaderDiagnostics.push(
+              createDiagnostic(
+                DiagnosticCode.HybridPackageDiscouraged,
+                `HYBRID_PACKAGE_DISCOURAGED: '${pkg.coordinate}' uses mixed-exports = true — prefer splitting into separate registry and topology packages`,
+                {
+                  target: pkg.coordinate,
+                  location: { file: join(pkg.rootDir, TOML_FILE), line: 1, col: 1 },
+                },
+              ),
+            );
           }
         }
         if (profile === PackageProfile.Topology || profile === PackageProfile.Mixed) {
           // Load and parse each manifest-referenced file
           for (const manifestPath of program.manifestExports) {
             const fullPath = join(pkg.rootDir, manifestPath);
-            if (!existsSync(fullPath)) continue;
+            if (!existsSync(fullPath)) {
+              throw new PackageResolutionError(
+                PackageErrorCode.PackageLockMismatch,
+                `TOPOLOGY_EXPORT_FILE_MISSING: manifest file '${manifestPath}' referenced in '${pkg.coordinate}' index.pactia does not exist`,
+              );
+            }
             const fileSource = readFileSync(fullPath, "utf8");
             try {
               const fileProgram = parseSyntaxTree({ source: fileSource, entryFile: manifestPath }).root;
@@ -152,6 +189,7 @@ export class FsRegistryLoader implements RegistryLoaderSync {
       importEntries,
       localTags: local.tags,
       localMacros: local.macros,
+      diagnostics: loaderDiagnostics,
     });
   }
 }

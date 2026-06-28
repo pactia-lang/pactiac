@@ -71,6 +71,17 @@ export function hashDirectoryMarker(rootDir: string): string {
   }
   const toml = readOptional(join(rootDir, "pactia.toml")) ?? "";
   const index = readOptional(join(rootDir, "index.pactia")) ?? "";
-  const hash = createHash("sha256").update(toml, "utf8").update(index, "utf8").digest("hex");
-  return `sha256:${hash}`;
+  const hash = createHash("sha256").update(toml, "utf8").update(index, "utf8");
+
+  // Include manifest-referenced topology files in the digest
+  const manifestPattern = /^export\s+["']([^"']+)["']/gm;
+  let match: RegExpExecArray | null = manifestPattern.exec(index);
+  while (match) {
+    const filePath = match[1]!;
+    const content = readOptional(join(rootDir, filePath)) ?? "";
+    hash.update(content, "utf8");
+    match = manifestPattern.exec(index);
+  }
+
+  return `sha256:${hash.digest("hex")}`;
 }

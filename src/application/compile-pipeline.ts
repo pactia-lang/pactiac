@@ -50,6 +50,7 @@ export class CompilePipeline {
       contexts: new Map(),
       constants: new Map(),
       structuralExports: new Map(),
+      diagnostics: [],
     };
 
     diagnostics.push(...assertSupportedVersion(context.source));

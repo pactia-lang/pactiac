@@ -166,3 +166,38 @@ test("mergeEffectiveRegistry allows same-source entries", () => {
     }),
   );
 });
+
+test("mergeEffectiveRegistry rejects colliding topology exports as TOPOLOGY_DUPLICATE_SERVICE", () => {
+  assert.throws(
+    () =>
+      mergeEffectiveRegistry({
+        importEntries: [
+          {
+            coordinate: "@acme/backend",
+            tier: RegistryPrecedenceTier.Dependency,
+            tags: [],
+            macros: [],
+            contexts: [],
+            constants: new Map(),
+            topologyExports: [
+              { kind: "service", name: "OrderService", source: "@acme/backend", body: "..." },
+            ],
+          },
+          {
+            coordinate: "@acme/web",
+            tier: RegistryPrecedenceTier.Dependency,
+            tags: [],
+            macros: [],
+            contexts: [],
+            constants: new Map(),
+            topologyExports: [
+              { kind: "service", name: "OrderService", source: "@acme/web", body: "..." },
+            ],
+          },
+        ],
+        localTags: [],
+        localMacros: [],
+      }),
+    /TOPOLOGY_DUPLICATE_SERVICE.*OrderService.*@acme\/backend.*@acme\/web/,
+  );
+});

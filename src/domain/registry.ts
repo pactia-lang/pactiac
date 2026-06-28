@@ -1,3 +1,4 @@
+import type { Diagnostic } from "./diagnostics.js";
 import type { IrFile } from "./ir-file.js";
 import type { IrMerge } from "./ir-merge.js";
 import type { PlacementTarget } from "./placement.js";
@@ -67,6 +68,8 @@ export interface EffectiveRegistry {
   readonly constants: ReadonlyMap<string, string>;
   /** Topology exports from vendored topology/mixed packages (module/service/model/context names with bodies). */
   readonly structuralExports: ReadonlyMap<string, { readonly kind: string; readonly source: string; readonly body: string }>;
+  /** Non-fatal diagnostics collected during registry loading (warnings, discouraged patterns). */
+  readonly diagnostics: readonly Diagnostic[];
 }
 
 export enum RegistryPrecedenceTier {
