@@ -66,7 +66,7 @@ After `pactia build`: `input/context.index.json` and `input/context/` (bundled c
 
 | pactiac release | Implements spec |
 | --- | --- |
-| 0.3.x | Pactia 1.2 / 1.3 — package constants (`export def name = value`); `CONSTANT_DEF_REQUIRED`; topology packages (`export "./file"` manifest, `structuralExports`, profile detection); topology diagnostics (`TOPOLOGY_DEF_FORBIDDEN`, `TOPOLOGY_WILDCARD_FORBIDDEN`, `PACKAGE_EXPORT_MIXED`, `EXPORT_NOT_DECLARED`) |
+| 0.3.x | Pactia 1.2 / 1.3 — package constants (`export def name = value`); `CONSTANT_DEF_REQUIRED`; topology packages (`export "./file"` manifest, `structuralExports`, profile detection, `exports`/`mixed-exports` fields); 12 topology diagnostics (`TOPOLOGY_DEF_FORBIDDEN`, `TOPOLOGY_WILDCARD_FORBIDDEN`, `TOPOLOGY_NESTED_EXPORT`, `TOPOLOGY_MULTIPLE_ROOT_EXPORTS`, `TOPOLOGY_MANIFEST_INLINE_EXPORT`, `TOPOLOGY_EXPORT_FILE_MISSING`, `PACKAGE_EXPORT_MIXED`, `PACKAGE_PROFILE_MISMATCH`, `HYBRID_PACKAGE_DISCOURAGED`, `PACKAGE_IMPORT_MIXED`, `EXPORT_NOT_DECLARED`, `TOPOLOGY_DUPLICATE_SERVICE`); `*` wildcard import |
 | 0.2.x | Pactia 1.2 — source-order `body[]` IR; structural `context[]` with `name`; `FRAGMENT_PACKAGE_IMPORT` warning; package `export context` |
 | 0.1.x | Pactia 1.0 — parse/bind/lower to module-scoped JSON IR; workspace compile (import + attach; legacy folder scan); macro expansion from package `export def` |
 

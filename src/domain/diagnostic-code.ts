@@ -48,6 +48,14 @@ export enum DiagnosticCode {
   TopologyWildcardForbidden = "TOPOLOGY_WILDCARD_FORBIDDEN",
   PackageExportMixed = "PACKAGE_EXPORT_MIXED",
   ExportNotDeclared = "EXPORT_NOT_DECLARED",
+  TopologyNestedExport = "TOPOLOGY_NESTED_EXPORT",
+  TopologyMultipleRootExports = "TOPOLOGY_MULTIPLE_ROOT_EXPORTS",
+  TopologyManifestInlineExport = "TOPOLOGY_MANIFEST_INLINE_EXPORT",
+  TopologyExportFileMissing = "TOPOLOGY_EXPORT_FILE_MISSING",
+  PackageProfileMismatch = "PACKAGE_PROFILE_MISMATCH",
+  HybridPackageDiscouraged = "HYBRID_PACKAGE_DISCOURAGED",
+  PackageImportMixed = "PACKAGE_IMPORT_MIXED",
+  TopologyDuplicateService = "TOPOLOGY_DUPLICATE_SERVICE",
 }
 
 export enum DiagnosticSeverity {
@@ -62,6 +70,7 @@ export const diagnosticWarningCodes: ReadonlySet<DiagnosticCode> = new Set([
   DiagnosticCode.ClauseDuplicateKey,
   DiagnosticCode.ImportUnused,
   DiagnosticCode.FragmentPackageImport,
+  DiagnosticCode.HybridPackageDiscouraged,
 ]);
 
 export function defaultSeverityForCode(code: DiagnosticCode): DiagnosticSeverity {

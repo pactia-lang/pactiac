@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { test } from "node:test";
@@ -156,4 +156,106 @@ test("mergeWorkspaceSources — non-attach inline module path", () => {
   assert.match(merged.source, /product InlineDemo/);
   assert.match(merged.source, /@api list/);
   assert.equal(merged.entry, "product.pactia");
+});
+
+test("assembleWorkspace emits PACKAGE_IMPORT_MIXED for mixed * and topology import", () => {
+  const tmp = join(tmpdir(), `pactia-test-mixedimport-${Date.now()}`);
+  const wsDir = join(tmp, "ws");
+  const pkgDir = join(wsDir, ".pactia", "packages", "@hybrid--kit@1.0.0");
+  mkdirSync(pkgDir, { recursive: true });
+
+  writeFileSync(join(pkgDir, ".digest"), "sha256:abc", "utf8");
+  writeFileSync(join(pkgDir, "pactia.toml"), '[package]\nname = "@hybrid/kit"\nversion = "1.0.0"\nmixed-exports = true\n', "utf8");
+  writeFileSync(join(pkgDir, "index.pactia"), 'pactia 1.0\nexport def @api in service { }\nexport "./commerce.module.pactia"\n', "utf8");
+  writeFileSync(join(pkgDir, "commerce.module.pactia"), "export module commerce { }", "utf8");
+
+  writeFileSync(join(wsDir, "pactia.toml"), '[package]\nname = "test"\nversion = "1.0.0"\n\n[dependencies]\n"@hybrid/kit" = "^1.0"\n', "utf8");
+  writeFileSync(join(wsDir, "pactia.lock"), 'lockVersion = 1\n\n[[package]]\nname = "@hybrid/kit"\nversion = "1.0.0"\ndigest = "sha256:abc"\n', "utf8");
+  writeFileSync(join(wsDir, "product.pactia"), 'pactia 1.0\nimport { *, commerce } from @hybrid/kit;\nproduct X { module(commerce) { } }\n');
+
+  try {
+    const assembled = assembleWorkspace(wsDir);
+    const mixedDiags = (assembled.merged.diagnostics ?? []).filter(
+      (d) => d.code === "PACKAGE_IMPORT_MIXED" as any,
+    );
+    assert.equal(mixedDiags.length, 1);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("assembleWorkspace throws TOPOLOGY_WILDCARD_FORBIDDEN for bare import from topology package", () => {
+  const tmp = join(tmpdir(), `pactia-test-topowild-${Date.now()}`);
+  const wsDir = join(tmp, "ws");
+  const pkgDir = join(wsDir, ".pactia", "packages", "@topo--only@1.0.0");
+  mkdirSync(pkgDir, { recursive: true });
+
+  writeFileSync(join(pkgDir, ".digest"), "sha256:abc", "utf8");
+  writeFileSync(join(pkgDir, "pactia.toml"), '[package]\nname = "@topo/only"\nversion = "1.0.0"\n', "utf8");
+  writeFileSync(join(pkgDir, "index.pactia"), 'pactia 1.0\nexport "./commerce.module.pactia"\n', "utf8");
+  writeFileSync(join(pkgDir, "commerce.module.pactia"), "export module commerce { }", "utf8");
+
+  writeFileSync(join(wsDir, "pactia.toml"), '[package]\nname = "test"\nversion = "1.0.0"\n\n[dependencies]\n"@topo/only" = "^1.0"\n', "utf8");
+  writeFileSync(join(wsDir, "pactia.lock"), 'lockVersion = 1\n\n[[package]]\nname = "@topo/only"\nversion = "1.0.0"\ndigest = "sha256:abc"\n', "utf8");
+  writeFileSync(join(wsDir, "product.pactia"), 'pactia 1.0\nimport @topo/only;\nproduct X { }\n');
+
+  try {
+    assert.throws(
+      () => assembleWorkspace(wsDir),
+      /TOPOLOGY_WILDCARD_FORBIDDEN/,
+    );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("assembleWorkspace inlines topology export bodies into merged source", () => {
+  const tmp = join(tmpdir(), `pactia-test-inline-${Date.now()}`);
+  const wsDir = join(tmp, "ws");
+  const pkgDir = join(wsDir, ".pactia", "packages", "@topo--inline@1.0.0");
+  mkdirSync(pkgDir, { recursive: true });
+
+  writeFileSync(join(pkgDir, ".digest"), "sha256:abc", "utf8");
+  writeFileSync(join(pkgDir, "pactia.toml"), '[package]\nname = "@topo/inline"\nversion = "1.0.0"\n', "utf8");
+  writeFileSync(join(pkgDir, "index.pactia"), 'pactia 1.0\nexport "./commerce.module.pactia"\n', "utf8");
+  writeFileSync(join(pkgDir, "commerce.module.pactia"), "export module commerce {\n  @api list_orders { method: GET }\n}\n", "utf8");
+
+  writeFileSync(join(wsDir, "pactia.toml"), '[package]\nname = "test"\nversion = "1.0.0"\n\n[dependencies]\n"@topo/inline" = "^1.0"\n', "utf8");
+  writeFileSync(join(wsDir, "pactia.lock"), 'lockVersion = 1\n\n[[package]]\nname = "@topo/inline"\nversion = "1.0.0"\ndigest = "sha256:abc"\n', "utf8");
+  writeFileSync(join(wsDir, "product.pactia"), 'pactia 1.0\nimport { commerce } from @topo/inline;\nproduct X { module(commerce) { } }\n');
+
+  try {
+    const assembled = assembleWorkspace(wsDir);
+    assert.match(assembled.merged.source, /export module commerce/);
+    assert.match(assembled.merged.source, /@api list_orders/);
+    // Verify the import line was replaced with inlined topology
+    assert.equal(assembled.merged.source.includes("import { commerce } from @topo/inline"), false);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("assembleWorkspace throws EXPORT_NOT_DECLARED for undeclared topology symbol", () => {
+  const tmp = join(tmpdir(), `pactia-test-exportmissing-${Date.now()}`);
+  const wsDir = join(tmp, "ws");
+  const pkgDir = join(wsDir, ".pactia", "packages", "@topo--only2@1.0.0");
+  mkdirSync(pkgDir, { recursive: true });
+
+  writeFileSync(join(pkgDir, ".digest"), "sha256:abc", "utf8");
+  writeFileSync(join(pkgDir, "pactia.toml"), '[package]\nname = "@topo/only2"\nversion = "1.0.0"\n', "utf8");
+  writeFileSync(join(pkgDir, "index.pactia"), 'pactia 1.0\nexport "./commerce.module.pactia"\n', "utf8");
+  writeFileSync(join(pkgDir, "commerce.module.pactia"), "export module commerce { }", "utf8");
+
+  writeFileSync(join(wsDir, "pactia.toml"), '[package]\nname = "test"\nversion = "1.0.0"\n\n[dependencies]\n"@topo/only2" = "^1.0"\n', "utf8");
+  writeFileSync(join(wsDir, "pactia.lock"), 'lockVersion = 1\n\n[[package]]\nname = "@topo/only2"\nversion = "1.0.0"\ndigest = "sha256:abc"\n', "utf8");
+  writeFileSync(join(wsDir, "product.pactia"), 'pactia 1.0\nimport { nonexistent } from @topo/only2;\nproduct X { }\n');
+
+  try {
+    assert.throws(
+      () => assembleWorkspace(wsDir),
+      /EXPORT_NOT_DECLARED/,
+    );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });

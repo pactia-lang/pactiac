@@ -1,5 +1,6 @@
 import { FsRegistryLoader } from "../../adapters/fs-registry-loader.js";
 import type { EffectiveRegistry } from "../../domain/registry.js";
+import { createDiagnostic, DiagnosticCode, type Diagnostic } from "../../domain/index.js";
 import { parseSyntaxTree } from "../../passes/parse/recursive-descent-parser.js";
 import type { LoadedPackage } from "../../resolve/loader.js";
 import { resolveWorkspacePackages } from "../../resolve/resolver.js";
@@ -29,6 +30,10 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
     syntax,
   });
 
+  const assembleDiagnostics: Diagnostic[] = [
+    ...(effectiveRegistry?.diagnostics ?? []),
+  ];
+
   // Post-merge: check for bare imports from topology packages → TOPOLOGY_WILDCARD_FORBIDDEN
   if (effectiveRegistry) {
     const bareImportPattern = /^\s*import\s+(@\S+)\s*;/gm;
@@ -51,6 +56,32 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
       }
       bareMatch = bareImportPattern.exec(merged.source);
     }
+
+    // PACKAGE_IMPORT_MIXED: consumer imports { *, topologySymbol } from hybrid package
+    const mixedImportPattern = /import\s*\{([^}]+)\}\s+from\s+(@\S+);/g;
+    let mixedMatch: RegExpExecArray | null = mixedImportPattern.exec(merged.source);
+    while (mixedMatch) {
+      const symbolList = mixedMatch[1]!;
+      const symbols = symbolList.split(",").map((s) => s.trim()).filter(Boolean);
+      const hasWildcard = symbols.some((s) => s === "*");
+      // Check if any bare (non-sigiled) symbol is a topology export from this coordinate
+      const coordinate = mixedMatch[2]!;
+      const hasTopologyImport = symbols.some((sym) => {
+        if (sym.startsWith("@") || sym.startsWith("#") || sym === "*") return false;
+        const te = effectiveRegistry.structuralExports.get(sym);
+        return te && te.source === coordinate;
+      });
+      if (hasWildcard && hasTopologyImport) {
+        assembleDiagnostics.push(
+          createDiagnostic(
+            DiagnosticCode.PackageImportMixed,
+            `PACKAGE_IMPORT_MIXED: mixing '*' with topology symbols from '${coordinate}' is discouraged — use separate import lines for registry and topology`,
+            { target: coordinate, location: { file: merged.entry, line: 1, col: 1 } },
+          ),
+        );
+      }
+      mixedMatch = mixedImportPattern.exec(merged.source);
+    }
   }
 
   // Post-merge: inline topology export bodies into the merged source
@@ -63,8 +94,8 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
       const symbols = symbolList.split(",").map((s) => s.trim()).filter(Boolean);
       const inlined: string[] = [];
       for (const sym of symbols) {
-        // Skip sigiled symbols (@, @@, #) — those go to registry, not topology
-        if (sym.startsWith("@") || sym.startsWith("#")) continue;
+        // Skip sigiled symbols (@, @@, #) and wildcard (*) — those go to registry, not topology
+        if (sym.startsWith("@") || sym.startsWith("#") || sym === "*") continue;
         const bare = sym.trim();
         const te = effectiveRegistry.structuralExports.get(bare);
         if (te && te.body) {
@@ -88,6 +119,10 @@ export function assembleWorkspace(rootDir: string): AssembledWorkspace {
       ...merged,
       source: mergedSource,
       lockfileDigest: resolved.lockfileDigest,
+      diagnostics: [
+        ...(merged.diagnostics ?? []),
+        ...assembleDiagnostics,
+      ],
     },
     lockfileDigest: resolved.lockfileDigest,
     effectiveRegistry,

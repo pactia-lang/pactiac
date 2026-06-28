@@ -142,6 +142,46 @@ describe("package constant exports", () => {
       /TOPOLOGY_DEF_FORBIDDEN/,
     );
   });
+
+  it("rejects multiple root topology exports as TOPOLOGY_MULTIPLE_ROOT_EXPORTS", () => {
+    assert.throws(
+      () => parseSyntaxTree({
+        source: "pactia 1.0\nexport module orders { }\nexport service OrderService { }\n",
+        entryFile: "orders.module.pactia",
+      }),
+      /TOPOLOGY_MULTIPLE_ROOT_EXPORTS/,
+    );
+  });
+
+  it("rejects inline topology with manifest as TOPOLOGY_MANIFEST_INLINE_EXPORT", () => {
+    assert.throws(
+      () => parseSyntaxTree({
+        source: 'pactia 1.0\nexport "./mod.pactia"\nexport module orders { }\n',
+        entryFile: "index.pactia",
+      }),
+      /TOPOLOGY_MANIFEST_INLINE_EXPORT/,
+    );
+  });
+
+  it("rejects nested export inside module as TOPOLOGY_NESTED_EXPORT", () => {
+    assert.throws(
+      () => parseSyntaxTree({
+        source: "pactia 1.0\nexport module orders {\n  export service OrderService { }\n}\n",
+        entryFile: "orders.module.pactia",
+      }),
+      /TOPOLOGY_NESTED_EXPORT/,
+    );
+  });
+
+  it("rejects nested export inside service as TOPOLOGY_NESTED_EXPORT", () => {
+    assert.throws(
+      () => parseSyntaxTree({
+        source: "pactia 1.0\nexport service OrderService {\n  export model order_model { }\n}\n",
+        entryFile: "order.service.pactia",
+      }),
+      /TOPOLOGY_NESTED_EXPORT/,
+    );
+  });
 });
 
 describe("fragment exports", () => {
