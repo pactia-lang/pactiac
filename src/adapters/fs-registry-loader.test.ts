@@ -157,6 +157,33 @@ describe("FsRegistryLoader", () => {
     }
   });
 
+  it("resolves kernel symbols transitively when consumer only imports rust-stack", async () => {
+    const previous = process.env["PACTIA_VENDOR_ROOT"];
+    process.env["PACTIA_VENDOR_ROOT"] = join(repoRoot, "test/fixtures/packages");
+    try {
+      const source = [
+        "pactia 1.0",
+        "import @pactia/rust-stack;",
+        "product Test {",
+        "  @topology { mode: microservices }",
+        "}",
+      ].join("\n");
+      const tree = parseSyntaxTree({ source, entryFile: "test.pactia" });
+
+      // Use loadRegistryFromWorkspace (same pattern as other tests)
+      const registry = loadRegistryFromWorkspace(relayWorkspace, tree);
+
+      // Kernel symbols should be available through transitive resolution
+      assert.ok(registry.tags.has("topology"), "expected @topology from kernel transitively");
+      assert.ok(registry.tags.has("stack"), "expected @stack from kernel transitively");
+      assert.ok(registry.tags.has("api"), "expected @api from kernel transitively");
+      assert.ok(registry.macros.has("rust-stack"), "expected #rust-stack from rust-stack directly");
+    } finally {
+      if (previous === undefined) delete process.env["PACTIA_VENDOR_ROOT"];
+      else process.env["PACTIA_VENDOR_ROOT"] = previous;
+    }
+  });
+
   it("filters registry entries for partial package imports", () => {
     const previous = process.env["PACTIA_VENDOR_ROOT"];
     process.env["PACTIA_VENDOR_ROOT"] = join(

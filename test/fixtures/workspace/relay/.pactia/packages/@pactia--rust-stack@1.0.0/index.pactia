@@ -1,5 +1,6 @@
 pactia 1.0
 // Package: @pactia/rust-stack — Rust / Actix / Node backend stack (ANB)
+import @pactia/kernel;
 
 export def #rust-stack in product {
   > Rust / Actix / Node backend stack (ANB) — primary APIs in Rust on actix-web and tokio.
