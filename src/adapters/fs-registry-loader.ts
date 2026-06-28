@@ -38,6 +38,23 @@ function readOptional(path: string): string | undefined {
   return existsSync(path) ? readFileSync(path, "utf8") : undefined;
 }
 
+function resolveVendorDir(
+  workspaceRoot: string,
+  coordinate: string,
+  version: string,
+): string | undefined {
+  const pkgDirName = `${coordinate.replace(/\//g, "--")}@${version}`;
+  const roots = [join(workspaceRoot, ".pactia", "packages")];
+  if (process.env["PACTIA_VENDOR_ROOT"]) {
+    roots.push(resolve(process.env["PACTIA_VENDOR_ROOT"]));
+  }
+  for (const root of roots) {
+    const dir = join(root, pkgDirName);
+    if (existsSync(dir)) return dir;
+  }
+  return undefined;
+}
+
 function tierRank(tier: RegistryPrecedenceTier): number {
   return registryPrecedenceOrder.indexOf(tier);
 }
@@ -48,14 +65,71 @@ export class FsRegistryLoader implements RegistryLoaderSync {
     const lockSource = readOptional(join(input.workspaceRoot, LOCK_FILE));
     const imports = input.importCoordinates;
 
+    const loaderDiagnostics: Diagnostic[] = [];
     const importPackages: LoadedPackage[] = [];
+    let transitiveExplicit: Set<string> = new Set();
 
     if (tomlSource && lockSource) {
       const toml = parsePactiaToml(tomlSource);
       const lock = parsePactiaLock(lockSource);
       assertImportsDeclared(imports, toml);
 
+      // Start with consumer's explicit imports, then discover transitive deps
       const coordinates = [...new Set(imports)];
+      transitiveExplicit = new Set<string>();
+      const visited = new Set(coordinates);
+
+      // BFS: for each imported package, check its index.pactia for import lines
+      const queue = [...coordinates];
+      while (queue.length > 0) {
+        const coord = queue.shift()!;
+        const lockEntry = lock.packages.find((pkg) => pkg.name === coord);
+        if (!lockEntry) continue;
+
+        // Load just enough to read the index.pactia (don't add to importPackages yet)
+        const pkgDir = resolveVendorDir(input.workspaceRoot, coord, lockEntry.version);
+        if (!pkgDir) continue;
+        const indexSrc = readOptional(join(pkgDir, INDEX_FILE));
+        if (!indexSrc) continue;
+
+        try {
+          const pkgProg = parseSyntaxTree({ source: indexSrc, entryFile: INDEX_FILE }).root;
+          for (const pkgImp of pkgProg.imports) {
+            // Only follow @pkg imports (not fragment imports)
+            if (!pkgImp.path.startsWith("@")) continue;
+
+            // Check circular dependency
+            if (visited.has(pkgImp.path)) {
+              // Already in the dependency graph — skip but don't error
+              // (it's valid for multiple packages to import the same dep)
+              continue;
+            }
+
+            // Validate against package's own pactia.toml [dependencies]
+            const pkgTomlSrc = readOptional(join(pkgDir, TOML_FILE));
+            if (pkgTomlSrc) {
+              const pkgToml = parsePackageToml(pkgTomlSrc);
+              if (!pkgToml.dependencies.get(pkgImp.path)) {
+                loaderDiagnostics.push(
+                  createDiagnostic(
+                    DiagnosticCode.PackageImportUnresolved,
+                    `Package '${coord}' imports '${pkgImp.path}' but it is not declared in its pactia.toml [dependencies]`,
+                  ),
+                );
+                continue;
+              }
+            }
+
+            visited.add(pkgImp.path);
+            queue.push(pkgImp.path);
+            coordinates.push(pkgImp.path);
+            transitiveExplicit.add(pkgImp.path);
+          }
+        } catch {
+          // Skip unparseable index.pactia files in transitive deps
+        }
+      }
+
       assertLockEntries(coordinates, lock);
 
       for (const coordinate of coordinates) {
@@ -64,7 +138,6 @@ export class FsRegistryLoader implements RegistryLoaderSync {
       }
     }
 
-    const loaderDiagnostics: Diagnostic[] = [];
 
     const importEntries = importPackages.map((pkg) => {
       const indexSource = readOptional(join(pkg.rootDir, INDEX_FILE));
@@ -79,14 +152,51 @@ export class FsRegistryLoader implements RegistryLoaderSync {
         ? undefined
         : input.partialImports?.get(pkg.coordinate);
       const filtered = applyPartialImportFilter(parsed.tags, parsed.macros, partialSymbols);
+
+      // Apply aliases from consumer's import statement
+      // e.g., `import { @api as @endpoint } from @pkg` → register both names
+      const aliasTags = [...filtered.tags];
+      const aliasMacros = [...filtered.macros];
+      if (input.syntax) {
+        for (const imp of input.syntax.root.imports) {
+          if (imp.path !== pkg.coordinate || !imp.aliases) continue;
+          for (const [aliasSymbol, originalSymbol] of imp.aliases) {
+            // Determine sigil from the alias symbol (@, @@, #)
+            const isHash = aliasSymbol.startsWith("#");
+            const aliasName = isHash ? aliasSymbol.slice(1) : aliasSymbol.startsWith("@@") ? aliasSymbol.slice(2) : aliasSymbol.slice(1);
+            const origName = isHash ? originalSymbol.slice(1) : originalSymbol.startsWith("@@") ? originalSymbol.slice(2) : originalSymbol.slice(1);
+
+            if (isHash) {
+              const macro = filtered.macros.find((m) => m.name === origName);
+              if (macro) aliasMacros.push({ ...macro, name: aliasName });
+            } else {
+              const tag = filtered.tags.find((t) => t.name === origName);
+              if (tag) aliasTags.push({ ...tag, name: aliasName });
+            }
+          }
+          break;
+        }
+      }
+
       const contextExports = filterContextExports(
         program ? contextExportsFromProgram(program, pkg.coordinate) : [],
         partialSymbols,
       );
 
-      const tier = imports.includes(pkg.coordinate)
+      // Transitive deps that are explicitly imported by a directly-imported
+      // package get ExplicitImport tier — their symbols contribute to the registry.
+      const isExplicit = imports.includes(pkg.coordinate)
+        || transitiveExplicit.has(pkg.coordinate);
+      const tier = isExplicit
         ? RegistryPrecedenceTier.ExplicitImport
         : RegistryPrecedenceTier.Dependency;
+
+      // Warn if consumer redundantly imports a package already available transitively
+      if (imports.includes(pkg.coordinate) && transitiveExplicit.has(pkg.coordinate)) {
+        // This package was both explicitly imported AND transitively imported.
+        // That's fine — the explicit import takes priority. No warning needed
+        // because the consumer may want to use its symbols directly.
+      }
 
       const allConstants = program
         ? constantsFromProgram(program)
@@ -167,8 +277,8 @@ export class FsRegistryLoader implements RegistryLoaderSync {
       return {
         coordinate: pkg.coordinate,
         tier,
-        tags: filtered.tags,
-        macros: filtered.macros,
+        tags: aliasTags,
+        macros: aliasMacros,
         contexts: contextExports,
         constants: new Map(
           (partialSymbols
