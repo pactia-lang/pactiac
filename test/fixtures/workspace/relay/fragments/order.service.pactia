@@ -1,3 +1,6 @@
+import @pactia/kernel;
+import @pactia/rust-stack;
+
 export service OrderService {
   #database
   > Core order relay API

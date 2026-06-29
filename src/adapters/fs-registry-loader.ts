@@ -4,6 +4,8 @@ import {
   RegistryPrecedenceTier,
   registryPrecedenceOrder,
   type EffectiveRegistry,
+  type RegistryMacroEntry,
+  type RegistryTagEntry,
 } from "../domain/registry.js";
 import { collectLocalDefs, programModules, type SyntaxTree } from "../domain/syntax-tree.js";
 import type { RegistryLoaderInput, RegistryLoaderSync } from "../ports/registry-loader.js";
@@ -202,8 +204,11 @@ export class FsRegistryLoader implements RegistryLoaderSync {
         ? constantsFromProgram(program)
         : [];
 
-      // Load topology exports from manifest files for topology/mixed packages
+      // Load topology exports from manifest files for all profiles
       let topologyExports: ReturnType<typeof topologyExportsFromProgram> = [];
+      const manifestRegistryTags: RegistryTagEntry[] = [];
+      const manifestRegistryMacros: RegistryMacroEntry[] = [];
+      const manifestConstants: { readonly name: string; readonly value: string }[] = [];
       if (program) {
         const profile = detectPackageProfile(program);
 
@@ -247,8 +252,8 @@ export class FsRegistryLoader implements RegistryLoaderSync {
             );
           }
         }
-        if (profile === PackageProfile.Topology || profile === PackageProfile.Mixed) {
-          // Load and parse each manifest-referenced file
+        // Process manifest exports for ALL profiles (registry files can also be split via export "./file")
+        if (program.manifestExports.length > 0) {
           for (const manifestPath of program.manifestExports) {
             const fullPath = join(pkg.rootDir, manifestPath);
             if (!existsSync(fullPath)) {
@@ -260,13 +265,20 @@ export class FsRegistryLoader implements RegistryLoaderSync {
             const fileSource = readFileSync(fullPath, "utf8");
             try {
               const fileProgram = parseSyntaxTree({ source: fileSource, entryFile: manifestPath }).root;
+              // Extract both topology and registry exports from manifest files
               topologyExports = topologyExports.concat(
                 topologyExportsFromProgram(fileProgram, pkg.coordinate, fileSource),
               );
+              const manifestReg = registryEntriesFromProgram(fileProgram, pkg.coordinate);
+              manifestRegistryTags.push(...manifestReg.tags);
+              manifestRegistryMacros.push(...manifestReg.macros);
+              manifestConstants.push(...constantsFromProgram(fileProgram));
             } catch {
               // Skip unparseable manifest files
             }
           }
+        }
+        if (profile === PackageProfile.Topology || profile === PackageProfile.Mixed) {
           // Also include inline topology exports from index.pactia itself
           topologyExports = topologyExports.concat(
             topologyExportsFromProgram(program, pkg.coordinate, indexSource),
@@ -274,18 +286,42 @@ export class FsRegistryLoader implements RegistryLoaderSync {
         }
       }
 
+      // Merge manifest registry exports with inline exports
+      const allTags = [...aliasTags];
+      const allMacros = [...aliasMacros];
+      if (partialSymbols) {
+        // Apply partial import filter to manifest exports too
+        const manifestFiltered = applyPartialImportFilter(
+          manifestRegistryTags,
+          manifestRegistryMacros,
+          partialSymbols,
+        );
+        allTags.push(...manifestFiltered.tags);
+        allMacros.push(...manifestFiltered.macros);
+      } else {
+        allTags.push(...manifestRegistryTags);
+        allMacros.push(...manifestRegistryMacros);
+      }
+
+      const mergedConstants = new Map<string, string>(
+        (partialSymbols
+          ? allConstants.filter((c) => partialSymbols.includes(c.name))
+          : allConstants
+        ).map((c) => [c.name, c.value] as const),
+      );
+      for (const mc of manifestConstants) {
+        if (!partialSymbols || partialSymbols.includes(mc.name)) {
+          mergedConstants.set(mc.name, mc.value);
+        }
+      }
+
       return {
         coordinate: pkg.coordinate,
         tier,
-        tags: aliasTags,
-        macros: aliasMacros,
+        tags: allTags,
+        macros: allMacros,
         contexts: contextExports,
-        constants: new Map(
-          (partialSymbols
-            ? allConstants.filter((c) => partialSymbols.includes(c.name))
-            : allConstants
-          ).map((c) => [c.name, c.value] as const),
-        ),
+        constants: mergedConstants,
         topologyExports,
       };
     });

@@ -8,6 +8,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Package import resolution (1.3)** — package `index.pactia` files MAY use `import @pkg` to declare symbol dependencies. Compiler resolves them transitively via BFS walk of vendored packages.
+- **`as` aliasing** — `import { @api as @endpoint, #list as #collection } from @pkg` with sigil-preserving validation. `IMPORT_ALIAS_SIGIL_MISMATCH` when sigils don't match.
+- **Transitive dependency resolution** — symbols from packages imported by direct dependencies flow into the consumer's `effectiveRegistry` via `ExplicitImport` tier. Supports any depth.
+- **7 new diagnostic codes**: `PACKAGE_IMPORT_UNRESOLVED`, `PACKAGE_SYMBOL_UNRESOLVED`, `PACKAGE_CIRCULAR_DEPENDENCY`, `CONSUMER_REDUNDANT_IMPORT`, `IMPORT_ALIAS_SIGIL_MISMATCH`, `IMPORT_ALIAS_COLLISION`, `IMPORT_COLLISION_RESOLVABLE`.
+- **Collision detection**: `REGISTRY_COLLISION` thrown when two packages export the same tag name. Same-source transitive chains do not produce false collisions.
+- **Wildcard import fix**: `import { *, @api } from @pkg` — wildcard `*` now correctly returns all entries (was silently returning zero).
+
+### Changed
+
+- **`ImportNode`** extended with `aliases` field (`ReadonlyMap<string, string>`).
+- **`applyPartialImportFilter`** treats `*` as "no filter" (returns all entries).
+
 - **Package constants** — `export def name = value` in package `index.pactia`; parsed at file root and stored in `EffectiveRegistry.constants`. Consumers import with `import { name } from @pkg` and interpolate via `${name}` in prose/macro bodies.
 - **`CONSTANT_DEF_REQUIRED`** diagnostic — emitted in bind pass for bare `export name = value` (missing `def` keyword).
 - **`EXPORT_KIND_AMBIGUITY`** diagnostic code reserved for 1.3 mixed-package detection.

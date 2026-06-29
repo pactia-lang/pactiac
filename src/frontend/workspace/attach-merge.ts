@@ -4,7 +4,6 @@ import type { Diagnostic } from "../../domain/diagnostics.js";
 import {
   attachKindMismatchDiagnostic,
   attachUndefinedDiagnostic,
-  collectFragmentPackageImportDiagnostics,
 } from "../../passes/workspace/workspace-diagnostics.js";
 import { extractBlockAfter, findMatchingBrace } from "../kernel/brace.js";
 import type { MergedWorkspaceSource, WorkspaceFiles } from "./types.js";
@@ -151,7 +150,6 @@ function buildFragmentRegistry(
   const diagnostics: Diagnostic[] = [];
   for (const filePath of parsePartialImportPaths(productSource, productDir)) {
     const source = readFileSync(filePath, "utf8");
-    diagnostics.push(...collectFragmentPackageImportDiagnostics(filePath, source));
     for (const exportDecl of indexFragmentExports(filePath, source)) {
       if (registry.has(exportDecl.name)) {
         throw new Error(
@@ -318,7 +316,11 @@ function extractInlineModulesAfterAttach(productBody: string): string {
   return productBody.slice(lastEnd).trimEnd();
 }
 
-function extractProductHeader(productSource: string, productDir: string): {
+function extractProductHeader(
+  productSource: string,
+  productDir: string,
+  fragmentImports: string[],
+): {
   versionLine: string;
   imports: string;
   productName: string;
@@ -355,7 +357,7 @@ function extractProductHeader(productSource: string, productDir: string): {
 
   return {
     versionLine,
-    imports: imports.join("\n"),
+    imports: [...imports, ...fragmentImports].join("\n"),
     productName: productBlock.id,
     productBody: productBody.trimEnd(),
   };
@@ -377,7 +379,36 @@ export function mergeAttachedWorkspace(files: WorkspaceFiles): MergedAttachWorks
     throw new Error("Attach workspace requires module(name) { … } blocks in product.pactia");
   }
 
-  const { versionLine, imports, productName, productBody } = extractProductHeader(files.productSource, productDir);
+  // Collect package imports from fragment files (file-local imports model)
+  const seenFragmentImports = new Set<string>();
+  const productImportPattern = /^\s*import\s+.+;/gm;
+  let pm: RegExpExecArray | null = productImportPattern.exec(files.productSource);
+  while (pm) {
+    seenFragmentImports.add(pm[0].trim());
+    pm = productImportPattern.exec(files.productSource);
+  }
+  const fragmentImportLines: string[] = [];
+  for (const [, exportDecl] of registry) {
+    if (existsSync(exportDecl.filePath)) {
+      const fragSource = readFileSync(exportDecl.filePath, "utf8");
+      const pattern = /^\s*import\s+.+;/gm;
+      let m: RegExpExecArray | null = pattern.exec(fragSource);
+      while (m) {
+        const line = m[0].trim();
+        if (line.includes("@") && !seenFragmentImports.has(line)) {
+          seenFragmentImports.add(line);
+          fragmentImportLines.push(line);
+        }
+        m = pattern.exec(fragSource);
+      }
+    }
+  }
+
+  const { versionLine, imports, productName, productBody } = extractProductHeader(
+    files.productSource,
+    productDir,
+    fragmentImportLines,
+  );
   const trailingModules = extractInlineModulesAfterAttach(productBlock.body);
   const diagnostics: Diagnostic[] = [...fragmentDiagnostics];
   const moduleBlocks: string[] = [];

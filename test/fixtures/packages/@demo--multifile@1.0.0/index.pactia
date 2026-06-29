@@ -1,0 +1,5 @@
+pactia 1.0
+// Multi-file registry package — exports split across internal files
+export "./defs/host-tags.pactia"
+export "./defs/macros.pactia"
+export "./defs/constants.pactia"

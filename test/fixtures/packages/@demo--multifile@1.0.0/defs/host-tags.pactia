@@ -1,0 +1,9 @@
+export def @entity in model {
+}
+export def @api in service {
+  method,
+  path,
+}
+export def @auth in service {
+  roles,
+}

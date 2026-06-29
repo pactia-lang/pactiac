@@ -1,0 +1,2 @@
+export def max_page = 100
+export def timeout = 30

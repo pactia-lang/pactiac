@@ -259,3 +259,377 @@ test("assembleWorkspace throws EXPORT_NOT_DECLARED for undeclared topology symbo
     rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+// ── File-local imports (1.4) ──
+
+test("mergeWorkspaceSources — fragment with file-local imports compiles cleanly", () => {
+  const productSource = [
+    "pactia 1.0",
+    "import @pactia/kernel;",
+    "",
+    "product Demo {",
+    "  @topology { mode: microservices }",
+    "}",
+  ].join("\n");
+
+  const fragmentSource = [
+    "import @pactia/kernel;",
+    "",
+    "export module orders {",
+    "  @actor operators { }",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock",
+    productPath: "/tmp/mock/product.pactia",
+    productSource,
+    pactiaTomlPath: undefined, pactiaTomlSource: undefined,
+    pactiaLockPath: undefined, pactiaLockSource: undefined,
+    modules: [{
+      dirName: "orders",
+      modulePath: "/tmp/mock/modules/orders/orders.module.pactia",
+      moduleSource: fragmentSource,
+      moduleName: "orders",
+      services: [],
+      featureFiles: new Map(),
+      entityFiles: new Map(),
+    }],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  const diags = merged.diagnostics ?? [];
+  assert.equal(diags.length, 0, `Expected 0 diagnostics, got ${diags.length}: ${diags.map(d => d.message).join("; ")}`);
+  assert.match(merged.source, /product Demo/);
+  assert.match(merged.source, /module orders/);
+});
+
+test("mergeWorkspaceSources — fragment with unused partial import emits UNUSED_IMPORT", () => {
+  const productSource = [
+    "pactia 1.0",
+    "import { orders } from ./fragments/orders.module.pactia;",
+    "",
+    "product Demo {",
+    "  module(orders) { }",
+    "}",
+  ].join("\n");
+
+  const fragmentSource = [
+    "import { @api, #unused_macro } from @pactia/kernel;",
+    "",
+    "export module orders {",
+    "  @api list { }",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock",
+    productPath: "/tmp/mock/product.pactia",
+    productSource,
+    pactiaTomlPath: undefined, pactiaTomlSource: undefined,
+    pactiaLockPath: undefined, pactiaLockSource: undefined,
+    modules: [{
+      dirName: "orders",
+      modulePath: "/tmp/mock/modules/orders/orders.module.pactia",
+      moduleSource: fragmentSource,
+      moduleName: "orders",
+      services: [],
+      featureFiles: new Map(),
+      entityFiles: new Map(),
+    }],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  const diags = merged.diagnostics ?? [];
+  const unusedDiags = diags.filter((d) => d.code === "UNUSED_IMPORT");
+  assert.ok(unusedDiags.length >= 1, `Expected UNUSED_IMPORT, got: ${diags.map(d => d.message).join("; ")}`);
+  assert.match(unusedDiags[0]!.message, /#unused_macro/);
+});
+
+
+test("mergeWorkspaceSources — fragment without imports emits IMPORT_MISSING", () => {
+  const fragmentSource = [
+    "export module orders {",
+    "  #database",
+    "  @api list { }",
+    "}",
+  ].join("\n");
+
+  const productSource = [
+    "pactia 1.0",
+    "import { orders } from ./fragments/orders.module.pactia;",
+    "",
+    "product Demo {",
+    "  module(orders) { }",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock", productPath: "/tmp/mock/product.pactia", productSource,
+    pactiaTomlPath: undefined, pactiaTomlSource: undefined,
+    pactiaLockPath: undefined, pactiaLockSource: undefined,
+    modules: [{
+      dirName: "orders",
+      modulePath: "/tmp/mock/modules/orders/orders.module.pactia",
+      moduleSource: fragmentSource, moduleName: "orders",
+      services: [], featureFiles: new Map(), entityFiles: new Map(),
+    }],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  const diags = merged.diagnostics ?? [];
+  const missingDiags = diags.filter((d) => d.code === "IMPORT_MISSING");
+  assert.ok(missingDiags.length >= 2, `Expected >= 2 IMPORT_MISSING, got ${missingDiags.length}`);
+  const hasApi = missingDiags.some((d) => d.message.includes("@api"));
+  const hasDb = missingDiags.some((d) => d.message.includes("#database"));
+  assert.ok(hasApi, "Expected IMPORT_MISSING for @api");
+  assert.ok(hasDb, "Expected IMPORT_MISSING for #database");
+});
+
+test("mergeWorkspaceSources — fragment mixing missing + unused imports", () => {
+  const fragmentSource = [
+    "import { @api, #unused } from @pactia/kernel;",
+    "",
+    "export module orders {",
+    "  #database",
+    "  @api list { }",
+    "}",
+  ].join("\n");
+
+  const productSource = [
+    "pactia 1.0",
+    "import { orders } from ./fragments/orders.module.pactia;",
+    "",
+    "product Demo {",
+    "  module(orders) { }",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock", productPath: "/tmp/mock/product.pactia", productSource,
+    pactiaTomlPath: undefined, pactiaTomlSource: undefined,
+    pactiaLockPath: undefined, pactiaLockSource: undefined,
+    modules: [{
+      dirName: "orders",
+      modulePath: "/tmp/mock/modules/orders/orders.module.pactia",
+      moduleSource: fragmentSource, moduleName: "orders",
+      services: [], featureFiles: new Map(), entityFiles: new Map(),
+    }],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  const diags = merged.diagnostics ?? [];
+  const missingDiags = diags.filter((d) => d.code === "IMPORT_MISSING");
+  const unusedDiags = diags.filter((d) => d.code === "UNUSED_IMPORT");
+  assert.ok(missingDiags.length >= 1, `Expected IMPORT_MISSING for #database`);
+  assert.ok(unusedDiags.length >= 1, `Expected UNUSED_IMPORT for #unused`);
+  assert.match(missingDiags[0]!.message, /#database/);
+  assert.match(unusedDiags[0]!.message, /#unused/);
+});
+
+test("mergeWorkspaceSources — multiple fragments each import own subsets", () => {
+  const moduleSource = [
+    "import { @actor } from @pactia/kernel;",
+    "",
+    "export module shop {",
+    "  @actor sellers { }",
+    "}",
+  ].join("\n");
+
+  const serviceSource = [
+    "import { @api, @@output } from @pactia/kernel;",
+    "",
+    "export service OrderApi {",
+    "  @@output OrderResponse",
+    "  @api list { method: GET }",
+    "}",
+  ].join("\n");
+
+  const productSource = [
+    "pactia 1.0",
+    "",
+    "product Demo {",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock", productPath: "/tmp/mock/product.pactia", productSource,
+    pactiaTomlPath: undefined, pactiaTomlSource: undefined,
+    pactiaLockPath: undefined, pactiaLockSource: undefined,
+    modules: [{
+      dirName: "shop",
+      modulePath: "/tmp/mock/modules/shop/shop.module.pactia",
+      moduleSource, moduleName: "shop",
+      services: [{
+        path: "/tmp/mock/modules/shop/order.service.pactia",
+        source: serviceSource, serviceName: "OrderApi",
+      }],
+      featureFiles: new Map(), entityFiles: new Map(),
+    }],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  const diags = merged.diagnostics ?? [];
+  const errors = diags.filter((d) => d.code !== "UNUSED_IMPORT");
+  assert.equal(errors.length, 0, `Expected 0 errors, got: ${errors.map(d => d.message).join("; ")}`);
+  assert.match(merged.source, /@actor sellers/);
+  assert.match(merged.source, /@@output OrderResponse/);
+  assert.match(merged.source, /@api list/);
+});
+
+test("mergeWorkspaceSources — monolith inline modules compiles unchanged", () => {
+  const productSource = [
+    "pactia 1.0",
+    "import @pactia/kernel;",
+    "",
+    "product Monolith {",
+    "  #rust-stack",
+    "  module orders {",
+    "    @actor operators { }",
+    "    service OrderApi {",
+    "      @api list { method: GET }",
+    "    }",
+    "  }",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock", productPath: "/tmp/mock/product.pactia", productSource,
+    pactiaTomlPath: undefined, pactiaTomlSource: undefined,
+    pactiaLockPath: undefined, pactiaLockSource: undefined,
+    modules: [],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  const diags = merged.diagnostics ?? [];
+  assert.equal(diags.length, 0, `Expected 0 diagnostics, got: ${diags.map(d => d.message).join("; ")}`);
+  assert.match(merged.source, /product Monolith/);
+  assert.match(merged.source, /@api list/);
+});
+
+test("mergeWorkspaceSources — service fragment with partial imports compiles cleanly", () => {
+  const productSource = ["pactia 1.0", "", "product Demo { }"].join("\n");
+
+  const serviceSource = [
+    "import { @api, @@output, #list } from @pactia/kernel;",
+    "",
+    "export service OrderApi {",
+    "  #list",
+    "  @@output OrderResponse",
+    "  @api list { method: GET, path: \"/orders\" }",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock", productPath: "/tmp/mock/product.pactia", productSource,
+    pactiaTomlPath: undefined, pactiaTomlSource: undefined,
+    pactiaLockPath: undefined, pactiaLockSource: undefined,
+    modules: [{
+      dirName: "orders",
+      modulePath: "/tmp/mock/modules/orders/orders.module.pactia",
+      moduleSource: "export module orders { }",
+      moduleName: "orders",
+      services: [{
+        path: "/tmp/mock/modules/orders/order.service.pactia",
+        source: serviceSource, serviceName: "OrderApi",
+      }],
+      featureFiles: new Map(), entityFiles: new Map(),
+    }],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  const diags = merged.diagnostics ?? [];
+  const errors = diags.filter((d) => d.code !== "UNUSED_IMPORT");
+  assert.equal(errors.length, 0, `Expected 0 errors, got: ${errors.map(d => d.message).join("; ")}`);
+  assert.match(merged.source, /@api list/);
+  assert.match(merged.source, /@@output OrderResponse/);
+  assert.match(merged.source, /#list/);
+});
+
+test("mergeWorkspaceSources — partial import missing one symbol emits IMPORT_MISSING only for missing", () => {
+  const productSource = ["pactia 1.0", "", "product Demo { }"].join("\n");
+
+  const serviceSource = [
+    "import { @api } from @pactia/kernel;",
+    "// missing: @@output, #list",
+    "",
+    "export service OrderApi {",
+    "  #list",
+    "  @@output OrderResponse",
+    "  @api list { method: GET }",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock", productPath: "/tmp/mock/product.pactia", productSource,
+    pactiaTomlPath: undefined, pactiaTomlSource: undefined,
+    pactiaLockPath: undefined, pactiaLockSource: undefined,
+    modules: [{
+      dirName: "orders",
+      modulePath: "/tmp/mock/modules/orders/orders.module.pactia",
+      moduleSource: "export module orders { }",
+      moduleName: "orders",
+      services: [{
+        path: "/tmp/mock/modules/orders/order.service.pactia",
+        source: serviceSource, serviceName: "OrderApi",
+      }],
+      featureFiles: new Map(), entityFiles: new Map(),
+    }],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  const diags = merged.diagnostics ?? [];
+  const missingDiags = diags.filter((d) => d.code === "IMPORT_MISSING");
+  assert.ok(missingDiags.length >= 2, `Expected >= 2 IMPORT_MISSING, got: ${diags.map(d => d.message).join("; ")}`);
+  assert.ok(missingDiags.some((d) => d.message.includes("@@output")), "Expected IMPORT_MISSING for @@output");
+  assert.ok(missingDiags.some((d) => d.message.includes("#list")), "Expected IMPORT_MISSING for #list");
+  assert.equal(missingDiags.some((d) => d.message.includes("@api")), false, "@api is imported, no IMPORT_MISSING");
+});
+
+test("mergeWorkspaceSources — two services import different subsets from same package", () => {
+  const productSource = ["pactia 1.0", "", "product Demo { }"].join("\n");
+
+  const read = [
+    "import { @api, #list, @@output } from @pactia/kernel;",
+    "",
+    "export service ReadApi {",
+    "  #list",
+    "  @@output ListResponse",
+    "  @api list { method: GET }",
+    "}",
+  ].join("\n");
+
+  const write = [
+    "import { @api, #create, @@output } from @pactia/kernel;",
+    "",
+    "export service WriteApi {",
+    "  #create",
+    "  @@output CreateResponse",
+    "  @api create { method: POST }",
+    "}",
+  ].join("\n");
+
+  const files: WorkspaceFiles = {
+    rootDir: "/tmp/mock", productPath: "/tmp/mock/product.pactia", productSource,
+    pactiaTomlPath: undefined, pactiaTomlSource: undefined,
+    pactiaLockPath: undefined, pactiaLockSource: undefined,
+    modules: [{
+      dirName: "orders",
+      modulePath: "/tmp/mock/modules/orders/orders.module.pactia",
+      moduleSource: "export module orders { }",
+      moduleName: "orders",
+      services: [
+        { path: "/tmp/mock/modules/orders/read.service.pactia", source: read, serviceName: "ReadApi" },
+        { path: "/tmp/mock/modules/orders/write.service.pactia", source: write, serviceName: "WriteApi" },
+      ],
+      featureFiles: new Map(), entityFiles: new Map(),
+    }],
+  };
+
+  const merged = mergeWorkspaceSources(files);
+  const diags = merged.diagnostics ?? [];
+  const errors = diags.filter((d) => d.code !== "UNUSED_IMPORT");
+  assert.equal(errors.length, 0, `Expected 0 errors, got: ${errors.map(d => d.message).join("; ")}`);
+  assert.match(merged.source, /@api list/);
+  assert.match(merged.source, /@api create/);
+});

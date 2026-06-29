@@ -281,4 +281,59 @@ describe("FsRegistryLoader", () => {
       else process.env["PACTIA_VENDOR_ROOT"] = previous;
     }
   });
+
+  it("loads registry exports from multi-file package via export ./file manifest", () => {
+    const tmp = join(tmpdir(), `pactia-test-multifile-${Date.now()}`);
+    const wsDir = join(tmp, "ws");
+    const pkgDir = join(wsDir, ".pactia", "packages", "@demo--multifile@1.0.0");
+    mkdirSync(pkgDir, { recursive: true });
+    const defsDir = join(pkgDir, "defs");
+    mkdirSync(defsDir, { recursive: true });
+
+    try {
+      // Package manifest + digest
+      writeFileSync(join(pkgDir, ".digest"), "sha256:abc", "utf8");
+      writeFileSync(join(pkgDir, "pactia.toml"), '[package]\nname = "@demo/multifile"\nversion = "1.0.0"\n', "utf8");
+      // index.pactia with export ./file manifest
+      writeFileSync(join(pkgDir, "index.pactia"), [
+        "pactia 1.0",
+        'export "./defs/host-tags.pactia"',
+        'export "./defs/macros.pactia"',
+        'export "./defs/constants.pactia"',
+      ].join("\n"), "utf8");
+      // Internal files
+      writeFileSync(join(defsDir, "host-tags.pactia"), [
+        "export def @entity in model { }",
+        "export def @api in service { method, path, }",
+      ].join("\n"), "utf8");
+      writeFileSync(join(defsDir, "macros.pactia"), [
+        "export def #list in service { }",
+        "export def #create in service { }",
+      ].join("\n"), "utf8");
+      writeFileSync(join(defsDir, "constants.pactia"), [
+        "export def max_page = 100",
+        "export def timeout = 30",
+      ].join("\n"), "utf8");
+
+      // Workspace config
+      writeFileSync(join(wsDir, "pactia.toml"), '[package]\nname = "test"\nversion = "1.0.0"\n\n[dependencies]\n"@demo/multifile" = "^1.0"\n', "utf8");
+      writeFileSync(join(wsDir, "pactia.lock"), 'lockVersion = 1\n\n[[package]]\nname = "@demo/multifile"\nversion = "1.0.0"\ndigest = "sha256:abc"\n');
+      writeFileSync(join(wsDir, "product.pactia"), 'pactia 1.0\nimport @demo/multifile;\nproduct Test { }\n');
+
+      const syntax = parseSyntaxTree({
+        source: 'pactia 1.0\nimport @demo/multifile;\nproduct Test { }\n',
+        entryFile: "product.pactia",
+      });
+      const registry = loadRegistryFromWorkspace(wsDir, syntax);
+
+      assert.ok(registry.tags.has("entity"), "Expected @entity from manifest file");
+      assert.ok(registry.tags.has("api"), "Expected @api from manifest file");
+      assert.ok(registry.macros.has("list"), "Expected #list from manifest file");
+      assert.ok(registry.macros.has("create"), "Expected #create from manifest file");
+      assert.equal(registry.constants.get("max_page"), "100");
+      assert.equal(registry.constants.get("timeout"), "30");
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
 });

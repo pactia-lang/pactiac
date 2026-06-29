@@ -65,7 +65,6 @@ test("mergeEffectiveRegistry rejects colliding tags", () => {
             contexts: [],
             constants: new Map(),
             topologyExports: [],
-            topologyExports: [],
           },
           {
             coordinate: "@acme/rules",
@@ -74,7 +73,6 @@ test("mergeEffectiveRegistry rejects colliding tags", () => {
             macros: [],
             contexts: [],
             constants: new Map(),
-            topologyExports: [],
             topologyExports: [],
           },
         ],
@@ -199,5 +197,78 @@ test("mergeEffectiveRegistry rejects colliding topology exports as TOPOLOGY_DUPL
         localMacros: [],
       }),
     /TOPOLOGY_DUPLICATE_SERVICE.*OrderService.*@acme\/backend.*@acme\/web/,
+  );
+});
+
+test("mergeEffectiveRegistry rejects local def colliding with imported def", () => {
+  const localTag: RegistryTagEntry = {
+    ...tagA,
+    source: "local",
+  };
+  assert.throws(
+    () =>
+      mergeEffectiveRegistry({
+        importEntries: [
+          {
+            coordinate: "@pactia/kernel",
+            tier: RegistryPrecedenceTier.Dependency,
+            tags: [tagA],
+            macros: [],
+            contexts: [],
+            constants: new Map(),
+            topologyExports: [],
+          },
+        ],
+        localTags: [localTag],
+        localMacros: [],
+      }),
+    /REGISTRY_COLLISION.*api/,
+  );
+});
+
+test("mergeEffectiveRegistry allows same-source local defs with different placements", () => {
+  const local1: RegistryTagEntry = {
+    ...tagA,
+    source: "local",
+  };
+  const local2: RegistryTagEntry = {
+    ...tagA,
+    source: "local",
+    in: [PlacementTarget.Module],
+  };
+  // Same source = no collision. Last one wins silently.
+  const registry = mergeEffectiveRegistry({
+    importEntries: [],
+    localTags: [local1, local2],
+    localMacros: [],
+  });
+  assert.ok(registry.tags.has("api"));
+});
+
+test("mergeEffectiveRegistry does not throw when same package exports same tag from manifest file", () => {
+  // Simulates multi-file package: index.pactia + manifest file both export @api
+  // Same source = same package coordinate = no collision
+  assert.doesNotThrow(() =>
+    mergeEffectiveRegistry({
+      importEntries: [
+        {
+          coordinate: "@demo/multifile",
+          tier: RegistryPrecedenceTier.Dependency,
+          tags: [
+            { ...tagA, source: "@demo/multifile" },
+            { ...tagA, source: "@demo/multifile" }, // same tag, same source
+          ],
+          macros: [
+            { ...macroA, source: "@demo/multifile" },
+            { ...macroA, source: "@demo/multifile" }, // same macro, same source
+          ],
+          contexts: [],
+          constants: new Map(),
+          topologyExports: [],
+        },
+      ],
+      localTags: [],
+      localMacros: [],
+    }),
   );
 });

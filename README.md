@@ -36,7 +36,7 @@ my-product/
   .pactia/packages/           # vendored packages (from pactia install / build)
 ```
 
-**Package imports vs fragment imports:** declare `import { @api, #database, … } from @pactia/…` only in `product.pactia`. Fragment files use `export module` / `export service` / `export model` and are wired with `import { Symbol } from ./path` plus `module(name) { service(Symbol) { … } }`. Package imports in a fragment file trigger a **`FRAGMENT_PACKAGE_IMPORT`** warning (ignored at assembly). See [spec — Workspace layout](https://github.com/pactia-lang/spec/blob/main/docs/language-spec.md#workspace-layout).
+**File-local imports:** every `.pactia` file imports the symbols it uses. Fragment files carry their own `import { @api, #database } from @pactia/kernel;`. `product.pactia` holds only product-level imports plus fragment paths for attach. Missing imports trigger **`IMPORT_MISSING`** (error); unused imports trigger **`UNUSED_IMPORT`** (warning). See [spec — File-local imports](https://github.com/pactia-lang/spec/blob/main/docs/language-spec.md#file-local-imports).
 
 Examples: [relay](test/fixtures/workspace/relay) (`./fragments/…`), [PPM](https://github.com/pactia-lang/examples/tree/main/ppm) (`./modules/…`).
 
