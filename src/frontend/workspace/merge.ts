@@ -1,7 +1,11 @@
 import { dirname, resolve } from "node:path";
 import { extractBlockAfter } from "../kernel/brace.js";
 import { hasAttachComposition, mergeAttachedWorkspace } from "./attach-merge.js";
-import { collectImportUnusedDiagnostics } from "../../passes/workspace/workspace-diagnostics.js";
+import {
+  collectImportMissingDiagnostics,
+  collectImportUnusedDiagnostics,
+  collectUnusedImportDiagnostics,
+} from "../../passes/workspace/workspace-diagnostics.js";
 import type { MergedWorkspaceSource, WorkspaceFiles, WorkspaceModuleFiles } from "./types.js";
 
 const PRODUCT_FILE = "product.pactia";
@@ -94,9 +98,51 @@ function buildModuleBlock(module: WorkspaceModuleFiles): string {
   return [`  module ${module.moduleName} {`, indentBlock(combined, 4), "  }"].join("\n");
 }
 
+function extractImportLines(source: string): string[] {
+  const lines: string[] = [];
+  const pattern = /^\s*import\s+.+;/gm;
+  let match: RegExpExecArray | null = pattern.exec(source);
+  while (match) {
+    lines.push(match[0]!.trim());
+    match = pattern.exec(source);
+  }
+  return lines;
+}
+
+function collectAllImportLines(files: WorkspaceFiles): string[] {
+  const seen = new Set<string>();
+  const all: string[] = [];
+
+  const add = (source: string) => {
+    for (const line of extractImportLines(source)) {
+      if (!seen.has(line)) {
+        seen.add(line);
+        all.push(line);
+      }
+    }
+  };
+
+  add(files.productSource);
+  for (const mod of files.modules) {
+    add(mod.moduleSource);
+    for (const svc of mod.services) {
+      add(svc.source);
+    }
+    for (const [, featureSource] of mod.featureFiles) {
+      add(featureSource);
+    }
+    for (const [, entitySource] of mod.entityFiles) {
+      add(entitySource);
+    }
+  }
+
+  return all;
+}
+
 function extractProductHeader(
   productSource: string,
   externalModuleCount: number,
+  fragmentImports: string[],
 ): {
   versionLine: string;
   imports: string;
@@ -127,13 +173,32 @@ function extractProductHeader(
 
   return {
     versionLine,
-    imports: imports.join("\n"),
+    imports: [...imports, ...fragmentImports].join("\n"),
     productName: productBlock.id,
     productBody: productBody.trimEnd(),
   };
 }
 
 export function mergeWorkspaceSources(files: WorkspaceFiles): MergedWorkspaceSource {
+  // Per-file diagnostics: check each fragment for missing imports
+  const fileDiagnostics: import("../../domain/diagnostics.js").Diagnostic[] = [];
+  for (const mod of files.modules) {
+    fileDiagnostics.push(...collectImportMissingDiagnostics(mod.moduleSource, mod.modulePath));
+    fileDiagnostics.push(...collectUnusedImportDiagnostics(mod.moduleSource, mod.modulePath));
+    for (const svc of mod.services) {
+      fileDiagnostics.push(...collectImportMissingDiagnostics(svc.source, svc.path));
+      fileDiagnostics.push(...collectUnusedImportDiagnostics(svc.source, svc.path));
+    }
+    for (const [path, source] of mod.featureFiles) {
+      fileDiagnostics.push(...collectImportMissingDiagnostics(source, path));
+      fileDiagnostics.push(...collectUnusedImportDiagnostics(source, path));
+    }
+    for (const [path, source] of mod.entityFiles) {
+      fileDiagnostics.push(...collectImportMissingDiagnostics(source, path));
+      fileDiagnostics.push(...collectUnusedImportDiagnostics(source, path));
+    }
+  }
+
   if (hasAttachComposition(files.productSource)) {
     const merged = mergeAttachedWorkspace(files);
     return {
@@ -142,14 +207,22 @@ export function mergeWorkspaceSources(files: WorkspaceFiles): MergedWorkspaceSou
       lockfileDigest: merged.lockfileDigest,
       diagnostics: [
         ...merged.diagnostics,
-        ...collectImportUnusedDiagnostics(files.productSource, files.productPath),
+        ...collectImportUnusedDiagnostics(merged.source, merged.entry),
+        ...fileDiagnostics,
       ],
     };
   }
 
+  const allImportLines = collectAllImportLines(files);
+  const productImportLines = extractImportLines(files.productSource).join("\n");
+  const fragmentImportLines = allImportLines.filter(
+    (line) => !productImportLines.includes(line),
+  );
+
   const { versionLine, imports, productName, productBody } = extractProductHeader(
     files.productSource,
     files.modules.length,
+    fragmentImportLines,
   );
   const moduleBlocks = files.modules.map((mod) => buildModuleBlock(mod));
 
@@ -163,6 +236,9 @@ export function mergeWorkspaceSources(files: WorkspaceFiles): MergedWorkspaceSou
     source,
     entry: PRODUCT_FILE,
     lockfileDigest: undefined,
-    diagnostics: collectImportUnusedDiagnostics(files.productSource, files.productPath),
+    diagnostics: [
+      ...collectImportUnusedDiagnostics(source, PRODUCT_FILE),
+      ...fileDiagnostics,
+    ],
   };
 }

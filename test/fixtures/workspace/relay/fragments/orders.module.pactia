@@ -1,3 +1,5 @@
+import @pactia/kernel;
+
 export module orders {
   @actor operators {
     role: Operator,

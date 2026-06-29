@@ -50,6 +50,10 @@ export enum DiagnosticCode {
   ContextMissingPath = "CONTEXT_MISSING_PATH",
   FragmentPackageImport = "FRAGMENT_PACKAGE_IMPORT",
 
+  // File-local imports (1.4)
+  ImportMissing = "IMPORT_MISSING",
+  UnusedImport = "UNUSED_IMPORT",
+
   // Package constants
   ConstantDefRequired = "CONSTANT_DEF_REQUIRED",
   ExportKindAmbiguity = "EXPORT_KIND_AMBIGUITY",
@@ -84,6 +88,7 @@ export const diagnosticWarningCodes: ReadonlySet<DiagnosticCode> = new Set([
   DiagnosticCode.HybridPackageDiscouraged,
   DiagnosticCode.ImportCollisionResolvable,
   DiagnosticCode.ConsumerRedundantImport,
+  DiagnosticCode.UnusedImport,
 ]);
 
 export function defaultSeverityForCode(code: DiagnosticCode): DiagnosticSeverity {
