@@ -757,33 +757,30 @@ export class RecursiveDescentParser {
 
   private parseProse(stream: TokenStream, file: string): ProseNode {
     const start = stream.expect(TokenType.GT, "Expected prose prefix '>'");
+
+    // Multiline prose: >> text >>
     if (stream.match(TokenType.GT)) {
-      const parts: string[] = [];
-      while (!(stream.check(TokenType.GT) && stream.peek(1).type === TokenType.GT)) {
-        if (stream.atEnd()) break;
-        parts.push(stream.advance().value);
-      }
+      const text = stream.check(TokenType.PROSE_TEXT)
+        ? stream.advance().value.trim()
+        : "";
       stream.expect(TokenType.GT, "Expected closing '>>'");
       stream.expect(TokenType.GT, "Expected closing '>>'");
       return {
         kind: SyntaxNodeKind.Prose,
-        text: parts.join(" ").trim(),
+        text,
         multiline: true,
         location: { file, line: start.line, col: start.col },
       };
     }
 
-    const parts: string[] = [];
-    while (!stream.atEnd()) {
-      const token = stream.peek();
-      if (token.line !== start.line) break;
-      if (token.type === TokenType.RBRACE) break;
-      parts.push(stream.advance().value);
-    }
+    // Single-line prose: > text
+    const text = stream.check(TokenType.PROSE_TEXT)
+      ? stream.advance().value.trim()
+      : "";
 
     return {
       kind: SyntaxNodeKind.Prose,
-      text: parts.join(" ").trim(),
+      text,
       multiline: false,
       location: { file, line: start.line, col: start.col },
     };

@@ -20,6 +20,7 @@ export enum TokenType {
   RPAREN = "RPAREN",
   SEMICOLON = "SEMICOLON",
   EQUALS = "EQUALS",
+  PROSE_TEXT = "PROSE_TEXT",
   EOF = "EOF",
 }
 
@@ -85,14 +86,14 @@ export function tokenize(source: string): Token[] {
   const tokens: Token[] = [];
   let i = 0;
   let line = 1;
-  let col = 1;
+  let col = 1; // will be incremented to 1 below
 
   const advance = (): string => {
     const ch = source[i] ?? "";
     i += 1;
     if (ch === "\n") {
       line += 1;
-      col = 1;
+      col = 0; // will be incremented to 1 below
     } else {
       col += 1;
     }
@@ -173,6 +174,88 @@ export function tokenize(source: string): Token[] {
         value,
         line: startLine,
         col: startCol,
+      });
+      continue;
+    }
+
+    // Prose: > single-line or >> multiline >>.  The > token itself is always
+    // emitted so the parser can recognise the prose grammar rule.  Everything
+    // after the marker(s) until the end of line (or closing >>) is captured as
+    // a single PROSE_TEXT token — any character is legal, just like in strings.
+    if (ch === ">") {
+      advance(); // consume >
+      tokens.push({
+        type: TokenType.GT,
+        value: ">",
+        line: startLine,
+        col: startCol,
+      });
+
+      // Multiline prose: >> text >>
+      if (source[i] === ">") {
+        advance(); // consume second >
+        tokens.push({
+          type: TokenType.GT,
+          value: ">",
+          line: startLine,
+          col: startCol + 1,
+        });
+
+        // Capture everything until closing >>
+        let value = "";
+        while (i < source.length) {
+          if (source[i] === ">" && source[i + 1] === ">") break;
+          if (source[i] === "\n") {
+            line += 1;
+            col = 0; // will be incremented to 1 below
+          }
+          value += source[i];
+          i += 1;
+          col += 1;
+        }
+
+        tokens.push({
+          type: TokenType.PROSE_TEXT,
+          value,
+          line: startLine,
+          col: startCol + 2,
+        });
+
+        // Closing >>
+        if (i < source.length) {
+          const endLine = line;
+          const endCol = col;
+          advance(); // >
+          tokens.push({
+            type: TokenType.GT,
+            value: ">",
+            line: endLine,
+            col: endCol,
+          });
+          advance(); // >
+          tokens.push({
+            type: TokenType.GT,
+            value: ">",
+            line: endLine,
+            col: endCol + 1,
+          });
+        }
+        continue;
+      }
+
+      // Single-line prose: consume until newline (or EOF)
+      let value = "";
+      while (i < source.length && source[i] !== "\n") {
+        value += source[i];
+        i += 1;
+        col += 1;
+      }
+
+      tokens.push({
+        type: TokenType.PROSE_TEXT,
+        value,
+        line: startLine,
+        col: startCol + 1,
       });
       continue;
     }
