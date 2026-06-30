@@ -4,7 +4,7 @@ All notable compiler changes are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.4.0] - 2026-06-30
 
 ### Added
 
@@ -62,6 +62,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 Initial `@pactia/pactiac` release track.
 
-[Unreleased]: https://github.com/pactia-lang/pactiac/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/pactia-lang/pactiac/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/pactia-lang/pactiac/compare/v0.2.0...v0.4.0
 [0.2.0]: https://github.com/pactia-lang/pactiac/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/pactia-lang/pactiac/releases/tag/v0.1.0

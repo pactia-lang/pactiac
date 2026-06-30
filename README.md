@@ -3,7 +3,7 @@
 [![CI](https://github.com/pactia-lang/pactiac/actions/workflows/ci.yml/badge.svg)](https://github.com/pactia-lang/pactiac/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/pactia-lang/pactiac/branch/main/graph/badge.svg)](https://codecov.io/gh/pactia-lang/pactiac)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/pactia-lang/pactiac/releases)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/pactia-lang/pactiac/releases)
 
 Pactia compiler — parse `.pactia` source, lower to module-scoped IR, emit workspace JSON.
 
