@@ -12,6 +12,7 @@ interface CliArgs {
   readonly output: string | undefined;
   readonly report: boolean;
   readonly provenance: string | undefined;
+  readonly stopAfter: string | undefined;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -22,6 +23,7 @@ function parseArgs(argv: string[]): CliArgs {
   let output: string | undefined;
   let report = false;
   let provenance: string | undefined;
+  let stopAfter: string | undefined;
   for (let i = 0; i < optionArgs.length; i += 1) {
     const arg = optionArgs[i];
     if ((arg === "-i" || arg === "--input") && optionArgs[i + 1]) {
@@ -36,11 +38,14 @@ function parseArgs(argv: string[]): CliArgs {
     } else if (arg === "--provenance" && optionArgs[i + 1]) {
       provenance = optionArgs[i + 1];
       i += 1;
+    } else if (arg === "--stop-after" && optionArgs[i + 1]) {
+      stopAfter = optionArgs[i + 1];
+      i += 1;
     } else if (arg === "--report") {
       report = true;
     }
   }
-  return { command, input, workspace, output, report, provenance };
+  return { command, input, workspace, output, report, provenance, stopAfter };
 }
 
 function printProvenanceSummary(diagnostics: CompileResult["diagnostics"]): void {
@@ -119,7 +124,7 @@ function main(): void {
   }
 
   process.stderr.write(
-    "Usage:\n  pactiac compile (-i <file.pactia> | -w <workspace-dir>) -o <output-dir> [--report]\n",
+    "Usage:\n  pactiac compile (-i <file.pactia> | -w <workspace-dir>) -o <output-dir> [--report] [--provenance <path>] [--stop-after <phase>]\n",
   );
   process.exit(1);
 }

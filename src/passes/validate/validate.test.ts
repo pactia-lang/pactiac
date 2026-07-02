@@ -166,7 +166,7 @@ describe("validateBoundTree", () => {
     assert.equal(result.diagnostics.length, 0);
   });
 
-  it("produces warnings (not errors) for all validation codes", () => {
+  it("emits errors for missing required fields and warnings for unknown/duplicate fields", () => {
     const tree = makeTree([
       makeTag("api", [makeField("x"), makeField("x")], {
         required: ["missing"],
@@ -174,7 +174,24 @@ describe("validateBoundTree", () => {
     ]);
     const result = validateBoundTree(tree);
     assert.ok(result.diagnostics.length > 0);
-    for (const d of result.diagnostics) {
+    const missing = result.diagnostics.filter(
+      (d) => d.code === DiagnosticCode.TagBodyMissingField,
+    );
+    const unknown = result.diagnostics.filter(
+      (d) => d.code === DiagnosticCode.TagBodyUnknownField,
+    );
+    const dupes = result.diagnostics.filter(
+      (d) => d.code === DiagnosticCode.ClauseDuplicateKey,
+    );
+    // missing required fields are errors
+    for (const d of missing) {
+      assert.equal(d.severity, DiagnosticSeverity.Error);
+    }
+    // unknown fields and duplicates are warnings
+    for (const d of unknown) {
+      assert.equal(d.severity, DiagnosticSeverity.Warning);
+    }
+    for (const d of dupes) {
       assert.equal(d.severity, DiagnosticSeverity.Warning);
     }
   });

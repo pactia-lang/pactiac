@@ -1,16 +1,26 @@
-/** Normative compile phases — spec/docs/compilation.md (0–11). */
+/**
+ * Normative compile phases — canonical list: spec/docs/compilation.md.
+ *
+ * Phases 0–7 are implemented in pactiac.
+ * Phase 8 (CrossCheck) is reserved for future cross-module validation.
+ * Phase 9 (Infer) is reserved for future deterministic inference (BSC / future pactiac).
+ * Phase 10 (Emit) writes IR files.
+ * After pactiac, optional BSC render/expand and `pactia build` context index are external.
+ */
 export enum CompilePhase {
   AssembleWorkspace = 0,
   ValidateVersion = 1,
   Lex = 2,
   Parse = 3,
   ResolvePackages = 4,
-  MergeDeclarations = 5,
+  BuildRegistry = 5,
   Bind = 6,
   ExpandMacros = 7,
   Validate = 8,
+  /** Reserved — cross-module validation (future). Not called by the pipeline. */
   CrossCheck = 9,
   Lower = 10,
+  /** Reserved — deterministic inference (future BSC / pactiac pass). Not called by the pipeline. */
   Infer = 11,
   Emit = 12,
 }
@@ -21,7 +31,7 @@ export const compilePhaseOrder: readonly CompilePhase[] = [
   CompilePhase.Lex,
   CompilePhase.Parse,
   CompilePhase.ResolvePackages,
-  CompilePhase.MergeDeclarations,
+  CompilePhase.BuildRegistry,
   CompilePhase.Bind,
   CompilePhase.ExpandMacros,
   CompilePhase.Validate,
@@ -43,8 +53,8 @@ export function compilePhaseLabel(phase: CompilePhase): string {
       return "parse";
     case CompilePhase.ResolvePackages:
       return "resolve-packages";
-    case CompilePhase.MergeDeclarations:
-      return "merge-declarations";
+    case CompilePhase.BuildRegistry:
+      return "build-registry";
     case CompilePhase.Bind:
       return "bind";
     case CompilePhase.ExpandMacros:

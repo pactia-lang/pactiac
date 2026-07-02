@@ -3,7 +3,7 @@ pactia 1.0
 export def @api in service {
   method,
   path,
-  summary,
+  summary: "",
 }
 
 export def @output in service {

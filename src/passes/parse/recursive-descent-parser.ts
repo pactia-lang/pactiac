@@ -682,9 +682,12 @@ export class RecursiveDescentParser {
 
     if (stream.check(TokenType.LPAREN)) {
       stream.advance();
-      const argToken = stream.expect(TokenType.IDENT, "Expected modifier shorthand argument");
+      const argToken = stream.peek();
+      if (argToken.type !== TokenType.IDENT && argToken.type !== TokenType.NUMBER && argToken.type !== TokenType.STRING) {
+        throw new PactiaSyntaxError("Expected identifier, number, or string in modifier shorthand", argToken.line, argToken.col);
+      }
+      shorthand = stream.advance().value;
       stream.expect(TokenType.RPAREN, "Expected ')' after modifier shorthand");
-      shorthand = argToken.value;
     }
 
     return {
