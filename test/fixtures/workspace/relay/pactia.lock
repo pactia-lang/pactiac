@@ -3,9 +3,9 @@ lockVersion = 1
 [[package]]
 name = "@pactia/kernel"
 version = "1.0.0"
-digest = "sha256:6ae15bfca18a71756baf1b309860cc7c1a39713f6f38a41cc2765fcff8af6874"
+digest = "sha256:1281f770f86fbbcbe0192e02bd342e5ab5144eac0d43b761c4b8d4726ba49923"
 
 [[package]]
 name = "@pactia/rust-stack"
 version = "1.0.0"
-digest = "sha256:b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef12345678"
+digest = "sha256:dfb5e70f2c10e8074afe9bbfce46065370badf5793358070c5a0bb6b811363d3"

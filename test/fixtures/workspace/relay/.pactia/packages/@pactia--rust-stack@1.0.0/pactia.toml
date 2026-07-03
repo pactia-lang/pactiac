@@ -1,6 +1,0 @@
-[package]
-name = "@pactia/rust-stack"
-version = "1.0.0"
-
-[dependencies]
-"@pactia/kernel" = "^1.0"
