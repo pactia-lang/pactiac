@@ -75,7 +75,7 @@ export function parsePactiaLockToml(source: string): PactiaLockManifest {
 
   if (lockVersion !== undefined && lockVersion < 1) {
     throw new PackageResolutionError(
-      PackageErrorCode.LockEntryMissing,
+      PackageErrorCode.LockVersionInvalid,
       "pactia.lock lockVersion must be >= 1",
     );
   }
