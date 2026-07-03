@@ -71,6 +71,26 @@ export class FsRegistryLoader implements RegistryLoaderSync {
     const importPackages: LoadedPackage[] = [];
     let transitiveExplicit: Set<string> = new Set();
 
+    // Emit LOCK_MISSING when there are package imports but no lockfile
+    if (!lockSource && imports.length > 0) {
+      loaderDiagnostics.push(
+        createDiagnostic(
+          DiagnosticCode.LockMissing,
+          `pactia.lock is missing — run 'pactia install' to generate it from pactia.toml [dependencies]`,
+        ),
+      );
+    }
+
+    // Emit LOCK_STALE when lock exists but TOML is missing (shouldn't happen normally)
+    if (lockSource && !tomlSource && imports.length > 0) {
+      loaderDiagnostics.push(
+        createDiagnostic(
+          DiagnosticCode.LockStale,
+          `pactia.toml is missing — cannot validate declared dependencies against lockfile`,
+        ),
+      );
+    }
+
     if (tomlSource && lockSource) {
       const toml = parsePactiaToml(tomlSource);
       const lock = parsePactiaLock(lockSource);
