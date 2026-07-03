@@ -23,6 +23,9 @@ export enum DiagnosticCode {
   PackageNotFound = "PACKAGE_NOT_FOUND",
   PackageLockMismatch = "PACKAGE_LOCK_MISMATCH",
   LockEntryMissing = "LOCK_ENTRY_MISSING",
+  LockDigestMismatch = "LOCK_DIGEST_MISMATCH",
+  LockStale = "LOCK_STALE",
+  LockMissing = "LOCK_MISSING",
 
   // Package import resolution (1.3)
   PackageImportUnresolved = "PACKAGE_IMPORT_UNRESOLVED",
@@ -48,7 +51,6 @@ export enum DiagnosticCode {
   ContextAttachUndefined = "CONTEXT_ATTACH_UNDEFINED",
   ContextAttachKindMismatch = "CONTEXT_ATTACH_KIND_MISMATCH",
   ContextMissingPath = "CONTEXT_MISSING_PATH",
-  FragmentPackageImport = "FRAGMENT_PACKAGE_IMPORT",
 
   // File-local imports (1.4)
   ImportMissing = "IMPORT_MISSING",
@@ -80,11 +82,9 @@ export enum DiagnosticSeverity {
 
 /** Codes that represent warnings rather than hard errors. */
 export const diagnosticWarningCodes: ReadonlySet<DiagnosticCode> = new Set([
-  DiagnosticCode.TagBodyMissingField,
   DiagnosticCode.TagBodyUnknownField,
   DiagnosticCode.ClauseDuplicateKey,
   DiagnosticCode.ImportUnused,
-  DiagnosticCode.FragmentPackageImport,
   DiagnosticCode.HybridPackageDiscouraged,
   DiagnosticCode.ImportCollisionResolvable,
   DiagnosticCode.ConsumerRedundantImport,
