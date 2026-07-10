@@ -27,9 +27,9 @@ test("cli compile writes IR workspace files to output directory", () => {
     );
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /wrote input\/manifest\.json/);
-    assert.match(readFileSync(join(outputDir, "input/manifest.json"), "utf8"), /"pactiaVersion": "1.0"/);
-    assert.match(readFileSync(join(outputDir, "input/product.json"), "utf8"), /Relay/);
+    assert.match(result.stdout, /wrote input\/manifest\.yaml/);
+    assert.match(readFileSync(join(outputDir, "input/manifest.yaml"), "utf8"), /pactiaVersion: '1.0'/);
+    assert.match(readFileSync(join(outputDir, "input/product.yaml"), "utf8"), /Relay/);
   } finally {
     rmSync(outputDir, { recursive: true, force: true });
   }
@@ -46,8 +46,8 @@ test("cli compile -w writes IR from multi-file workspace", () => {
     );
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /wrote input\/modules\/orders\/services\/order\.service\.json/);
-    assert.match(readFileSync(join(outputDir, "input/manifest.json"), "utf8"), /"lockfileDigest": "sha256:/);
+    assert.match(result.stdout, /wrote input\/modules\/orders\/services\/order\.service\.yaml/);
+    assert.match(readFileSync(join(outputDir, "input/manifest.yaml"), "utf8"), /lockfileDigest: sha256:/);
   } finally {
     rmSync(outputDir, { recursive: true, force: true });
   }
@@ -69,9 +69,9 @@ test("cli compile rejects both -i and -w", () => {
   assert.match(result.stderr, /exactly one of -i .* or -w/);
 });
 
-test("cli compile writes provenance report when requested", () => {
+test("cli compile writes provenance report when requested", async () => {
   const outputDir = mkdtempSync(join(tmpdir(), "pactiac-cli-prov-"));
-  const provenancePath = join(outputDir, "provenance.json");
+    const provenancePath = join(outputDir, "provenance.yaml");
   const sourcePath = join(outputDir, "input.pactia");
   try {
     const source = readTestFixture(TestFixtureId.Relay);
@@ -94,7 +94,8 @@ test("cli compile writes provenance report when requested", () => {
     );
 
     assert.equal(result.status, 0, result.stderr);
-    const report = JSON.parse(readFileSync(provenancePath, "utf8")) as {
+    const { load } = await import("js-yaml");
+    const report = load(readFileSync(provenancePath, "utf8")) as {
       diagnostics: Array<{ provenance: string; target: string }>;
     };
     assert.ok(Array.isArray(report.diagnostics));
