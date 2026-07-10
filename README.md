@@ -5,18 +5,22 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/pactia-lang/pactiac/releases)
 
-Pactia compiler — parse `.pactia` source, lower to module-scoped IR, emit workspace JSON.
+Pactia compiler — parse `.pactia` source, lower to module-scoped IR, emit workspace YAML (or JSON with `--json`).
 
 Implements the normative specification in [pactia-lang/spec](https://github.com/pactia-lang/spec).
 
 ## Commands
 
 ```bash
-# Compile a single product file to an IR workspace directory
-pactiac compile -i product.pactia -o input/ [--report] [--provenance report.json]
+# Compile a single product file to an IR workspace directory (YAML default)
+pactiac compile -i product.pactia -o input/ [--report] [--provenance report.yaml]
 
-# Compile a multi-file workspace (import + attach in product.pactia)
-pactiac compile -w ./my-product -o input/ [--report] [--provenance report.json]
+# Compile a multi-file workspace — YAML output by default
+pactiac compile -w ./my-product -o input/ [--report] [--provenance report.yaml]
+
+# JSON output via --json flag or --format json
+pactiac compile -w ./my-product -o input/ --json
+pactiac compile -w ./my-product -o input/ --format json
 
 # Regenerate golden test fixtures after intentional compiler changes
 npm run generate:golden
@@ -53,16 +57,18 @@ npm run build
 
 ### Compile output layout
 
+Default output is YAML. Use `--json` for JSON.
+
 ```
-input/manifest.json
-input/product.json
-input/modules/<module>/<module>.module.json
-input/modules/<module>/<module>.model.json
-input/modules/<module>/services/<service>.service.json
-input/workspace.json
+input/manifest.yaml
+input/product.yaml
+input/modules/<module>/<module>.module.yaml
+input/modules/<module>/<module>.model.yaml
+input/modules/<module>/services/<service>.service.yaml
+input/workspace.yaml
 ```
 
-After `pactia build`: `input/context.index.json` and `input/context/` (bundled context files) — see [spec — Context index](https://github.com/pactia-lang/spec/blob/main/docs/compilation.md#context-index-pactia-build).
+After `pactia build`: `input/context.index.yaml` (or `.json` with `--json`) and `input/context/` (bundled context files) — see [spec — Context index](https://github.com/pactia-lang/spec/blob/main/docs/compilation.md#context-index-pactia-build).
 
 | pactiac release | Implements spec |
 | --- | --- |

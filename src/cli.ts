@@ -4,6 +4,11 @@ import { dirname, join, resolve } from "node:path";
 import { compile, compileWorkspace, workspaceRootForInput } from "./compile/compile.js";
 import type { CompileResult } from "./compile/compile.js";
 import { Provenance } from "./domain/provenance.js";
+import {
+  SerializationFormat,
+  parseSerializationFormat,
+} from "./domain/serialization-format.js";
+import { emitYaml } from "./adapters/yaml-emitter.js";
 
 interface CliArgs {
   readonly command: string;
@@ -13,6 +18,7 @@ interface CliArgs {
   readonly report: boolean;
   readonly provenance: string | undefined;
   readonly stopAfter: string | undefined;
+  readonly format: SerializationFormat;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -24,6 +30,7 @@ function parseArgs(argv: string[]): CliArgs {
   let report = false;
   let provenance: string | undefined;
   let stopAfter: string | undefined;
+  let format = SerializationFormat.Yaml;
   for (let i = 0; i < optionArgs.length; i += 1) {
     const arg = optionArgs[i];
     if ((arg === "-i" || arg === "--input") && optionArgs[i + 1]) {
@@ -35,17 +42,25 @@ function parseArgs(argv: string[]): CliArgs {
     } else if ((arg === "-o" || arg === "--output") && optionArgs[i + 1]) {
       output = optionArgs[i + 1];
       i += 1;
-    } else if (arg === "--provenance" && optionArgs[i + 1]) {
+    } else if ((arg === "--provenance" && optionArgs[i + 1]) || (arg === "-p" && optionArgs[i + 1])) {
       provenance = optionArgs[i + 1];
       i += 1;
     } else if (arg === "--stop-after" && optionArgs[i + 1]) {
       stopAfter = optionArgs[i + 1];
       i += 1;
+    } else if ((arg === "--format" || arg === "-f") && optionArgs[i + 1]) {
+      const formatValue = optionArgs[i + 1];
+      if (formatValue !== undefined) {
+        format = parseSerializationFormat(formatValue) ?? SerializationFormat.Yaml;
+        i += 1;
+      }
+    } else if (arg === "--json") {
+      format = SerializationFormat.Json;
     } else if (arg === "--report") {
       report = true;
     }
   }
-  return { command, input, workspace, output, report, provenance, stopAfter };
+  return { command, input, workspace, output, report, provenance, stopAfter, format };
 }
 
 function printProvenanceSummary(diagnostics: CompileResult["diagnostics"]): void {
@@ -66,12 +81,30 @@ function printNotDerivable(diagnostics: CompileResult["diagnostics"]): void {
   }
 }
 
-function writeOutput(result: CompileResult, outputDir: string): void {
+function serializeContent(
+  content: string,
+  format: SerializationFormat,
+): string {
+  if (format === SerializationFormat.Yaml) {
+    const parsed = JSON.parse(content) as unknown;
+    return emitYaml(parsed);
+  }
+  return content;
+}
+
+function writeOutput(
+  result: CompileResult,
+  outputDir: string,
+  format: SerializationFormat,
+): void {
+  const ext = format === SerializationFormat.Yaml ? ".yaml" : ".json";
   for (const [relPath, content] of result.files) {
-    const fullPath = join(outputDir, relPath);
+    const outPath = relPath.replace(/\.json$/, ext);
+    const fullPath = join(outputDir, outPath);
     mkdirSync(dirname(fullPath), { recursive: true });
-    writeFileSync(fullPath, content, "utf8");
-    process.stdout.write(`wrote ${relPath}\n`);
+    const serialized = serializeContent(content, format);
+    writeFileSync(fullPath, serialized, "utf8");
+    process.stdout.write(`wrote ${outPath}\n`);
   }
 }
 
@@ -95,7 +128,7 @@ function runCompile(args: CliArgs): void {
         return compile(readFileSync(inputPath, "utf8"), workspaceRootForInput(inputPath));
       })();
 
-  writeOutput(result, outputDir);
+  writeOutput(result, outputDir, args.format);
 
   if (args.provenance) {
     const provenancePath = resolve(args.provenance);
@@ -107,7 +140,11 @@ function runCompile(args: CliArgs): void {
         message: d.message,
       })),
     };
-    writeFileSync(provenancePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+    const serialized =
+      args.format === SerializationFormat.Yaml
+        ? emitYaml(payload)
+        : `${JSON.stringify(payload, null, 2)}\n`;
+    writeFileSync(provenancePath, serialized, "utf8");
     process.stdout.write(`wrote provenance report ${args.provenance}\n`);
   }
 
@@ -124,7 +161,7 @@ function main(): void {
   }
 
   process.stderr.write(
-    "Usage:\n  pactiac compile (-i <file.pactia> | -w <workspace-dir>) -o <output-dir> [--report] [--provenance <path>] [--stop-after <phase>]\n",
+    "Usage:\n  pactiac compile (-i <file> | -w <dir>) -o <output-dir> [--format json|yaml] [--json] [--report] [--provenance <path>] [--stop-after <phase>]\n\nDefault output format is YAML. Use --json for JSON output.\n",
   );
   process.exit(1);
 }
